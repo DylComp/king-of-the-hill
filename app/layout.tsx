@@ -2,15 +2,18 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://pump-tower.vercel.app"),
   title: "pump tower",
   description: "Your Solana bags become a pixel skyscraper. Every token is a floor. Hold longer, live higher.",
   openGraph: {
     title: "pump tower",
     description: "Every token is a floor. Bare walls on day zero, the penthouse at thirty days.",
+    images: ["/og.png"],
   },
+  twitter: { card: "summary_large_image", images: ["/og.png"] },
 };
 
-export const viewport: Viewport = { themeColor: "#0b0c0f" };
+export const viewport: Viewport = { themeColor: "#08090b" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

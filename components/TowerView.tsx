@@ -9,9 +9,10 @@ type Props = {
   placed: Record<string, Placement>;
   selected: string | null;
   onSelect: (mint: string) => void;
+  onCanvas?: (c: HTMLCanvasElement | null) => void;
 };
 
-export default function TowerView({ floors, placed, selected, onSelect }: Props) {
+export default function TowerView({ floors, placed, selected, onSelect, onCanvas }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const wrap = useRef<HTMLDivElement>(null);
   const scene = useRef(newScene());
@@ -34,6 +35,7 @@ export default function TowerView({ floors, placed, selected, onSelect }: Props)
   useEffect(() => {
     const c = canvas.current;
     if (!c) return;
+    onCanvas?.(c);
     const ctx = c.getContext("2d")!;
     let raf = 0;
     let last = performance.now();
@@ -48,6 +50,7 @@ export default function TowerView({ floors, placed, selected, onSelect }: Props)
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const h = towerHeight(floors.length);

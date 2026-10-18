@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { TIERS, type TierId, floorRate, citizensFor } from "@/lib/game";
 import { PREVIEW_H, PREVIEW_W, drawTierPreview } from "@/lib/render";
+import HoverText from "./HoverText";
 
 function Preview({ tier }: { tier: TierId }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -27,9 +28,9 @@ export default function TierLadder() {
         <div key={t.id} className="rung">
           <Preview tier={t.id} />
           <div className="rung-meta">
-            <span className="pixel rung-name">{t.name}</span>
+            <HoverText text={t.name} className="pixel rung-name" />
             <span className="dim">{t.minDays === 0 ? "day zero" : `${t.minDays}+ days held`}</span>
-            <span className="dim">{t.blurb}</span>
+            <HoverText by="word" text={t.blurb} className="dim" />
             <span className="green">
               {citizensFor(t.id)} {citizensFor(t.id) === 1 ? "citizen" : "citizens"} · ${floorRate(t.id, false)}/hr
             </span>

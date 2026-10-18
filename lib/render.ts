@@ -211,6 +211,8 @@ function painting(ctx: CanvasRenderingContext2D, scene: Scene, f: Floor, tier: T
   if (f.image && !img) {
     scene.images.set(f.image, "loading");
     const el = new Image();
+    // CORS-clean images keep the canvas exportable for "save png".
+    el.crossOrigin = "anonymous";
     el.referrerPolicy = "no-referrer";
     el.onload = () => scene.images.set(f.image!, el);
     el.onerror = () => scene.images.set(f.image!, "failed");

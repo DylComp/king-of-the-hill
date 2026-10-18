@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   HOUSE_MINT,
   ITEMS,
@@ -10,9 +10,9 @@ import {
   type ItemKind,
   type Save,
   buyAndPlace,
+  cashOf,
   citizensFor,
   daysHeld,
-  earned,
   emptySave,
   floorRate,
   fmtCash,
@@ -25,8 +25,16 @@ import {
 } from "@/lib/game";
 import TowerView from "./TowerView";
 import TierLadder from "./TierLadder";
+import Logo from "./Logo";
+import HoverText from "./HoverText";
+import Reveal from "./Reveal";
+import Boot from "./Boot";
+import ItemIcon from "./ItemIcon";
 
 const DAY = 86_400_000;
+const SITE = "https://pump-tower.vercel.app";
+const WALLET_BONUS = 100; // every tower starts with enough for a crate and a rat
+const DEMO_BONUS = 1500;
 
 function demoFloors(now: number): Floor[] {
   const f = (symbol: string, days: number, isHouse = false, mint = `demo${symbol}`): Floor => ({
@@ -42,10 +50,9 @@ function demoFloors(now: number): Floor[] {
   return [f("TOWER", 41, true, HOUSE_MINT), f("GRUNT", 18), f("NOODL", 9), f("MOGGY", 4), f("SLURP", 1.4), f("ZAP", 0.1)];
 }
 
-type Ticker = { symbol: string; price: number | null; mcap: number | null; change: number | null };
+type Coin = { symbol: string; price: number | null; mcap: number | null; change: number | null };
 
 type PhantomLike = {
-  isPhantom?: boolean;
   connect: (o?: { onlyIfTrusted?: boolean }) => Promise<{ publicKey: { toString(): string } }>;
   disconnect?: () => Promise<void>;
 };
@@ -55,15 +62,17 @@ function provider(): PhantomLike | null {
   return w.phantom?.solana ?? w.solana ?? w.solflare ?? null;
 }
 
-const saveKey = (owner: string | null) => `pumptower:v1:${owner ?? "demo"}`;
+const saveKey = (owner: string | null) => `pumptower:v2:${owner ?? "demo"}`;
 
 function loadSave(owner: string | null): Save {
   try {
     const raw = localStorage.getItem(saveKey(owner));
-    if (raw) return JSON.parse(raw) as Save;
+    if (raw) {
+      const s = JSON.parse(raw) as Save;
+      return { owned: s.owned ?? [], placed: s.placed ?? {} };
+    }
   } catch {}
-  // The demo tower starts with some cash so the shop is playable right away.
-  return { ...emptySave(), cash: owner ? 0 : 1500 };
+  return emptySave();
 }
 
 function fmtUsd(n: number | null) {
@@ -78,19 +87,23 @@ function fmtWait(ms: number) {
   return h >= 48 ? `${Math.ceil(h / 24)} days` : `${h} hr`;
 }
 
+const KIND_LABEL: Record<ItemKind, string> = { furniture: "furniture", pet: "pets", outfit: "outfits" };
+const KINDS: ItemKind[] = ["furniture", "pet", "outfit"];
+
 export default function Game() {
   const [owner, setOwner] = useState<string | null>(null);
   const [floors, setFloors] = useState<Floor[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [save, setSave] = useState<Save | null>(null);
+  const [save, setSave] = useState<Save>(emptySave);
   const [selected, setSelected] = useState<string | null>(null);
   const [tab, setTab] = useState<ItemKind>("furniture");
   const [lookup, setLookup] = useState("");
   const [now, setNow] = useState(() => Date.now());
-  const [ticker, setTicker] = useState<Ticker | null>(null);
+  const [coin, setCoin] = useState<Coin | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Floors stack oldest hold on top, so the penthouse is literally the top floor.
   const sorted = useMemo(
@@ -98,12 +111,19 @@ export default function Game() {
     [floors],
   );
   const rate = useMemo(() => towerRate(sorted, now), [sorted, now]);
+  const cash = cashOf(sorted, save.owned, owner ? WALLET_BONUS : DEMO_BONUS, now);
   const sel = sorted.find((f) => f.mint === selected) ?? null;
+  const citizens = sorted.reduce((n, f) => n + citizensFor(tierFor(f.heldSince, now)), 0);
+  const longest = sorted[0] ? daysHeld(sorted[0].heldSince, now) : 0;
 
   const open = useCallback(async (addr: string | null) => {
     setError(null);
     setOwner(addr);
     setSave(loadSave(addr));
+    const url = new URL(window.location.href);
+    if (addr) url.searchParams.set("w", addr);
+    else url.searchParams.delete("w");
+    window.history.replaceState(null, "", url);
     if (!addr) {
       const d = demoFloors(Date.now());
       setFloors(d);
@@ -116,8 +136,9 @@ export default function Game() {
       const res = await fetch(`/api/tower?owner=${addr}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "something broke");
-      setFloors(json.floors);
-      const top = [...(json.floors as Floor[])].sort((a, b) => (a.heldSince ?? Infinity) - (b.heldSince ?? Infinity))[0];
+      const fl = json.floors as Floor[];
+      setFloors(fl);
+      const top = [...fl].sort((a, b) => (a.heldSince ?? Infinity) - (b.heldSince ?? Infinity))[0];
       setSelected(top?.mint ?? null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -126,50 +147,44 @@ export default function Game() {
     }
   }, []);
 
-  // Start on the demo tower; reconnect silently if Phantom already trusts the site.
+  // Start on a shared tower if the link has one, else the demo; reconnect silently if Phantom already trusts us.
   useEffect(() => {
-    open(null);
-    const p = provider();
-    p?.connect({ onlyIfTrusted: true })
+    const shared = new URL(window.location.href).searchParams.get("w");
+    open(shared);
+    if (shared) return;
+    provider()
+      ?.connect({ onlyIfTrusted: true })
       .then((r) => open(r.publicKey.toString()))
       .catch(() => {});
   }, [open]);
 
-  // House coin ticker straight from DexScreener.
   useEffect(() => {
     const load = () =>
       fetch(`https://api.dexscreener.com/tokens/v1/solana/${HOUSE_MINT}`)
         .then((r) => r.json())
         .then((pairs: { baseToken: { symbol: string }; priceUsd?: string; marketCap?: number; fdv?: number; priceChange?: { h24?: number } }[]) => {
           const p = pairs?.[0];
-          if (!p) return setTicker({ symbol: "TOWER", price: null, mcap: null, change: null });
-          setTicker({
+          if (!p) return setCoin(null);
+          setCoin({
             symbol: p.baseToken.symbol,
             price: p.priceUsd ? Number(p.priceUsd) : null,
             mcap: p.marketCap ?? p.fdv ?? null,
             change: p.priceChange?.h24 ?? null,
           });
         })
-        .catch(() => setTicker({ symbol: "TOWER", price: null, mcap: null, change: null }));
+        .catch(() => setCoin(null));
     load();
     const id = setInterval(load, 60_000);
     return () => clearInterval(id);
   }, []);
 
-  // The cash clock: citizens earn every second, offline time is credited on load.
+  // Cash is derived from hold time, so the clock only needs to tick.
   useEffect(() => {
-    const id = setInterval(() => {
-      const t = Date.now();
-      setNow(t);
-      // Hold off until floors are in, so offline time is credited at the real rate.
-      if (!sorted.length) return;
-      setSave((s) => (s ? { ...s, cash: s.cash + earned(towerRate(sorted, t), s.lastTick, t), lastTick: t } : s));
-    }, 1000);
+    const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [sorted]);
+  }, []);
 
   useEffect(() => {
-    if (!save) return;
     try {
       localStorage.setItem(saveKey(owner), JSON.stringify(save));
     } catch {}
@@ -201,32 +216,63 @@ export default function Game() {
   }
 
   function buy(id: string) {
-    if (!save || !sel) return;
+    if (!sel) return;
     const item = itemById(id)!;
-    const r = buyAndPlace(save, item, sel.mint, tierFor(sel.heldSince, now));
+    const r = buyAndPlace(save, item, sel.mint, tierFor(sel.heldSince, now), cash);
     if (!r.ok) return setToast(r.reason);
     setSave(r.save);
     setToast(save.owned.includes(id) ? `${item.name} moved in` : `bought ${item.name}`);
   }
 
+  const shareUrl = owner ? `${SITE}/?w=${owner}` : SITE;
+  const shareText = owner
+    ? `my bags are a ${sorted.length} floor building with ${citizens} citizens. longest hold: ${Math.floor(longest)} days. what does yours look like`
+    : "your solana bags become a pixel skyscraper. hold longer, live higher.";
+
+  function savePng() {
+    const c = canvasRef.current;
+    if (!c) return;
+    try {
+      c.toBlob((b) => {
+        if (!b) return setToast("could not save image");
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(b);
+        a.download = "pump-tower.png";
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      });
+    } catch {
+      setToast("a token logo blocked the export");
+    }
+  }
+
   const selTier = sel ? tierFor(sel.heldSince, now) : 0;
-  const placement = sel && save ? save.placed[sel.mint] : undefined;
+  const placement = sel ? save.placed[sel.mint] : undefined;
   const nextMs = sel ? msToNextTier(sel.heldSince, now) : null;
+  const progress =
+    !sel || nextMs == null ? 1 : Math.min(1, Math.max(0, 1 - nextMs / ((TIERS[selTier + 1].minDays - TIERS[selTier].minDays) * DAY)));
   const holdsHouse = sorted.some((f) => f.isHouse);
 
   return (
     <>
+      <Boot />
+
       <header className="nav">
-        <a className="logo" href="#">
-          <span className="logo-mark" aria-hidden />
-          <span className="pixel">pump tower</span>
+        <a className="brand" href="#tower">
+          <Logo size={30} />
+          <HoverText text="pump tower" className="pixel brand-word" />
         </a>
         <nav className="nav-links">
-          <a href="#how">[how it works]</a>
-          <a href="#shop">[shop]</a>
-          <a href={`https://pump.fun/coin/${HOUSE_MINT}`} target="_blank" rel="noreferrer">
-            [pump.fun]
-          </a>
+          {[
+            ["#tower", "tower"],
+            ["#ladder", "ladder"],
+            ["#catalog", "catalog"],
+            ["#coin", "coin"],
+          ].map(([href, label]) => (
+            <a key={href} href={href}>
+              <HoverText text={label} />
+            </a>
+          ))}
         </nav>
         {owner ? (
           <button className="btn ghost" onClick={disconnect}>
@@ -239,31 +285,15 @@ export default function Game() {
         )}
       </header>
 
-      <div className="ticker">
-        <div className="ticker-track">
-          {Array.from({ length: 2 }).map((_, k) => (
-            <span key={k} className="ticker-run">
-              <span className="live" /> ${ticker?.symbol ?? "TOWER"} {fmtUsd(ticker?.price ?? null)}
-              <span className={ticker?.change != null && ticker.change < 0 ? "red" : "green"}>
-                {ticker?.change != null ? ` ${ticker.change > 0 ? "+" : ""}${ticker.change.toFixed(1)}%` : ""}
-              </span>
-              <i>mcap {fmtUsd(ticker?.mcap ?? null)}</i>
-              <i>bare walls on day zero</i>
-              <i>penthouse at thirty days</i>
-              <i>house coin floor earns triple</i>
-              <i>paper hands sleep on concrete</i>
-            </span>
-          ))}
-        </div>
-      </div>
+      <main>
+        <Reveal id="tower" className="sec">
+          <div className="sec-head">
+            <span className="kicker">01 / the tower</span>
+            <HoverText as="h1" text="your bags are a building" className="pixel display" />
+            <HoverText as="p" by="word" className="lede" text="Every token you hold is a floor. Hold longer, live higher. The clock never lies." />
+          </div>
 
-      <main className="board">
-        <section className="tower-col">
-          <div className="tower-head">
-            <div>
-              <h1 className="pixel title">your bags are a building</h1>
-              <p className="dim">hold longer, live higher. every token is a floor and the clock never lies.</p>
-            </div>
+          <div className="toolbar">
             <form
               className="lookup"
               onSubmit={(e) => {
@@ -271,171 +301,271 @@ export default function Game() {
                 if (lookup.trim()) open(lookup.trim());
               }}
             >
-              <input value={lookup} onChange={(e) => setLookup(e.target.value)} placeholder="peek at any wallet address" spellCheck={false} />
+              <input value={lookup} onChange={(e) => setLookup(e.target.value)} placeholder="visit any wallet address" spellCheck={false} />
               <button className="btn small" type="submit">
                 visit
               </button>
             </form>
-          </div>
-          {!owner && (
-            <div className="banner">
-              <span className="pixel green">demo tower</span>
-              <span className="dim">connect a wallet to move your own bags in</span>
-            </div>
-          )}
-          {loading && <div className="banner pixel blink">reading the chain…</div>}
-          {error && (
-            <div className="banner red">
-              {error} <button className="link" onClick={() => open(owner)}>retry</button>
-            </div>
-          )}
-          <TowerView floors={loading ? [] : sorted} placed={save?.placed ?? {}} selected={selected} onSelect={setSelected} />
-        </section>
-
-        <aside className="side">
-          <div className="panel stats">
-            <div className="stat">
-              <span className="label">01 cash</span>
-              <span className="pixel big green">${fmtCash(save?.cash ?? 0)}</span>
-            </div>
-            <div className="stat">
-              <span className="label">02 per hour</span>
-              <span className="pixel">${fmtCash(rate)}</span>
-            </div>
-            <div className="stat">
-              <span className="label">03 floors</span>
-              <span className="pixel">{sorted.length}</span>
-            </div>
-            <div className="stat">
-              <span className="label">04 citizens</span>
-              <span className="pixel">{sorted.reduce((n, f) => n + citizensFor(tierFor(f.heldSince, now)), 0)}</span>
+            <div className="share">
+              <a
+                className="btn small ghost"
+                target="_blank"
+                rel="noreferrer"
+                href={`https://x.com/intent/post?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`}
+              >
+                share on x
+              </a>
+              <button className="btn small ghost" onClick={() => navigator.clipboard?.writeText(shareUrl).then(() => setToast("link copied"))}>
+                copy link
+              </button>
+              <button className="btn small ghost" onClick={savePng}>
+                save png
+              </button>
             </div>
           </div>
 
-          {!holdsHouse && owner && !loading && (
-            <a className="panel house-cta" href={`https://pump.fun/coin/${HOUSE_MINT}`} target="_blank" rel="noreferrer">
-              <span className="pixel green">no house coin floor yet</span>
-              <span className="dim">the house coin floor earns triple cash. grab some on pump.fun and its floor moves in.</span>
-            </a>
-          )}
-
-          {sel ? (
-            <div className="panel floor-card">
-              <div className="floor-title">
-                <span className="pixel">${sel.symbol.toUpperCase()}</span>
-                {sel.isHouse && <span className="chip">house coin</span>}
-              </div>
-              <div className="rows">
-                <span>tier</span>
-                <span className="green">{TIERS[selTier].name}</span>
-                <span>held</span>
-                <span>{sel.heldSince ? `${daysHeld(sel.heldSince, now).toFixed(1)} days` : "unknown"}</span>
-                <span>next</span>
-                <span>{nextMs == null ? "top of the world" : `${TIERS[selTier + 1].name} in ${fmtWait(nextMs)}`}</span>
-                <span>earning</span>
-                <span>${fmtCash(floorRate(selTier, sel.isHouse))}/hr</span>
-                {sel.usd != null && (
-                  <>
-                    <span>bag</span>
-                    <span>{fmtUsd(sel.usd)}</span>
-                  </>
+          <div className="board">
+            <div className="tower-col">
+              <div className="tower-bar">
+                {owner ? (
+                  <span className="dim">
+                    tower of <span className="green">{shortAddr(owner)}</span>
+                  </span>
+                ) : (
+                  <span className="dim">
+                    <span className="green">demo tower</span> connect a wallet to move your bags in
+                  </span>
+                )}
+                {loading && <span className="pixel blink tiny-pixel">reading the chain</span>}
+                {error && (
+                  <span className="red">
+                    {error}{" "}
+                    <button className="link" onClick={() => open(owner)}>
+                      retry
+                    </button>
+                  </span>
                 )}
               </div>
-              {placement && placement.furniture.length > 0 && (
-                <div className="placed">
-                  {placement.furniture.map((id) => (
-                    <button key={id} className="chip" title="move out" onClick={() => save && setSave(removeFurniture(save, sel.mint, id))}>
-                      {itemById(id)?.name} ×
+              <TowerView
+                floors={loading ? [] : sorted}
+                placed={save.placed}
+                selected={selected}
+                onSelect={setSelected}
+                onCanvas={(c) => (canvasRef.current = c)}
+              />
+            </div>
+
+            <aside className="side">
+              <div className="panel stats">
+                <div className="stat wide">
+                  <span className="label">cash</span>
+                  <span className="pixel big green">${fmtCash(cash)}</span>
+                </div>
+                <div className="stat">
+                  <span className="label">per hour</span>
+                  <span className="pixel">${fmtCash(rate)}</span>
+                </div>
+                <div className="stat">
+                  <span className="label">floors</span>
+                  <span className="pixel">{sorted.length}</span>
+                </div>
+                <div className="stat">
+                  <span className="label">citizens</span>
+                  <span className="pixel">{citizens}</span>
+                </div>
+              </div>
+
+              {!holdsHouse && owner && !loading && (
+                <a className="panel house-cta" href={`https://pump.fun/coin/${HOUSE_MINT}`} target="_blank" rel="noreferrer">
+                  <span className="pixel green tiny-pixel">no house coin floor</span>
+                  <span className="dim">The house coin floor earns triple. Pick some up on pump.fun and it moves in.</span>
+                </a>
+              )}
+
+              {sel ? (
+                <div className="panel floor-card">
+                  <div className="floor-title">
+                    <span className="pixel">${sel.symbol.toUpperCase()}</span>
+                    {sel.isHouse && <span className="chip">house coin x3</span>}
+                  </div>
+                  <div className="tier-row">
+                    <span className="green">{TIERS[selTier].name}</span>
+                    <span className="dim">{nextMs == null ? "top of the world" : `${TIERS[selTier + 1].name} in ${fmtWait(nextMs)}`}</span>
+                  </div>
+                  <div className="meter">
+                    <span style={{ width: `${progress * 100}%` }} />
+                  </div>
+                  <div className="rows">
+                    <span>held</span>
+                    <span>{sel.heldSince ? `${daysHeld(sel.heldSince, now).toFixed(1)} days` : "unknown"}</span>
+                    <span>earning</span>
+                    <span>${fmtCash(floorRate(selTier, sel.isHouse))}/hr</span>
+                    {sel.usd != null && (
+                      <>
+                        <span>bag</span>
+                        <span>{fmtUsd(sel.usd)}</span>
+                      </>
+                    )}
+                  </div>
+                  {placement && placement.furniture.length > 0 && (
+                    <div className="placed">
+                      {placement.furniture.map((id) => (
+                        <button key={id} className="chip" title="move out" onClick={() => setSave(removeFurniture(save, sel.mint, id))}>
+                          {itemById(id)?.name} x
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="panel dim">Tap a floor to manage it.</div>
+              )}
+
+              <div className="panel shop">
+                <div className="tabs">
+                  {KINDS.map((k) => (
+                    <button key={k} className={tab === k ? "tab on" : "tab"} onClick={() => setTab(k)}>
+                      {KIND_LABEL[k]}
                     </button>
                   ))}
                 </div>
-              )}
-              <p className="dim tiny">sell it and the clock starts over. that is the whole game.</p>
-            </div>
-          ) : (
-            <div className="panel dim">tap a floor to manage it</div>
-          )}
-
-          <div className="panel shop" id="shop">
-            <div className="tabs">
-              {(["furniture", "pet", "outfit"] as ItemKind[]).map((k) => (
-                <button key={k} className={tab === k ? "tab on" : "tab"} onClick={() => setTab(k)}>
-                  {k === "pet" ? "pets" : k === "outfit" ? "outfits" : k}
-                </button>
-              ))}
-            </div>
-            <p className="dim tiny">
-              {tab === "furniture"
-                ? `up to ${MAX_FURNITURE} pieces per floor`
-                : tab === "pet"
-                  ? "one pet per floor, it follows the citizens around"
-                  : "dresses every citizen on the floor"}
-            </p>
-            <ul className="items">
-              {ITEMS.filter((i) => i.kind === tab).map((i) => {
-                const locked = selTier < i.minTier;
-                const owned = save?.owned.includes(i.id);
-                const equipped =
-                  placement && (placement.furniture.includes(i.id) || placement.pet === i.id || placement.outfit === i.id);
-                const broke = !owned && (save?.cash ?? 0) < i.price;
-                return (
-                  <li key={i.id} className={locked ? "item locked" : "item"}>
-                    <span className="item-name">{i.name}</span>
-                    <span className="item-req">{locked ? `${TIERS[i.minTier].minDays}d hold` : TIERS[i.minTier].name}</span>
-                    <button className="btn small" disabled={!sel || locked || !!equipped || broke} onClick={() => buy(i.id)}>
-                      {equipped ? "placed" : owned ? "place" : locked ? "locked" : `$${fmtCash(i.price)}`}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+                <p className="dim tiny">
+                  {tab === "furniture"
+                    ? `Up to ${MAX_FURNITURE} pieces per floor.`
+                    : tab === "pet"
+                      ? "One pet per floor. It follows the citizens around."
+                      : "Dresses every citizen on the floor."}
+                </p>
+                <ul className="items">
+                  {ITEMS.filter((i) => i.kind === tab).map((i) => {
+                    const locked = selTier < i.minTier;
+                    const owned = save.owned.includes(i.id);
+                    const equipped =
+                      placement && (placement.furniture.includes(i.id) || placement.pet === i.id || placement.outfit === i.id);
+                    const broke = !owned && cash < i.price;
+                    return (
+                      <li key={i.id} className={locked ? "item locked" : "item"}>
+                        <ItemIcon id={i.id} kind={i.kind} size={32} />
+                        <span className="item-name">{i.name}</span>
+                        <span className="item-req">{locked ? `${TIERS[i.minTier].minDays}d hold` : owned ? "owned" : ""}</span>
+                        <button className="btn small" disabled={!sel || locked || !!equipped || broke} onClick={() => buy(i.id)}>
+                          {equipped ? "placed" : owned ? "place" : locked ? "locked" : `$${fmtCash(i.price)}`}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </aside>
           </div>
-        </aside>
+        </Reveal>
+
+        <Reveal id="ladder" className="sec">
+          <div className="sec-head">
+            <span className="kicker">02 / the ladder</span>
+            <HoverText as="h2" text="hold longer, live higher" className="pixel display sm" />
+          </div>
+          <div className="how-grid">
+            <div className="lore">
+              <HoverText
+                as="p"
+                by="word"
+                text="Every token in your wallet is a floor. The clock starts the moment the bag lands, and it starts over if you sell it all. Day zero is bare concrete and a flickering bulb. A day gets you a studio, three an apartment, a week a loft, two weeks a suite."
+              />
+              <HoverText as="p" by="word" text="Thirty days and you move into the penthouse at the very top, because the longest hold always lives highest." />
+              <HoverText
+                as="p"
+                by="word"
+                text="Citizens move in as a floor gets nicer and pay rent every hour. Fancier floors pay more. Your cash is worked out from your hold time on chain, so nobody can fake it and nobody can buy their way up. You have to sit in it."
+              />
+            </div>
+            <TierLadder />
+          </div>
+        </Reveal>
+
+        <Reveal id="catalog" className="sec">
+          <div className="sec-head">
+            <span className="kicker">03 / the catalog</span>
+            <HoverText as="h2" text="the good stuff waits for diamond hands" className="pixel display sm" />
+            <HoverText
+              as="p"
+              by="word"
+              className="lede"
+              text="Furniture, pets and outfits unlock per floor by how long that floor has been held. Buy once, place it anywhere it qualifies."
+            />
+          </div>
+          {KINDS.map((k) => (
+            <div key={k} className="cat-group">
+              <div className="cat-label">{KIND_LABEL[k]}</div>
+              <div className="cat-grid">
+                {ITEMS.filter((i) => i.kind === k).map((i) => (
+                  <div key={i.id} className={`cat-card t${i.minTier}`}>
+                    <ItemIcon id={i.id} kind={i.kind} size={56} />
+                    <span className="cat-name">{i.name}</span>
+                    <span className="cat-meta">
+                      <span className="green">${fmtCash(i.price)}</span>
+                      <span className="dim">{TIERS[i.minTier].name}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </Reveal>
+
+        <Reveal id="coin" className="sec coin">
+          <div className="sec-head center">
+            <span className="kicker">04 / the house coin</span>
+            <HoverText as="h2" text="the floor that pays triple" className="pixel display sm" />
+            <HoverText
+              as="p"
+              by="word"
+              className="lede"
+              text="Hold the house coin and it gets its own neon trimmed floor in your tower, paying three times the rent of any other bag."
+            />
+          </div>
+          <div className="coin-tiles">
+            <div className="panel tile">
+              <span className="label">price</span>
+              <span className="pixel">{fmtUsd(coin?.price ?? null)}</span>
+            </div>
+            <div className="panel tile">
+              <span className="label">market cap</span>
+              <span className="pixel">{fmtUsd(coin?.mcap ?? null)}</span>
+            </div>
+            <div className="panel tile">
+              <span className="label">24h</span>
+              <span className={`pixel ${coin?.change != null && coin.change < 0 ? "red" : "green"}`}>
+                {coin?.change != null ? `${coin.change > 0 ? "+" : ""}${coin.change.toFixed(1)}%` : "soon"}
+              </span>
+            </div>
+          </div>
+          <div className="ca-row">
+            <button
+              className="ca"
+              onClick={() => {
+                navigator.clipboard?.writeText(HOUSE_MINT).then(() => setCopied(true));
+                setTimeout(() => setCopied(false), 1500);
+              }}
+            >
+              <span className="label">ca</span>
+              <span className="ca-full">{HOUSE_MINT}</span>
+              <span className="ca-short">{shortAddr(HOUSE_MINT)}</span>
+              <span className="pixel green tiny-pixel">{copied ? "copied" : "copy"}</span>
+            </button>
+            <a className="btn" href={`https://pump.fun/coin/${HOUSE_MINT}`} target="_blank" rel="noreferrer">
+              buy on pump.fun
+            </a>
+          </div>
+        </Reveal>
       </main>
 
-      <section className="how" id="how">
-        <h2 className="pixel">how it works</h2>
-        <div className="how-grid">
-          <div className="lore">
-            <p>
-              Every token in your wallet is a floor. The clock starts the moment that token first lands in your wallet. Day zero is bare
-              concrete and a flickering bulb. Hold a day and you get a studio. Three days, an apartment. A week, a loft. Two weeks, a suite.
-              Thirty days and you are in the penthouse, at the very top, because the longest hold always lives highest.
-            </p>
-            <p>
-              Citizens move in as a floor gets nicer, and every one of them earns cash around the clock. Fancier floors earn more. The house
-              coin floor earns triple. Close the tab for a day and the tower keeps counting.
-            </p>
-            <p>
-              Spend cash on furniture, pets and outfits. The best pieces only unlock on floors you have held long enough. You cannot buy
-              your way into the penthouse. You have to sit in it.
-            </p>
-          </div>
-          <TierLadder />
-        </div>
-      </section>
-
-      <section className="ca-block">
-        <span className="label">contract address</span>
-        <button
-          className="ca"
-          onClick={() => {
-            navigator.clipboard?.writeText(HOUSE_MINT).then(() => setCopied(true));
-            setTimeout(() => setCopied(false), 1500);
-          }}
-        >
-          <span className="ca-full">{HOUSE_MINT}</span>
-          <span className="ca-short">{shortAddr(HOUSE_MINT)}</span>
-          <span className="pixel green">{copied ? "copied" : "copy"}</span>
-        </button>
-        <a className="btn" href={`https://pump.fun/coin/${HOUSE_MINT}`} target="_blank" rel="noreferrer">
-          buy on pump.fun
-        </a>
-      </section>
-
-      <footer className="foot dim tiny">
-        pump tower only reads your wallet. it never asks you to sign anything and cannot move your tokens. cash and items live in this
-        browser for now.
+      <footer className="foot">
+        <Logo size={22} />
+        <span className="dim tiny">
+          Pump Tower only reads your wallet. It never asks you to sign anything and cannot move your tokens. Items you place are saved in
+          this browser.
+        </span>
       </footer>
 
       {toast && <div className="toast pixel">{toast}</div>}

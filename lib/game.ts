@@ -39,12 +39,30 @@ export function msToNextTier(heldSince: number | null, now = Date.now()): number
 export const citizensFor = (tier: TierId) => tier + 1;
 
 const TIER_RATE = [1, 1.5, 2, 3, 4, 6];
-export const BASE_RATE = 12; // cash per citizen per hour on bare walls
+export const BASE_RATE = 2; // cash per citizen per hour on bare walls; a penthouse throne takes days, not minutes
 export const HOUSE_BOOST = 3; // the house coin floor earns triple
-export const OFFLINE_CAP_H = 24;
+/** Rent starts on launch day; holds older than this earn from here. */
+export const GAME_EPOCH = Date.UTC(2026, 9, 18);
 
 export function floorRate(tier: TierId, isHouse: boolean): number {
   return citizensFor(tier) * BASE_RATE * TIER_RATE[tier] * (isHouse ? HOUSE_BOOST : 1);
+}
+
+/**
+ * Cash a floor has earned, worked out purely from its hold time: each hour is
+ * paid at the rate of the tier the floor was in at that hour. Nothing to store,
+ * nothing to fake.
+ */
+export function floorEarned(heldSince: number | null, isHouse: boolean, now = Date.now(), epoch = GAME_EPOCH): number {
+  if (heldSince == null) return 0;
+  let total = 0;
+  for (const t of TIERS) {
+    const segStart = Math.max(heldSince + t.minDays * DAY, epoch);
+    const next = TIERS[t.id + 1];
+    const segEnd = Math.min(next ? heldSince + next.minDays * DAY : Infinity, now);
+    if (segEnd > segStart) total += (floorRate(t.id, isHouse) * (segEnd - segStart)) / 3_600_000;
+  }
+  return total;
 }
 
 export type Floor = {
@@ -62,10 +80,14 @@ export function towerRate(floors: Floor[], now = Date.now()): number {
   return floors.reduce((sum, f) => sum + floorRate(tierFor(f.heldSince, now), f.isHouse), 0);
 }
 
-/** Cash earned between two timestamps, offline time capped. */
-export function earned(ratePerHour: number, from: number, to: number): number {
-  const ms = Math.min(Math.max(0, to - from), OFFLINE_CAP_H * 3_600_000);
-  return (ratePerHour * ms) / 3_600_000;
+export function towerEarned(floors: Floor[], now = Date.now(), epoch = GAME_EPOCH): number {
+  return floors.reduce((sum, f) => sum + floorEarned(f.heldSince, f.isHouse, now, epoch), 0);
+}
+
+/** Wallet cash: everything the tower has earned, minus everything bought. */
+export function cashOf(floors: Floor[], owned: string[], bonus = 0, now = Date.now(), epoch = GAME_EPOCH): number {
+  const spent = owned.reduce((n, id) => n + (itemById(id)?.price ?? 0), 0);
+  return Math.max(0, towerEarned(floors, now, epoch) + bonus - spent);
 }
 
 export type ItemKind = "furniture" | "pet" | "outfit";
@@ -103,20 +125,19 @@ export const itemById = (id: string) => ITEMS.find((i) => i.id === id);
 export const MAX_FURNITURE = 4;
 
 export type Placement = { furniture: string[]; pet: string | null; outfit: string | null };
+/** What the browser keeps: only what was bought and where it went. Cash is always derived. */
 export type Save = {
-  cash: number;
-  lastTick: number;
   owned: string[];
   placed: Record<string, Placement>;
 };
 
-export const emptySave = (now = Date.now()): Save => ({ cash: 0, lastTick: now, owned: [], placed: {} });
+export const emptySave = (): Save => ({ owned: [], placed: {} });
 export const emptyPlacement = (): Placement => ({ furniture: [], pet: null, outfit: null });
 
 export type BuyResult = { ok: true; save: Save } | { ok: false; reason: string };
 
 /** Buy an item and place it on a floor. Items unlock per floor by that floor's tier. */
-export function buyAndPlace(save: Save, item: Item, mint: string, floorTier: TierId): BuyResult {
+export function buyAndPlace(save: Save, item: Item, mint: string, floorTier: TierId, cash: number): BuyResult {
   if (floorTier < item.minTier) return { ok: false, reason: `needs ${TIERS[item.minTier].name} (${TIERS[item.minTier].minDays}d hold)` };
   const p = { ...(save.placed[mint] ?? emptyPlacement()) };
   const owned = save.owned.includes(item.id);
@@ -124,7 +145,7 @@ export function buyAndPlace(save: Save, item: Item, mint: string, floorTier: Tie
     if (p.furniture.includes(item.id)) return { ok: false, reason: "already on this floor" };
     if (p.furniture.length >= MAX_FURNITURE) return { ok: false, reason: "floor is full" };
   }
-  if (!owned && save.cash < item.price) return { ok: false, reason: "not enough cash" };
+  if (!owned && cash < item.price) return { ok: false, reason: "not enough cash" };
   if (item.kind === "furniture") p.furniture = [...p.furniture, item.id];
   if (item.kind === "pet") p.pet = item.id;
   if (item.kind === "outfit") p.outfit = item.id;
@@ -132,7 +153,6 @@ export function buyAndPlace(save: Save, item: Item, mint: string, floorTier: Tie
     ok: true,
     save: {
       ...save,
-      cash: owned ? save.cash : save.cash - item.price,
       owned: owned ? save.owned : [...save.owned, item.id],
       placed: { ...save.placed, [mint]: p },
     },

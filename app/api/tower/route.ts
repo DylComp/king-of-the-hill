@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { buildTower, isAddress } from "@/lib/chain";
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 export async function GET(req: Request) {
   const owner = new URL(req.url).searchParams.get("owner")?.trim() ?? "";

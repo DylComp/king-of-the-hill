@@ -152,3 +152,24 @@ export const FURNITURE: Record<string, { sp: Sprite; pal: Pal; hang?: boolean }>
     hang: true,
   },
 };
+
+/** Shop icon for any item: the furniture piece, the pet, or a citizen wearing the outfit. */
+export function itemIcon(id: string, kind: "furniture" | "pet" | "outfit"): HTMLCanvasElement | null {
+  if (kind === "furniture") {
+    const f = FURNITURE[id];
+    return f ? baked(`f:${id}`, f.sp, f.pal) : null;
+  }
+  if (kind === "pet") {
+    const p = PETS[id];
+    return p ? baked(`p:${id}:0`, p.sp[0], p.pal) : null;
+  }
+  const body = OUTFIT_BODY[id] ?? OUTFIT_BODY.none;
+  const c = document.createElement("canvas");
+  c.width = 7;
+  c.height = 12;
+  const ctx = c.getContext("2d")!;
+  ctx.drawImage(baked(`c:icon:${id}`, CITIZEN[0], { h: HAIRS[0], s: SKINS[1], e: "#111111", b: body.b, l: body.l, k: "#0b0b0e" }), 0, 0);
+  const acc = ACCESSORY[id];
+  if (acc) ctx.drawImage(baked(`a:${id}`, acc, { g: "#6b7079", c: "#22c55e", w: "#f8fafc", t: "#4ade80", y: "#facc15" }), 0, 0);
+  return c;
+}

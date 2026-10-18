@@ -22,11 +22,12 @@ Import `DylComp/pump-tower` into Vercel (framework Next.js, root directory left 
 
 ## How it works
 
-- `app/api/tower` reads the wallet's SPL and Token-2022 accounts, drops NFTs, dust under $0.50 and unlisted spam, prices them with DexScreener, and dates each floor by the oldest signature on its token account (when the wallet first picked the token up). Read only: nothing is ever signed.
-- `lib/game.ts` holds all rules (tiers, rates, item catalog, buying). `lib/render.ts` and `lib/sprites.ts` draw the tower on a canvas; all art is original and procedural.
-- Cash and items live in the browser (localStorage, per wallet) in v1. Offline earnings are capped at 24h.
+- `app/api/tower` reads the wallet's SPL and Token-2022 accounts, drops NFTs, dust under $0.50 and unlisted spam, and prices them with DexScreener. Each floor's clock is the latest transaction where its token account went from empty to holding, so selling everything restarts it. Read only: nothing is ever signed.
+- Cash is derived, not stored: every floor pays rent for each hour since launch (2026-10-18) at the tier it was in that hour, minus what the wallet has bought. Only purchases and placements live in the browser, so editing storage cannot mint cash.
+- `lib/game.ts` holds all rules (tiers, rent, item catalog, buying). `lib/render.ts` and `lib/sprites.ts` draw the tower and item icons; all art is original and procedural.
+- `?w=<address>` links straight to any tower; the page has share to X, copy link and save PNG.
 
-## Known limits (v1)
+## Known limits
 
-- Hold time is "first acquired", so selling everything and rebuying on the same token account keeps the old date. Fixing this needs per-transaction balance parsing (Helius enhanced transactions).
-- Cash is client-side and can be edited by a determined player. Move it server side before cash means anything.
+- Purchases are per browser. Syncing them across devices needs a small database (for example Vercel KV), which also unlocks a leaderboard.
+- Very busy token accounts (more than 30 recent transactions) fall back to their oldest visible signature, which can only make a hold look shorter.
