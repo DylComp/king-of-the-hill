@@ -17,7 +17,7 @@ Import `DylComp/pump-tower` into Vercel (framework Next.js, root directory left 
 
 | name | needed | what |
 | --- | --- | --- |
-| `HELIUS_API_KEY` | strongly recommended | Helius RPC for wallet reads. Without it the app falls back to the public Solana RPC, which rate limits hard. |
+| `HELIUS_API_KEY` | strongly recommended | Helius RPC for wallet reads. Without it the app uses PublicNode's free keyless RPC, which works but is slower. |
 | `SOLANA_RPC_URL` | optional | any other RPC URL, used when no Helius key is set |
 
 ## How it works

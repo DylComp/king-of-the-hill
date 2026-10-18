@@ -13,7 +13,8 @@ const MIN_USD = 0.5;
 
 function rpcUrl() {
   if (process.env.HELIUS_API_KEY) return `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`;
-  return process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
+  // PublicNode is free and keyless, and far more forgiving than api.mainnet-beta for these calls.
+  return process.env.SOLANA_RPC_URL || "https://solana-rpc.publicnode.com";
 }
 
 async function rpc<T>(method: string, params: unknown[]): Promise<T> {
