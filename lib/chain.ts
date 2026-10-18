@@ -7,7 +7,7 @@ const TOKEN_PROGRAMS = [
   "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
 ];
 const SIG_PAGE = 1000;
-const SIG_PAGES = 3;
+const RPC_TIMEOUT_MS = 8000;
 const MAX_FLOORS = 24;
 const MIN_USD = 0.5;
 
@@ -23,6 +23,7 @@ async function rpc<T>(method: string, params: unknown[]): Promise<T> {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
       cache: "no-store",
+      signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
     });
     if (res.status === 429 && attempt < 3) {
       await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
@@ -63,7 +64,9 @@ async function holdings(owner: string): Promise<Holding[]> {
 async function heldSince(account: string): Promise<number | null> {
   let before: string | undefined;
   let oldest: number | null = null;
-  for (let page = 0; page < SIG_PAGES; page++) {
+  // The public RPC is slow, so it only gets one page; very busy token accounts then date from their 1000th latest tx.
+  const pages = process.env.HELIUS_API_KEY || process.env.SOLANA_RPC_URL ? 3 : 1;
+  for (let page = 0; page < pages; page++) {
     const sigs = await rpc<{ signature: string; blockTime: number | null }[]>("getSignaturesForAddress", [
       account,
       { limit: SIG_PAGE, ...(before ? { before } : {}) },
@@ -93,6 +96,7 @@ async function metadata(mints: string[]): Promise<Map<string, Meta>> {
     try {
       const res = await fetch(`https://api.dexscreener.com/tokens/v1/solana/${chunk.join(",")}`, {
         next: { revalidate: 120 },
+        signal: AbortSignal.timeout(RPC_TIMEOUT_MS),
       });
       if (!res.ok) continue;
       const pairs = (await res.json()) as DexPair[];
@@ -148,7 +152,7 @@ export async function buildTower(owner: string): Promise<Floor[]> {
     .sort((a, b) => Number(b.isHouse) - Number(a.isHouse) || (b.usd ?? 0) - (a.usd ?? 0))
     .slice(0, MAX_FLOORS);
 
-  const since = await pool(candidates, 4, (c) => heldSince(c.h.account).catch(() => null));
+  const since = await pool(candidates, process.env.HELIUS_API_KEY ? 6 : 3, (c) => heldSince(c.h.account).catch(() => null));
 
   return candidates.map((c, i) => ({
     mint: c.h.mint,
