@@ -1,66 +1,110 @@
-// The "how it works" guide. Kept as data next to the rules it explains so every
-// game change updates it in the same commit. Numbers come from the rules where
-// they can, so the guide can't drift from the game.
-import { CASH_PER_SOL, HOUSE_BOOST, HOUSE_SYMBOL, MAX_FURNITURE, TIERS, WALLET_BONUS, citizensFor, floorRate, streakReward } from "./game";
+// The docs shown in the "how it works" section: what Pump Tower is, then every
+// section of the site and its features, in page order. Kept next to the rules so each change
+// updates it in the same commit; numbers are read from the rules, not typed in.
+import {
+  CASH_PER_SOL,
+  HOUSE_BOOST,
+  HOUSE_SYMBOL,
+  MAX_FURNITURE,
+  TIERS,
+  WALLET_BONUS,
+  citizensFor,
+  floorRate,
+  streakReward,
+} from "./game";
 
-export type Step = { n: string; title: string; body: string };
+export type DocSection = { id: string; title: string; summary: string; items: [string, string][] };
 
-const tierLine = TIERS.map((t) => `${t.name} ${t.minDays === 0 ? "on day zero" : `at ${t.minDays}d`}`).join(", ");
+export const DOCS_INTRO =
+  "Pump Tower turns a Solana wallet into a pixel skyscraper. Every coin you hold is a floor. The longer you hold it, the better the floor gets and the more rent it pays in game cash. It only reads wallets and never sends a transaction.";
 
-export const HOW_IT_WORKS: Step[] = [
+export const DOCS: DocSection[] = [
   {
-    n: "01",
-    title: "your bags are floors",
-    body: `Connect a wallet or paste any address. Every listed coin worth $0.50 or more becomes a floor, the longest hold on top. Signing in also gives you a free home floor, so nobody starts with nothing.`,
+    id: "tower",
+    title: "Tower",
+    summary: "Your wallet as a building.",
+    items: [
+      ["Floors", "Every listed coin worth $0.50 or more is one floor. Oldest hold sits on top."],
+      ["Home floor", "Signing in adds a free floor, so every tower has at least one."],
+      ["Rooms", "Each floor is a themed room. Three rooms per tier; the coin picks which."],
+      ["Coin details", "Rooms show the coin's logo, colours and live price. More cash or gold appears as the bag grows."],
+      ["Mood", "Windows rain when the coin is down 12% on the day and show fireworks when it is up 12%."],
+      ["Token card", "Next to each floor: bag value, 24h move, time held, rent, level and time to the next tier."],
+      ["Level", "Grows with bag size times hold time."],
+      ["Citizens", `${citizensFor(0)} on bare walls up to ${citizensFor(5)} in a penthouse. They talk about the coin.`],
+      ["Visit", "Paste any wallet to see its tower. Share on X, copy the link or save a PNG."],
+    ],
   },
   {
-    n: "02",
-    title: "hold to climb",
-    body: `A floor's clock starts when the bag lands and resets if you sell it all. Floors move up the tiers as they age: ${tierLine}. You can't buy your way up, only sit in it.`,
+    id: "cash",
+    title: "Cash",
+    summary: "The game currency. Not a token, not withdrawable.",
+    items: [
+      ["Rent", `Each floor earns per hour by tier: $${floorRate(0, false)} on bare walls up to $${floorRate(5, false)} in a penthouse.`],
+      ["Source", "Worked out from on-chain hold time, so it can't be faked."],
+      ["Start", `New towers start with $${WALLET_BONUS}.`],
+      ["Daily bonus", `Sign in and collect once a day. $${streakReward(1)} on day one, rising to $${streakReward(7)} from day seven. Missing a day resets the streak.`],
+    ],
   },
   {
-    n: "03",
-    title: "every floor is a room",
-    body: `Each tier has three themed rooms, from a noodle stall to the whale lounge, and the coin decides which one you get. The room wears the coin's colours, hangs its logo, runs its price on a ticker and piles up cash or gold with the bag size. Windows rain when the coin is down 12% on the day and set off fireworks when it is up 12%.`,
+    id: "city",
+    title: "City",
+    summary: "Every tower on one skyline.",
+    items: [
+      ["Buildings", "Each ranked tower, floors lit by tier. Green is $" + HOUSE_SYMBOL + ", gold is a penthouse."],
+      ["Order", "Highest rent in the middle. Top three get a lit antenna."],
+      ["Visit", "Hover for the owner and rent, tap to walk in."],
+    ],
   },
   {
-    n: "04",
-    title: "the token card",
-    body: `Next to every floor sits its card: logo, bag value, 24h move, time held, rent, the room's name and a bar to the next tier. Its level grows with bag size times hold time, so a big bag and a long hold both count.`,
+    id: "skyline",
+    title: "Skyline",
+    summary: "The leaderboards.",
+    items: [
+      ["Season", "Weekly. Each daily check-in adds a day of your tower's rent as points."],
+      ["All time", "Ranked by rent per hour."],
+      ["Achievements", "Ten milestones, from moving in to a 7 day streak."],
+    ],
   },
   {
-    n: "05",
-    title: "citizens pay rent",
-    body: `Each tier adds a citizen, from ${citizensFor(0)} on bare walls to ${citizensFor(5)} in the penthouse, and they talk about their floor's coin. Rent runs from $${floorRate(0, false)}/hr on bare walls to $${floorRate(5, false)}/hr in a penthouse. Cash is worked out from on-chain hold time, so it can't be faked. New towers start with $${WALLET_BONUS}.`,
+    id: "ladder",
+    title: "Ladder",
+    summary: "How floors level up.",
+    items: [
+      ...TIERS.map((t): [string, string] => [t.name, `${t.minDays === 0 ? "Day zero" : `${t.minDays}+ days held`}. $${floorRate(t.id, false)}/hr.`]),
+      ["Reset", "Selling the whole bag resets that floor's clock. Partial sells don't."],
+    ],
   },
   {
-    n: "06",
-    title: "spend it",
-    body: `Furniture, pets and outfits unlock by the tier of the floor you put them on. Up to ${MAX_FURNITURE} pieces of furniture, one pet and one outfit per floor, and you see all of it inside the room.`,
+    id: "catalog",
+    title: "Catalog",
+    summary: "What cash buys.",
+    items: [
+      ["Furniture", `Up to ${MAX_FURNITURE} pieces per floor, shown inside the room.`],
+      ["Pets", "One per floor. Walks around the room."],
+      ["Outfits", "One per floor. Every citizen on that floor wears it."],
+      ["Unlocks", "Each item needs its floor to reach a tier first."],
+      ["Saves", "Signed in, purchases are stored on the server and follow you to any device."],
+    ],
   },
   {
-    n: "07",
-    title: "check in daily",
-    body: `Signed-in towers collect a daily rent bonus that grows with the streak, $${streakReward(1)} on day one up to $${streakReward(7)} a day from day seven. Each check-in also banks a full day of your tower's rent as season points.`,
+    id: "coin",
+    title: `$${HOUSE_SYMBOL}`,
+    summary: "The game's coin, launching on pump.fun.",
+    items: [
+      ["HQ floor", `Holding $${HOUSE_SYMBOL} adds a Pump HQ floor that earns ${HOUSE_BOOST}x rent.`],
+      ["Holder rewards", "pump.fun pays SOL to holders with $20 or more, several times an hour, straight to the wallet."],
+      ["In game", `Every SOL received also adds $${CASH_PER_SOL.toLocaleString("en-US")} of game cash. Your SOL stays yours.`],
+      ["Contract", "Posted on this site on launch day."],
+    ],
   },
   {
-    n: "08",
-    title: "seasons and achievements",
-    body: `Seasons run a week and reset on the leaderboard; the all-time board ranks by rent per hour. Ten achievements track the milestones, from moving in to a 7 day streak.`,
-  },
-  {
-    n: "09",
-    title: `$${HOUSE_SYMBOL} floors`,
-    body: `Holding $${HOUSE_SYMBOL} adds its own Pump HQ floor with a neon frame that earns ${HOUSE_BOOST}x rent. It launches on pump.fun with holder rewards on: holders with $20 or more get SOL paid straight to their wallet several times an hour, and every SOL paid also lands in your tower as $${CASH_PER_SOL.toLocaleString("en-US")} of game cash.`,
-  },
-  {
-    n: "10",
-    title: "the city",
-    body: `Every ranked tower stands in the city, tallest rent in the middle and the top three lit up on their roofs. Hover a building to see whose it is and tap it to walk inside.`,
-  },
-  {
-    n: "11",
-    title: "read only",
-    body: `Pump Tower only reads wallets. Signing in is a free message signature, never a transaction, and it can't move your tokens.`,
+    id: "safety",
+    title: "Safety",
+    summary: "What the site can and can't do.",
+    items: [
+      ["Read only", "Pump Tower reads balances and history. It never asks for a transaction."],
+      ["Sign in", "A free message signature to prove the wallet is yours. It can't move tokens."],
+    ],
   },
 ];

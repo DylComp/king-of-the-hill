@@ -44,7 +44,7 @@ import {
 import TowerView from "./TowerView";
 import TierLadder from "./TierLadder";
 import City from "./City";
-import { HOW_IT_WORKS } from "@/lib/howto";
+import { DOCS, DOCS_INTRO } from "@/lib/howto";
 import Logo from "./Logo";
 import HoverText from "./HoverText";
 import Reveal from "./Reveal";
@@ -960,18 +960,25 @@ export default function Game() {
         <Reveal id="how" className="sec">
           <div className="sec-head">
             <span className="kicker">07 / how it works</span>
-            <HoverText as="h2" text="the whole game on one page" className="pixel display sm" />
+            <HoverText as="h2" text="the docs" className="pixel display sm" />
           </div>
-          <ol className="how-steps">
-            {HOW_IT_WORKS.map((s) => (
-              <li key={s.n} className="panel how-step">
-                <span className="pixel green tiny-pixel">
-                  {s.n} {s.title}
-                </span>
-                <span className="dim">{s.body}</span>
-              </li>
+          <p className="docs-intro">{DOCS_INTRO}</p>
+          <div className="docs">
+            {DOCS.map((d) => (
+              <section key={d.id} className="panel doc">
+                <h3 className="pixel green tiny-pixel">{d.title}</h3>
+                <p className="dim doc-sum">{d.summary}</p>
+                <dl>
+                  {d.items.map(([k, v]) => (
+                    <div key={k} className="doc-row">
+                      <dt>{k}</dt>
+                      <dd className="dim">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
             ))}
-          </ol>
+          </div>
         </Reveal>
       </main>
 
