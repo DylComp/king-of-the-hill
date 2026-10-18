@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://pump-tower.vercel.app"),
+  metadataBase: new URL(SITE_URL),
   title: "pump tower",
   description: "Your Solana bags become a pixel skyscraper. Every token is a floor. Hold longer, live higher.",
   openGraph: {

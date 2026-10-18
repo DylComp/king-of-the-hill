@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { SITE_HOST } from "@/lib/site";
 import { isAddress } from "@/lib/chain";
 import { type Floor, LOBBY_MINT, TIERS, citizensFor, daysHeld, shortAddr, tierFor, towerRate, fmtCash } from "@/lib/game";
 import { towerFor } from "@/lib/store";
@@ -56,7 +57,7 @@ export async function GET(req: Request) {
               </div>
             ))}
           </div>
-          <div style={{ fontSize: 30, color: "#8a8f9e" }}>hold longer, live higher · pump-tower.vercel.app</div>
+          <div style={{ fontSize: 30, color: "#8a8f9e" }}>{`hold longer, live higher · ${SITE_HOST}`}</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", width: 420, alignItems: "center", justifyContent: "flex-end" }}>
           <div style={{ display: "flex", width: 360, height: 46, background: "#16171d", border: "3px solid #2a2c33", alignItems: "center", justifyContent: "center", fontFamily: "Pixel", fontSize: 16, color: "#4ade80" }}>

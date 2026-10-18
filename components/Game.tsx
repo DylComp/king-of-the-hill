@@ -52,7 +52,7 @@ import Boot from "./Boot";
 import ItemIcon from "./ItemIcon";
 
 const DAY = 86_400_000;
-const SITE = "https://pump-tower.vercel.app";
+
 
 function demoFloors(now: number): Floor[] {
   const f = (symbol: string, days: number, usd: number, change24: number | null, isHouse = false): Floor => ({
@@ -372,7 +372,9 @@ export default function Game() {
     }
   }
 
-  const shareUrl = owner ? `${SITE}/?w=${owner}` : SITE;
+  // Share links use whichever domain the visitor is on.
+  const site = typeof window === "undefined" ? "" : window.location.origin;
+  const shareUrl = owner ? `${site}/?w=${owner}` : site;
   const shareText = owner
     ? `my bags are a ${sorted.length} floor building with ${citizens} citizens. longest hold: ${Math.floor(longest)} days. what does yours look like`
     : "your solana bags become a pixel skyscraper. hold longer, live higher.";
