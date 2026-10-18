@@ -420,12 +420,12 @@ export default function Game() {
         <nav className="nav-links">
           {[
             ["#tower", "tower"],
-            ["#how", "how it works"],
+            ["#city", "city"],
+            ["#skyline", "skyline"],
             ["#ladder", "ladder"],
             ["#catalog", "catalog"],
             ["#coin", "coin"],
-            ["#city", "city"],
-            ["#skyline", "skyline"],
+            ["#how", "how it works"],
           ].map(([href, label]) => (
             <a key={href} href={href}>
               <HoverText text={label} />
@@ -703,159 +703,9 @@ export default function Game() {
           </div>
         </Reveal>
 
-        <Reveal id="how" className="sec">
-          <div className="sec-head">
-            <span className="kicker">02 / how it works</span>
-            <HoverText as="h2" text="the whole game on one page" className="pixel display sm" />
-          </div>
-          <ol className="how-steps">
-            {HOW_IT_WORKS.map((s) => (
-              <li key={s.n} className="panel how-step">
-                <span className="pixel green tiny-pixel">
-                  {s.n} {s.title}
-                </span>
-                <span className="dim">{s.body}</span>
-              </li>
-            ))}
-          </ol>
-        </Reveal>
-
-        <Reveal id="ladder" className="sec">
-          <div className="sec-head">
-            <span className="kicker">03 / the ladder</span>
-            <HoverText as="h2" text="hold longer, live higher" className="pixel display sm" />
-          </div>
-          <div className="how-grid">
-            <div className="lore">
-              <HoverText
-                as="p"
-                by="word"
-                text="Every token in your wallet is a floor. The clock starts the moment the bag lands, and it starts over if you sell it all. Day zero is bare concrete and a flickering bulb. A day gets you a studio, three an apartment, a week a loft, two weeks a suite."
-              />
-              <HoverText as="p" by="word" text="Thirty days and you move into the penthouse at the very top, because the longest hold always lives highest." />
-              <HoverText
-                as="p"
-                by="word"
-                text="Citizens move in as a floor gets nicer and pay rent every hour. Fancier floors pay more. Your cash is worked out from your hold time on chain, so nobody can fake it and nobody can buy their way up. You have to sit in it."
-              />
-            </div>
-            <TierLadder />
-          </div>
-        </Reveal>
-
-        <Reveal id="catalog" className="sec">
-          <div className="sec-head">
-            <span className="kicker">04 / the catalog</span>
-            <HoverText as="h2" text="the good stuff waits for diamond hands" className="pixel display sm" />
-            <HoverText
-              as="p"
-              by="word"
-              className="lede"
-              text="Furniture, pets and outfits unlock per floor by how long that floor has been held. Buy once, place it anywhere it qualifies."
-            />
-          </div>
-          {KINDS.map((k) => (
-            <div key={k} className="cat-group">
-              <div className="cat-label">{KIND_LABEL[k]}</div>
-              <div className="cat-grid">
-                {ITEMS.filter((i) => i.kind === k).map((i) => (
-                  <div key={i.id} className={`cat-card t${i.minTier}`}>
-                    <ItemIcon id={i.id} kind={i.kind} size={56} />
-                    <span className="cat-name">{i.name}</span>
-                    <span className="cat-meta">
-                      <span className="green">${fmtCash(i.price)}</span>
-                      <span className="dim">{TIERS[i.minTier].name}</span>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </Reveal>
-
-        <Reveal id="coin" className="sec coin">
-          <div className="sec-head center">
-            <span className="kicker">05 / ${HOUSE_SYMBOL}</span>
-            <HoverText as="h2" text="the floor that pays triple" className="pixel display sm" />
-            <HoverText
-              as="p"
-              by="word"
-              className="lede"
-              text={`Hold $${HOUSE_SYMBOL} and it gets its own neon trimmed floor in your tower, paying three times the rent of any other bag.${launched ? "" : " Launching on pump.fun soon."}`}
-            />
-          </div>
-          <div className="reward-steps">
-            <div className="panel tile">
-              <span className="pixel green tiny-pixel">01 hold</span>
-              <span className="dim">${HOUSE_SYMBOL} launches on pump.fun with holder rewards switched on. Every holder with $20 or more gets paid.</span>
-            </div>
-            <div className="panel tile">
-              <span className="pixel green tiny-pixel">02 get paid sol</span>
-              <span className="dim">pump.fun sends SOL from trading fees straight to holders' wallets, several times an hour. No claiming.</span>
-            </div>
-            <div className="panel tile">
-              <span className="pixel green tiny-pixel">03 spend it here too</span>
-              <span className="dim">
-                Every SOL you are paid also lands in the tower as ${fmtCash(CASH_PER_SOL)} cash for furniture, pets and outfits. Your real SOL stays yours.
-              </span>
-            </div>
-          </div>
-          {owner && holderRewardsLive() && (
-            <div className="panel reward-live">
-              <span className="label">paid to this wallet</span>
-              <span className="pixel gold">{rewardsSol.toFixed(4)} SOL</span>
-              <span className="green">+${fmtCash(rewardCash(rewardsSol))} tower cash</span>
-            </div>
-          )}
-          <div className="coin-tiles">
-            <div className="panel tile">
-              <span className="label">price</span>
-              <span className="pixel">{fmtUsd(coin?.price ?? null)}</span>
-            </div>
-            <div className="panel tile">
-              <span className="label">market cap</span>
-              <span className="pixel">{fmtUsd(coin?.mcap ?? null)}</span>
-            </div>
-            <div className="panel tile">
-              <span className="label">24h</span>
-              <span className={`pixel ${coin?.change != null && coin.change < 0 ? "red" : "green"}`}>
-                {coin?.change != null ? `${coin.change > 0 ? "+" : ""}${coin.change.toFixed(1)}%` : "soon"}
-              </span>
-            </div>
-          </div>
-          <div className="ca-row">
-            {HOUSE_MINT ? (
-              <button
-                className="ca"
-                onClick={() => {
-                  navigator.clipboard?.writeText(HOUSE_MINT!).then(() => setCopied(true));
-                  setTimeout(() => setCopied(false), 1500);
-                }}
-              >
-                <span className="label">ca</span>
-                <span className="ca-full">{HOUSE_MINT}</span>
-                <span className="ca-short">{shortAddr(HOUSE_MINT)}</span>
-                <span className="pixel green tiny-pixel">{copied ? "copied" : "copy"}</span>
-              </button>
-            ) : (
-              <div className="ca">
-                <span className="label">ca</span>
-                <span className="dim">drops on launch day, right here</span>
-              </div>
-            )}
-            {launched ? (
-              <a className="btn" href={pumpUrl} target="_blank" rel="noreferrer">
-                buy ${HOUSE_SYMBOL} on pump.fun
-              </a>
-            ) : (
-              <span className="btn ghost soon">launching soon</span>
-            )}
-          </div>
-        </Reveal>
-
         <Reveal id="city" className="sec">
           <div className="sec-head">
-            <span className="kicker">06 / the city</span>
+            <span className="kicker">02 / the city</span>
             <HoverText as="h2" text="everyone's towers, one skyline" className="pixel display sm" />
             <HoverText
               as="p"
@@ -875,7 +725,7 @@ export default function Game() {
 
         <Reveal id="skyline" className="sec">
           <div className="sec-head">
-            <span className="kicker">07 / the skyline</span>
+            <span className="kicker">03 / the skyline</span>
             <HoverText as="h2" text="the tallest rent in the city" className="pixel display sm" />
             <HoverText
               as="p"
@@ -970,6 +820,156 @@ export default function Game() {
           ) : (
             <div className="panel dim">{db ? "The skyline is empty. Connect a wallet to build the first tower." : "The skyline opens soon."}</div>
           )}
+        </Reveal>
+
+        <Reveal id="ladder" className="sec">
+          <div className="sec-head">
+            <span className="kicker">04 / the ladder</span>
+            <HoverText as="h2" text="hold longer, live higher" className="pixel display sm" />
+          </div>
+          <div className="how-grid">
+            <div className="lore">
+              <HoverText
+                as="p"
+                by="word"
+                text="Every token in your wallet is a floor. The clock starts the moment the bag lands, and it starts over if you sell it all. Day zero is bare concrete and a flickering bulb. A day gets you a studio, three an apartment, a week a loft, two weeks a suite."
+              />
+              <HoverText as="p" by="word" text="Thirty days and you move into the penthouse at the very top, because the longest hold always lives highest." />
+              <HoverText
+                as="p"
+                by="word"
+                text="Citizens move in as a floor gets nicer and pay rent every hour. Fancier floors pay more. Your cash is worked out from your hold time on chain, so nobody can fake it and nobody can buy their way up. You have to sit in it."
+              />
+            </div>
+            <TierLadder />
+          </div>
+        </Reveal>
+
+        <Reveal id="catalog" className="sec">
+          <div className="sec-head">
+            <span className="kicker">05 / the catalog</span>
+            <HoverText as="h2" text="the good stuff waits for diamond hands" className="pixel display sm" />
+            <HoverText
+              as="p"
+              by="word"
+              className="lede"
+              text="Furniture, pets and outfits unlock per floor by how long that floor has been held. Buy once, place it anywhere it qualifies."
+            />
+          </div>
+          {KINDS.map((k) => (
+            <div key={k} className="cat-group">
+              <div className="cat-label">{KIND_LABEL[k]}</div>
+              <div className="cat-grid">
+                {ITEMS.filter((i) => i.kind === k).map((i) => (
+                  <div key={i.id} className={`cat-card t${i.minTier}`}>
+                    <ItemIcon id={i.id} kind={i.kind} size={56} />
+                    <span className="cat-name">{i.name}</span>
+                    <span className="cat-meta">
+                      <span className="green">${fmtCash(i.price)}</span>
+                      <span className="dim">{TIERS[i.minTier].name}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </Reveal>
+
+        <Reveal id="coin" className="sec coin">
+          <div className="sec-head center">
+            <span className="kicker">06 / ${HOUSE_SYMBOL}</span>
+            <HoverText as="h2" text="the floor that pays triple" className="pixel display sm" />
+            <HoverText
+              as="p"
+              by="word"
+              className="lede"
+              text={`Hold $${HOUSE_SYMBOL} and it gets its own neon trimmed floor in your tower, paying three times the rent of any other bag.${launched ? "" : " Launching on pump.fun soon."}`}
+            />
+          </div>
+          <div className="reward-steps">
+            <div className="panel tile">
+              <span className="pixel green tiny-pixel">01 hold</span>
+              <span className="dim">${HOUSE_SYMBOL} launches on pump.fun with holder rewards switched on. Every holder with $20 or more gets paid.</span>
+            </div>
+            <div className="panel tile">
+              <span className="pixel green tiny-pixel">02 get paid sol</span>
+              <span className="dim">pump.fun sends SOL from trading fees straight to holders' wallets, several times an hour. No claiming.</span>
+            </div>
+            <div className="panel tile">
+              <span className="pixel green tiny-pixel">03 spend it here too</span>
+              <span className="dim">
+                Every SOL you are paid also lands in the tower as ${fmtCash(CASH_PER_SOL)} cash for furniture, pets and outfits. Your real SOL stays yours.
+              </span>
+            </div>
+          </div>
+          {owner && holderRewardsLive() && (
+            <div className="panel reward-live">
+              <span className="label">paid to this wallet</span>
+              <span className="pixel gold">{rewardsSol.toFixed(4)} SOL</span>
+              <span className="green">+${fmtCash(rewardCash(rewardsSol))} tower cash</span>
+            </div>
+          )}
+          <div className="coin-tiles">
+            <div className="panel tile">
+              <span className="label">price</span>
+              <span className="pixel">{fmtUsd(coin?.price ?? null)}</span>
+            </div>
+            <div className="panel tile">
+              <span className="label">market cap</span>
+              <span className="pixel">{fmtUsd(coin?.mcap ?? null)}</span>
+            </div>
+            <div className="panel tile">
+              <span className="label">24h</span>
+              <span className={`pixel ${coin?.change != null && coin.change < 0 ? "red" : "green"}`}>
+                {coin?.change != null ? `${coin.change > 0 ? "+" : ""}${coin.change.toFixed(1)}%` : "soon"}
+              </span>
+            </div>
+          </div>
+          <div className="ca-row">
+            {HOUSE_MINT ? (
+              <button
+                className="ca"
+                onClick={() => {
+                  navigator.clipboard?.writeText(HOUSE_MINT!).then(() => setCopied(true));
+                  setTimeout(() => setCopied(false), 1500);
+                }}
+              >
+                <span className="label">ca</span>
+                <span className="ca-full">{HOUSE_MINT}</span>
+                <span className="ca-short">{shortAddr(HOUSE_MINT)}</span>
+                <span className="pixel green tiny-pixel">{copied ? "copied" : "copy"}</span>
+              </button>
+            ) : (
+              <div className="ca">
+                <span className="label">ca</span>
+                <span className="dim">drops on launch day, right here</span>
+              </div>
+            )}
+            {launched ? (
+              <a className="btn" href={pumpUrl} target="_blank" rel="noreferrer">
+                buy ${HOUSE_SYMBOL} on pump.fun
+              </a>
+            ) : (
+              <span className="btn ghost soon">launching soon</span>
+            )}
+          </div>
+        </Reveal>
+
+        <Reveal id="how" className="sec">
+          <div className="sec-head">
+            <span className="kicker">07 / how it works</span>
+            <HoverText as="h2" text="the whole game on one page" className="pixel display sm" />
+          </div>
+          <ol className="how-steps">
+            {HOW_IT_WORKS.map((s) => (
+              <li key={s.n} className="panel how-step">
+                <span className="pixel green tiny-pixel">
+                  {s.n} {s.title}
+                </span>
+                <span className="dim">{s.body}</span>
+              </li>
+            ))}
+          </ol>
         </Reveal>
       </main>
 
