@@ -1,5 +1,6 @@
 import { fail, json } from "@/lib/api";
 import { isAddress } from "@/lib/chain";
+import { limited } from "@/lib/limit";
 import { hasDb } from "@/lib/redis";
 import { rewardsFor } from "@/lib/rewards";
 import { loadSave, loadStreak } from "@/lib/store";
@@ -8,6 +9,8 @@ import { loadSave, loadStreak } from "@/lib/store";
 export async function GET(req: Request) {
   const w = new URL(req.url).searchParams.get("w") ?? "";
   if (!isAddress(w)) return json({ error: "not a solana address" }, 400);
+  const slow = await limited(req, "save");
+  if (slow) return slow;
   if (!hasDb()) return json({ save: null, streak: null, rewardsSol: 0 });
   try {
     const [save, streak, rewardsSol] = await Promise.all([loadSave(w), loadStreak(w), rewardsFor(w)]);

@@ -1,9 +1,12 @@
 import { body, fail, json } from "@/lib/api";
 import { checkSignature, startSession } from "@/lib/auth";
 import { isAddress } from "@/lib/chain";
+import { limited } from "@/lib/limit";
 import { markJoined } from "@/lib/store";
 
 export async function POST(req: Request) {
+  const slow = await limited(req, "verify");
+  if (slow) return slow;
   const { wallet, signature } = await body<{ wallet: string; signature: string }>(req);
   if (!wallet || !isAddress(wallet) || typeof signature !== "string") return json({ error: "bad request" }, 400);
   try {

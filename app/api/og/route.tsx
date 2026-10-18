@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { SITE_HOST } from "@/lib/site";
 import { isAddress } from "@/lib/chain";
+import { limited } from "@/lib/limit";
 import { type Floor, LOBBY_MINT, TIERS, citizensFor, daysHeld, shortAddr, tierFor, towerRate, fmtCash } from "@/lib/game";
 import { towerFor } from "@/lib/store";
 
@@ -28,7 +29,8 @@ const SHOW = 8;
 export async function GET(req: Request) {
   const w = new URL(req.url).searchParams.get("w") ?? "";
   let floors: Floor[] = [];
-  if (isAddress(w)) floors = await towerFor(w).catch(() => []);
+  // Over the cap the card still renders, just without a chain read.
+  if (isAddress(w) && !(await limited(req, "og"))) floors = await towerFor(w).catch(() => []);
   const now = Date.now();
   const sorted = [...floors].sort((a, b) => (a.heldSince ?? Infinity) - (b.heldSince ?? Infinity));
   const citizens = sorted.reduce((n, f) => n + citizensFor(tierFor(f.heldSince, now)), 0);
