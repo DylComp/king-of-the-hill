@@ -12,7 +12,8 @@ export async function GET(req: Request) {
     const floors = await towerFor(owner, params.has("fresh"));
     return NextResponse.json(
       { owner, floors, at: Date.now() },
-      { headers: { "cache-control": "public, s-maxage=60, stale-while-revalidate=300" } },
+      // Redis caches the chain read; skipping the CDN means every visit lands on the skyline.
+      { headers: { "cache-control": "no-store" } },
     );
   } catch (e) {
     console.error("tower", owner, e);
