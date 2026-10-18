@@ -1,6 +1,6 @@
 // Server-only: reads a wallet's SPL holdings and how long each has been held.
 // Read-only RPC calls; nothing here signs or sends a transaction.
-import { HOUSE_MINT, HOUSE_SYMBOL, type Floor } from "./game";
+import { HOUSE_SYMBOL, isHouseMint, type Floor } from "./game";
 
 const TOKEN_PROGRAMS = [
   "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
@@ -149,9 +149,12 @@ type DexPair = {
   priceUsd?: string;
   liquidity?: { usd?: number };
   info?: { imageUrl?: string };
+  priceChange?: { h24?: number };
+  marketCap?: number;
+  fdv?: number;
 };
 
-type Meta = { symbol: string; name: string; image: string | null; price: number | null };
+type Meta = { symbol: string; name: string; image: string | null; price: number | null; change24: number | null; mcap: number | null };
 
 async function metadata(mints: string[]): Promise<Map<string, Meta>> {
   const out = new Map<string, Meta>();
@@ -176,6 +179,8 @@ async function metadata(mints: string[]): Promise<Map<string, Meta>> {
           name: p.baseToken.name,
           image: p.info?.imageUrl ?? null,
           price: p.priceUsd ? Number(p.priceUsd) : null,
+          change24: p.priceChange?.h24 ?? null,
+          mcap: p.marketCap ?? p.fdv ?? null,
         });
       }
     } catch {
@@ -209,7 +214,7 @@ export async function buildTower(owner: string): Promise<Floor[]> {
     .map((h) => {
       const m = meta.get(h.mint);
       const usd = m?.price != null ? m.price * h.amount : null;
-      return { h, m, usd, isHouse: h.mint === HOUSE_MINT };
+      return { h, m, usd, isHouse: isHouseMint(h.mint) };
     })
     // Unlisted tokens are usually spam airdrops; dust does not get a floor.
     .filter((c) => c.isHouse || (c.m && (c.usd ?? 0) >= MIN_USD))
@@ -227,5 +232,7 @@ export async function buildTower(owner: string): Promise<Floor[]> {
     usd: c.usd,
     heldSince: since[i],
     isHouse: c.isHouse,
+    change24: c.m?.change24 ?? null,
+    mcap: c.m?.mcap ?? null,
   }));
 }

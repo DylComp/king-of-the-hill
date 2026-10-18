@@ -3,7 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   HOUSE_MINT,
+  CASH_PER_SOL,
   ITEMS,
+  floorLevel,
+  holderRewardsLive,
+  rewardCash,
   MAX_FURNITURE,
   TIERS,
   type Floor,
@@ -49,17 +53,26 @@ const DAY = 86_400_000;
 const SITE = "https://pump-tower.vercel.app";
 
 function demoFloors(now: number): Floor[] {
-  const f = (symbol: string, days: number, isHouse = false, mint = `demo${symbol}`): Floor => ({
-    mint,
+  const f = (symbol: string, days: number, usd: number, change24: number | null, isHouse = false): Floor => ({
+    mint: isHouse && HOUSE_MINT ? HOUSE_MINT : `demo${symbol}`,
     symbol,
     name: symbol,
     image: null,
     amount: 0,
-    usd: null,
+    usd,
+    change24,
     heldSince: now - days * DAY,
     isHouse,
   });
-  return [f(HOUSE_SYMBOL, 41, true, HOUSE_MINT), f("GRUNT", 18), f("NOODL", 9), f("MOGGY", 4), f("SLURP", 1.4), f("ZAP", 0.1)];
+  return [
+    f("BLOOP", 44, 26_400, 31.2),
+    f(HOUSE_SYMBOL, 33, 4_200, 18.4, true),
+    f("GRUNT", 18, 12_500, -3.1),
+    f("NOODL", 9, 860, 27.5),
+    f("MOGGY", 4, 140, -22.8),
+    f("SLURP", 1.4, 48, 5.2),
+    f("ZAP", 0.1, 12, null),
+  ];
 }
 
 type Coin = { symbol: string; price: number | null; mcap: number | null; change: number | null };
@@ -135,8 +148,10 @@ export default function Game() {
   const [board, setBoard] = useState<Skyline | null>(null);
   const [boardTab, setBoardTab] = useState<"season" | "all">("season");
   const [streak, setStreak] = useState<Streak>(emptyStreak);
+  const [rewardsSol, setRewardsSol] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const dbRef = useRef(false);
+  const loadedFor = useRef<string | null>(null);
   // Without a database (or on the demo) the browser keeps the save; otherwise the server owns it.
   const local = !owner || !db;
   const canEdit = local || owner === me;
@@ -147,7 +162,7 @@ export default function Game() {
     [floors],
   );
   const rate = useMemo(() => towerRate(sorted, now), [sorted, now]);
-  const cash = cashOf(sorted, save.owned, owner ? WALLET_BONUS + streak.total : DEMO_BONUS, now);
+  const cash = cashOf(sorted, save.owned, owner ? WALLET_BONUS + streak.total + rewardCash(rewardsSol) : DEMO_BONUS, now);
   const sel = sorted.find((f) => f.mint === selected) ?? null;
   const citizens = sorted.reduce((n, f) => n + citizensFor(tierFor(f.heldSince, now)), 0);
   const longest = sorted[0] ? daysHeld(sorted[0].heldSince, now) : 0;
@@ -165,16 +180,20 @@ export default function Game() {
     if (addr && dbRef.current) {
       setSave(emptySave());
       setStreak(emptyStreak());
+      setRewardsSol(0);
       fetch(`/api/save?w=${addr}`)
         .then((r) => r.json())
-        .then((j: { save: Save | null; streak: Streak | null }) => {
+        .then((j: { save: Save | null; streak: Streak | null; rewardsSol?: number }) => {
           if (j.save) setSave(j.save);
           if (j.streak) setStreak(j.streak);
+          setRewardsSol(j.rewardsSol ?? 0);
         })
         .catch(() => {});
     } else {
+      loadedFor.current = addr ?? "demo";
       setSave(loadSave(addr));
       setStreak(emptyStreak());
+      setRewardsSol(0);
     }
     const url = new URL(window.location.href);
     if (addr) url.searchParams.set("w", addr);
@@ -225,6 +244,7 @@ export default function Game() {
   }, [open, loadBoard]);
 
   useEffect(() => {
+    if (!HOUSE_MINT) return; // pre-launch: nothing to price yet
     const load = () =>
       fetch(`https://api.dexscreener.com/tokens/v1/solana/${HOUSE_MINT}`)
         .then((r) => r.json())
@@ -251,7 +271,8 @@ export default function Game() {
   }, []);
 
   useEffect(() => {
-    if (!local) return;
+    // Don't write until this wallet's save has been read, or the empty first render wipes it.
+    if (!local || loadedFor.current !== (owner ?? "demo")) return;
     try {
       localStorage.setItem(saveKey(owner), JSON.stringify(save));
     } catch {}
@@ -378,7 +399,7 @@ export default function Game() {
     !sel || nextMs == null ? 1 : Math.min(1, Math.max(0, 1 - nextMs / ((TIERS[selTier + 1].minDays - TIERS[selTier].minDays) * DAY)));
   const holdsHouse = sorted.some((f) => f.isHouse);
   const launched = coin != null;
-  const pumpUrl = `https://pump.fun/coin/${HOUSE_MINT}`;
+  const pumpUrl = HOUSE_MINT ? `https://pump.fun/coin/${HOUSE_MINT}` : "https://pump.fun";
   const empty = !!owner && !loading && !error && tokenFloors(sorted).length === 0;
   const earned = achievementsOf(sorted, save, streak, !!owner && owner === me, now);
   const streakNow = liveStreak(streak, now);
@@ -491,6 +512,8 @@ export default function Game() {
                 selected={selected}
                 onSelect={setSelected}
                 onCanvas={(c) => (canvasRef.current = c)}
+                rewardsSol={holderRewardsLive() && owner ? rewardsSol : null}
+                houseLive={launched}
               />
             </div>
 
@@ -575,6 +598,17 @@ export default function Game() {
                     <span>{sel.heldSince ? `${daysHeld(sel.heldSince, now).toFixed(1)} days` : "unknown"}</span>
                     <span>earning</span>
                     <span>${fmtCash(floorRate(selTier, sel.isHouse))}/hr</span>
+                    <span>level</span>
+                    <span>lv {floorLevel(sel.usd, sel.heldSince, now)}</span>
+                    {sel.change24 != null && (
+                      <>
+                        <span>24h</span>
+                        <span className={sel.change24 < 0 ? "red" : "green"}>
+                          {sel.change24 > 0 ? "+" : ""}
+                          {sel.change24.toFixed(1)}%
+                        </span>
+                      </>
+                    )}
                     {sel.usd != null && (
                       <>
                         <span>bag</span>
@@ -729,6 +763,29 @@ export default function Game() {
               text={`Hold $${HOUSE_SYMBOL} and it gets its own neon trimmed floor in your tower, paying three times the rent of any other bag.${launched ? "" : " Launching on pump.fun soon."}`}
             />
           </div>
+          <div className="reward-steps">
+            <div className="panel tile">
+              <span className="pixel green tiny-pixel">01 hold</span>
+              <span className="dim">${HOUSE_SYMBOL} launches on pump.fun with holder rewards switched on. Every holder with $20 or more gets paid.</span>
+            </div>
+            <div className="panel tile">
+              <span className="pixel green tiny-pixel">02 get paid sol</span>
+              <span className="dim">pump.fun sends SOL from trading fees straight to holders' wallets, several times an hour. No claiming.</span>
+            </div>
+            <div className="panel tile">
+              <span className="pixel green tiny-pixel">03 spend it here too</span>
+              <span className="dim">
+                Every SOL you are paid also lands in the tower as ${fmtCash(CASH_PER_SOL)} cash for furniture, pets and outfits. Your real SOL stays yours.
+              </span>
+            </div>
+          </div>
+          {owner && holderRewardsLive() && (
+            <div className="panel reward-live">
+              <span className="label">paid to this wallet</span>
+              <span className="pixel gold">{rewardsSol.toFixed(4)} SOL</span>
+              <span className="green">+${fmtCash(rewardCash(rewardsSol))} tower cash</span>
+            </div>
+          )}
           <div className="coin-tiles">
             <div className="panel tile">
               <span className="label">price</span>
@@ -746,18 +803,25 @@ export default function Game() {
             </div>
           </div>
           <div className="ca-row">
-            <button
-              className="ca"
-              onClick={() => {
-                navigator.clipboard?.writeText(HOUSE_MINT).then(() => setCopied(true));
-                setTimeout(() => setCopied(false), 1500);
-              }}
-            >
-              <span className="label">ca</span>
-              <span className="ca-full">{HOUSE_MINT}</span>
-              <span className="ca-short">{shortAddr(HOUSE_MINT)}</span>
-              <span className="pixel green tiny-pixel">{copied ? "copied" : "copy"}</span>
-            </button>
+            {HOUSE_MINT ? (
+              <button
+                className="ca"
+                onClick={() => {
+                  navigator.clipboard?.writeText(HOUSE_MINT!).then(() => setCopied(true));
+                  setTimeout(() => setCopied(false), 1500);
+                }}
+              >
+                <span className="label">ca</span>
+                <span className="ca-full">{HOUSE_MINT}</span>
+                <span className="ca-short">{shortAddr(HOUSE_MINT)}</span>
+                <span className="pixel green tiny-pixel">{copied ? "copied" : "copy"}</span>
+              </button>
+            ) : (
+              <div className="ca">
+                <span className="label">ca</span>
+                <span className="dim">drops on launch day, right here</span>
+              </div>
+            )}
             {launched ? (
               <a className="btn" href={pumpUrl} target="_blank" rel="noreferrer">
                 buy ${HOUSE_SYMBOL} on pump.fun

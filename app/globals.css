@@ -690,7 +690,7 @@ button.chip:hover {
 }
 .rung {
   display: grid;
-  grid-template-columns: 264px 1fr;
+  grid-template-columns: 512px 1fr;
   gap: 16px;
   align-items: center;
   padding: 8px;
@@ -706,8 +706,10 @@ button.chip:hover {
   border-color: var(--line-strong);
 }
 .tier-canvas {
-  width: 264px;
-  height: 78px;
+  width: 512px;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 256 / 96;
   image-rendering: pixelated;
   display: block;
   border-radius: 4px;
@@ -789,6 +791,29 @@ button.chip:hover {
   flex-direction: column;
   gap: 8px;
   align-items: center;
+}
+.reward-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 780px;
+  margin: 0 auto 18px;
+}
+.reward-steps .tile {
+  align-items: flex-start;
+  text-align: left;
+}
+.reward-live {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  max-width: 780px;
+  margin: 0 auto 18px;
+}
+.gold {
+  color: #e8b931;
 }
 .ca-row {
   display: flex;
@@ -967,6 +992,9 @@ button.chip:disabled {
 }
 
 @media (max-width: 1000px) {
+  .rung {
+    grid-template-columns: 1fr;
+  }
   .board,
   .how-grid {
     grid-template-columns: 1fr;
@@ -1011,6 +1039,9 @@ button.chip:disabled {
   }
   .coin-tiles {
     grid-template-columns: repeat(3, 1fr);
+  }
+  .reward-steps {
+    grid-template-columns: 1fr;
   }
   .ca-full {
     display: none;

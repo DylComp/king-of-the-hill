@@ -1,8 +1,24 @@
 // Pure game rules: hold-time tiers, citizens, cash and the item catalog.
 // Shared by the server route, the canvas renderer and the tests.
 
-export const HOUSE_MINT = "AE3RYXQ1ACGvLj63mmwkCtGdPNhWR6XsmgFAZfZgpump";
+/**
+ * $PTWR's mint, filled in on launch day. Until then the site runs in pre-launch
+ * mode: no buy links, no house floors, holder rewards switched off.
+ */
+export const HOUSE_MINT: string | null = null;
 export const HOUSE_SYMBOL = "PTWR";
+export const isHouseMint = (mint: string) => HOUSE_MINT != null && mint === HOUSE_MINT;
+
+/**
+ * pump.fun Holder Rewards pay $PTWR holders SOL from a distribution wallet several
+ * times an hour. Every SOL a wallet receives from these addresses also lands in
+ * the game as cash. Filled in once the first payout is seen on chain.
+ */
+export const HOLDER_REWARD_SOURCES: string[] = [];
+export const CASH_PER_SOL = 10_000;
+/** Holder rewards land in the game too: every SOL paid out is worth this much cash. */
+export const rewardCash = (sol: number) => Math.floor(Math.max(0, sol) * CASH_PER_SOL);
+export const holderRewardsLive = () => HOUSE_MINT != null && HOLDER_REWARD_SOURCES.length > 0;
 /** Every signed-in resident gets a free floor whose clock starts the day they move in. */
 export const LOBBY_MINT = "lobby";
 
@@ -41,6 +57,12 @@ export function msToNextTier(heldSince: number | null, now = Date.now()): number
 
 export const citizensFor = (tier: TierId) => tier + 1;
 
+/** Floor level: bag size times hold time, so both a big bag and a long hold climb. */
+export function floorLevel(usd: number | null | undefined, heldSince: number | null, now = Date.now()): number {
+  const days = daysHeld(heldSince, now);
+  return Math.max(1, Math.min(99, Math.floor(1 + Math.sqrt(days) * (1 + Math.log10(1 + Math.max(0, usd ?? 0))))));
+}
+
 const TIER_RATE = [1, 1.5, 2, 3, 4, 6];
 export const BASE_RATE = 2; // cash per citizen per hour on bare walls; a penthouse throne takes days, not minutes
 export const HOUSE_BOOST = 3; // the house coin floor earns triple
@@ -77,6 +99,9 @@ export type Floor = {
   usd: number | null;
   heldSince: number | null;
   isHouse: boolean;
+  /** 24h price change in percent, from DexScreener. Drives the floor's mood. */
+  change24?: number | null;
+  mcap?: number | null;
 };
 
 export function towerRate(floors: Floor[], now = Date.now()): number {
