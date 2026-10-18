@@ -139,6 +139,13 @@ export default function Game() {
   const [save, setSave] = useState<Save>(emptySave);
   const [selected, setSelected] = useState<string | null>(null);
   const [tab, setTab] = useState<ItemKind>("furniture");
+  const [shopOpen, setShopOpen] = useState(false);
+  useEffect(() => {
+    if (!shopOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setShopOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [shopOpen]);
   const [lookup, setLookup] = useState("");
   const [now, setNow] = useState(() => Date.now());
   const [coin, setCoin] = useState<Coin | null>(null);
@@ -410,6 +417,44 @@ export default function Game() {
   const nextDay = nextStreakDay(streak, now);
   const seasonLeft = board?.season ? Math.max(0, board.season.ends - now) : 0;
 
+  const tabHint =
+    tab === "furniture"
+      ? `Up to ${MAX_FURNITURE} pieces per floor.`
+      : tab === "pet"
+        ? "One pet per floor. It follows the citizens around."
+        : "Dresses every citizen on the floor.";
+
+  function shopItem(i: (typeof ITEMS)[number], big: boolean) {
+    const locked = selTier < i.minTier;
+    const owned = save.owned.includes(i.id);
+    const equipped = placement && (placement.furniture.includes(i.id) || placement.pet === i.id || placement.outfit === i.id);
+    const broke = !owned && cash < i.price;
+    const button = (
+      <button className="btn small" disabled={!canEdit || busy || !sel || locked || !!equipped || broke} onClick={() => buy(i.id)}>
+        {equipped ? "placed" : owned ? "place" : locked ? "locked" : `$${fmtCash(i.price)}`}
+      </button>
+    );
+    if (big)
+      return (
+        <li key={i.id} className={`card-item${locked ? " locked" : ""}${equipped ? " on" : ""}`}>
+          <ItemIcon id={i.id} kind={i.kind} size={102} />
+          <span className="item-name">{i.name}</span>
+          <span className="dim tiny">
+            {locked ? `unlocks at ${TIERS[i.minTier].name} (${TIERS[i.minTier].minDays}d)` : owned ? "owned" : `${TIERS[i.minTier].name}+`}
+          </span>
+          {button}
+        </li>
+      );
+    return (
+      <li key={i.id} className={locked ? "item locked" : "item"}>
+        <ItemIcon id={i.id} kind={i.kind} size={32} />
+        <span className="item-name">{i.name}</span>
+        <span className="item-req">{locked ? `${TIERS[i.minTier].minDays}d hold` : owned ? "owned" : ""}</span>
+        {button}
+      </li>
+    );
+  }
+
   return (
     <>
       <Boot />
@@ -667,39 +712,20 @@ export default function Game() {
               )}
 
               <div className="panel shop">
-                <div className="tabs">
-                  {KINDS.map((k) => (
-                    <button key={k} className={tab === k ? "tab on" : "tab"} onClick={() => setTab(k)}>
-                      {KIND_LABEL[k]}
-                    </button>
-                  ))}
+                <div className="shop-head">
+                  <div className="tabs">
+                    {KINDS.map((k) => (
+                      <button key={k} className={tab === k ? "tab on" : "tab"} onClick={() => setTab(k)}>
+                        {KIND_LABEL[k]}
+                      </button>
+                    ))}
+                  </div>
+                  <button className="btn small ghost" onClick={() => setShopOpen(true)} title="open the full shop">
+                    open shop
+                  </button>
                 </div>
-                <p className="dim tiny">
-                  {tab === "furniture"
-                    ? `Up to ${MAX_FURNITURE} pieces per floor.`
-                    : tab === "pet"
-                      ? "One pet per floor. It follows the citizens around."
-                      : "Dresses every citizen on the floor."}
-                </p>
-                <ul className="items">
-                  {ITEMS.filter((i) => i.kind === tab).map((i) => {
-                    const locked = selTier < i.minTier;
-                    const owned = save.owned.includes(i.id);
-                    const equipped =
-                      placement && (placement.furniture.includes(i.id) || placement.pet === i.id || placement.outfit === i.id);
-                    const broke = !owned && cash < i.price;
-                    return (
-                      <li key={i.id} className={locked ? "item locked" : "item"}>
-                        <ItemIcon id={i.id} kind={i.kind} size={32} />
-                        <span className="item-name">{i.name}</span>
-                        <span className="item-req">{locked ? `${TIERS[i.minTier].minDays}d hold` : owned ? "owned" : ""}</span>
-                        <button className="btn small" disabled={!canEdit || busy || !sel || locked || !!equipped || broke} onClick={() => buy(i.id)}>
-                          {equipped ? "placed" : owned ? "place" : locked ? "locked" : `$${fmtCash(i.price)}`}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <p className="dim tiny">{tabHint}</p>
+                <ul className="items">{ITEMS.filter((i) => i.kind === tab).map((i) => shopItem(i, false))}</ul>
               </div>
             </aside>
           </div>
@@ -989,6 +1015,38 @@ export default function Game() {
           {db ? " Purchases are saved to your wallet and follow you to any device." : " Items you place are saved in this browser."}
         </span>
       </footer>
+
+      {shopOpen && (
+        <div className="shop-modal" role="dialog" aria-label="shop" onClick={(e) => e.target === e.currentTarget && setShopOpen(false)}>
+          <div className="shop-sheet panel">
+            <div className="sheet-head">
+              <span className="pixel green">shop</span>
+              <span className="pixel">${fmtCash(cash)}</span>
+              <button className="btn small ghost" onClick={() => setShopOpen(false)}>
+                close
+              </button>
+            </div>
+            <div className="sheet-floors">
+              <span className="label">placing on</span>
+              {sorted.map((f) => (
+                <button key={f.mint} className={f.mint === selected ? "chip on" : "chip"} onClick={() => setSelected(f.mint)}>
+                  {f.symbol === "RESIDENT" ? "home" : `$${f.symbol.toUpperCase().slice(0, 8)}`} · {TIERS[tierFor(f.heldSince, now)].name}
+                </button>
+              ))}
+            </div>
+            <div className="tabs">
+              {KINDS.map((k) => (
+                <button key={k} className={tab === k ? "tab on" : "tab"} onClick={() => setTab(k)}>
+                  {KIND_LABEL[k]}
+                </button>
+              ))}
+              <span className="dim tiny sheet-hint">{tabHint}</span>
+            </div>
+            <ul className="card-items">{ITEMS.filter((i) => i.kind === tab).map((i) => shopItem(i, true))}</ul>
+            {!canEdit && <p className="dim tiny">This is someone else's tower. Sign in to shop for your own.</p>}
+          </div>
+        </div>
+      )}
 
       {toast && <div className="toast pixel">{toast}</div>}
     </>

@@ -84,6 +84,7 @@ export const DOCS: DocSection[] = [
       ["Pets", "One per floor. Walks around the room."],
       ["Outfits", "One per floor. Every citizen on that floor wears it."],
       ["Unlocks", "Each item needs its floor to reach a tier first."],
+      ["Full shop", "Open shop shows every item large, with a floor picker, so you can buy and place without scrolling the tower."],
       ["Saves", "Signed in, purchases are stored on the server and follow you to any device."],
     ],
   },
