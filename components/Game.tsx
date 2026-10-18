@@ -43,6 +43,8 @@ import {
 } from "@/lib/game";
 import TowerView from "./TowerView";
 import TierLadder from "./TierLadder";
+import City from "./City";
+import { HOW_IT_WORKS } from "@/lib/howto";
 import Logo from "./Logo";
 import HoverText from "./HoverText";
 import Reveal from "./Reveal";
@@ -418,9 +420,11 @@ export default function Game() {
         <nav className="nav-links">
           {[
             ["#tower", "tower"],
+            ["#how", "how it works"],
             ["#ladder", "ladder"],
             ["#catalog", "catalog"],
             ["#coin", "coin"],
+            ["#city", "city"],
             ["#skyline", "skyline"],
           ].map(([href, label]) => (
             <a key={href} href={href}>
@@ -699,9 +703,26 @@ export default function Game() {
           </div>
         </Reveal>
 
+        <Reveal id="how" className="sec">
+          <div className="sec-head">
+            <span className="kicker">02 / how it works</span>
+            <HoverText as="h2" text="the whole game on one page" className="pixel display sm" />
+          </div>
+          <ol className="how-steps">
+            {HOW_IT_WORKS.map((s) => (
+              <li key={s.n} className="panel how-step">
+                <span className="pixel green tiny-pixel">
+                  {s.n} {s.title}
+                </span>
+                <span className="dim">{s.body}</span>
+              </li>
+            ))}
+          </ol>
+        </Reveal>
+
         <Reveal id="ladder" className="sec">
           <div className="sec-head">
-            <span className="kicker">02 / the ladder</span>
+            <span className="kicker">03 / the ladder</span>
             <HoverText as="h2" text="hold longer, live higher" className="pixel display sm" />
           </div>
           <div className="how-grid">
@@ -724,7 +745,7 @@ export default function Game() {
 
         <Reveal id="catalog" className="sec">
           <div className="sec-head">
-            <span className="kicker">03 / the catalog</span>
+            <span className="kicker">04 / the catalog</span>
             <HoverText as="h2" text="the good stuff waits for diamond hands" className="pixel display sm" />
             <HoverText
               as="p"
@@ -754,7 +775,7 @@ export default function Game() {
 
         <Reveal id="coin" className="sec coin">
           <div className="sec-head center">
-            <span className="kicker">04 / ${HOUSE_SYMBOL}</span>
+            <span className="kicker">05 / ${HOUSE_SYMBOL}</span>
             <HoverText as="h2" text="the floor that pays triple" className="pixel display sm" />
             <HoverText
               as="p"
@@ -832,9 +853,29 @@ export default function Game() {
           </div>
         </Reveal>
 
+        <Reveal id="city" className="sec">
+          <div className="sec-head">
+            <span className="kicker">06 / the city</span>
+            <HoverText as="h2" text="everyone's towers, one skyline" className="pixel display sm" />
+            <HoverText
+              as="p"
+              by="word"
+              className="lede"
+              text="Every ranked tower in Pump Tower, side by side. Green floors hold $PTWR, gold floors are penthouses. Tap any building to walk in."
+            />
+          </div>
+          <City
+            me={me}
+            onVisit={(w) => {
+              open(w);
+              document.getElementById("tower")?.scrollIntoView({ behavior: "smooth" });
+            }}
+          />
+        </Reveal>
+
         <Reveal id="skyline" className="sec">
           <div className="sec-head">
-            <span className="kicker">05 / the skyline</span>
+            <span className="kicker">07 / the skyline</span>
             <HoverText as="h2" text="the tallest rent in the city" className="pixel display sm" />
             <HoverText
               as="p"

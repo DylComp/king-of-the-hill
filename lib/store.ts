@@ -85,6 +85,30 @@ export async function skyline(limit = 25): Promise<SkylineRow[]> {
     .slice(0, limit);
 }
 
+/** One building in the city: each floor's tier, oldest hold first. */
+export type CityTower = SkylineRow & { tiers: number[]; houses: number[] };
+
+/** Every ranked tower with its floors, for the city view. */
+export async function city(limit = 80): Promise<CityTower[]> {
+  const ids = await redis<string[]>("ZREVRANGE", k.board, 0, limit * 2 - 1);
+  if (!ids.length) return [];
+  const raw = await redis<(string | null)[]>("HMGET", k.residents, ...ids);
+  const now = Date.now();
+  return raw
+    .filter((r): r is string => !!r)
+    .map((r) => {
+      const res = JSON.parse(r) as Resident;
+      return {
+        ...skylineRow(res, now),
+        tiers: res.f.map(([since]) => tierFor(since, now)),
+        houses: res.f.map(([, h]) => h),
+      };
+    })
+    .filter((t) => t.floors > 0)
+    .sort((a, b) => b.rate - a.rate || b.longest - a.longest)
+    .slice(0, limit);
+}
+
 export type SeasonRow = SkylineRow & { points: number };
 
 /** This week's ranking: points banked by daily check-ins. */
