@@ -169,3 +169,36 @@ export const fmtCash = (n: number) =>
   n >= 1e6 ? `${(n / 1e6).toFixed(2)}m` : n >= 1e4 ? `${(n / 1e3).toFixed(1)}k` : Math.floor(n).toLocaleString("en-US");
 
 export const shortAddr = (a: string) => `${a.slice(0, 4)}…${a.slice(-4)}`;
+
+/** Every real tower starts with enough for a crate and a rat; the demo gets more to play with. */
+export const WALLET_BONUS = 100;
+export const DEMO_BONUS = 1500;
+
+/** Compact tower summary kept for the skyline leaderboard; rent is recomputed at read time. */
+export type Resident = { w: string; top: string; f: [number | null, 0 | 1][] };
+
+export function residentOf(owner: string, floors: Floor[]): Resident {
+  const byAge = [...floors].sort((a, b) => (a.heldSince ?? Infinity) - (b.heldSince ?? Infinity));
+  return { w: owner, top: byAge[0]?.symbol ?? "", f: byAge.map((f) => [f.heldSince, f.isHouse ? 1 : 0]) };
+}
+
+export type SkylineRow = { wallet: string; top: string; floors: number; citizens: number; rate: number; longest: number; house: boolean };
+
+export function skylineRow(r: Resident, now = Date.now()): SkylineRow {
+  let rate = 0;
+  let citizens = 0;
+  for (const [since, house] of r.f) {
+    const t = tierFor(since, now);
+    rate += floorRate(t, house === 1);
+    citizens += citizensFor(t);
+  }
+  return {
+    wallet: r.w,
+    top: r.top,
+    floors: r.f.length,
+    citizens,
+    rate,
+    longest: r.f.length ? daysHeld(r.f[0][0], now) : 0,
+    house: r.f.some(([, h]) => h === 1),
+  };
+}

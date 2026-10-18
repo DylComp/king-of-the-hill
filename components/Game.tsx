@@ -7,6 +7,9 @@ import {
   MAX_FURNITURE,
   TIERS,
   type Floor,
+  type SkylineRow,
+  DEMO_BONUS,
+  WALLET_BONUS,
   type ItemKind,
   type Save,
   buyAndPlace,
@@ -33,8 +36,6 @@ import ItemIcon from "./ItemIcon";
 
 const DAY = 86_400_000;
 const SITE = "https://pump-tower.vercel.app";
-const WALLET_BONUS = 100; // every tower starts with enough for a crate and a rat
-const DEMO_BONUS = 1500;
 
 function demoFloors(now: number): Floor[] {
   const f = (symbol: string, days: number, isHouse = false, mint = `demo${symbol}`): Floor => ({
@@ -55,7 +56,17 @@ type Coin = { symbol: string; price: number | null; mcap: number | null; change:
 type PhantomLike = {
   connect: (o?: { onlyIfTrusted?: boolean }) => Promise<{ publicKey: { toString(): string } }>;
   disconnect?: () => Promise<void>;
+  signMessage?: (msg: Uint8Array, display?: string) => Promise<{ signature: Uint8Array } | Uint8Array>;
 };
+
+async function post<T>(url: string, data?: unknown): Promise<T> {
+  const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(data ?? {}) });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error ?? "something broke");
+  return json as T;
+}
+
+type Skyline = { rows: SkylineRow[]; total: number };
 
 function provider(): PhantomLike | null {
   const w = window as unknown as { phantom?: { solana?: PhantomLike }; solana?: PhantomLike; solflare?: PhantomLike };
@@ -103,7 +114,15 @@ export default function Game() {
   const [coin, setCoin] = useState<Coin | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [db, setDb] = useState(false);
+  const [me, setMe] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [board, setBoard] = useState<Skyline | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const dbRef = useRef(false);
+  // Without a database (or on the demo) the browser keeps the save; otherwise the server owns it.
+  const local = !owner || !db;
+  const canEdit = local || owner === me;
 
   // Floors stack oldest hold on top, so the penthouse is literally the top floor.
   const sorted = useMemo(
@@ -116,10 +135,23 @@ export default function Game() {
   const citizens = sorted.reduce((n, f) => n + citizensFor(tierFor(f.heldSince, now)), 0);
   const longest = sorted[0] ? daysHeld(sorted[0].heldSince, now) : 0;
 
+  const loadBoard = useCallback(() => {
+    fetch("/api/leaderboard")
+      .then((r) => r.json())
+      .then((j: Skyline & { db: boolean }) => j.db && setBoard({ rows: j.rows, total: j.total }))
+      .catch(() => {});
+  }, []);
+
   const open = useCallback(async (addr: string | null) => {
     setError(null);
     setOwner(addr);
-    setSave(loadSave(addr));
+    if (addr && dbRef.current) {
+      setSave(emptySave());
+      fetch(`/api/save?w=${addr}`)
+        .then((r) => r.json())
+        .then((j: { save: Save | null }) => j.save && setSave(j.save))
+        .catch(() => {});
+    } else setSave(loadSave(addr));
     const url = new URL(window.location.href);
     if (addr) url.searchParams.set("w", addr);
     else url.searchParams.delete("w");
@@ -140,23 +172,33 @@ export default function Game() {
       setFloors(fl);
       const top = [...fl].sort((a, b) => (a.heldSince ?? Infinity) - (b.heldSince ?? Infinity))[0];
       setSelected(top?.mint ?? null);
+      if (dbRef.current) loadBoard();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadBoard]);
 
   // Start on a shared tower if the link has one, else the demo; reconnect silently if Phantom already trusts us.
   useEffect(() => {
-    const shared = new URL(window.location.href).searchParams.get("w");
-    open(shared);
-    if (shared) return;
-    provider()
-      ?.connect({ onlyIfTrusted: true })
-      .then((r) => open(r.publicKey.toString()))
-      .catch(() => {});
-  }, [open]);
+    (async () => {
+      const session = await fetch("/api/me")
+        .then((r) => r.json() as Promise<{ db: boolean; wallet: string | null }>)
+        .catch(() => ({ db: false, wallet: null }));
+      dbRef.current = session.db;
+      setDb(session.db);
+      setMe(session.wallet);
+      if (session.db) loadBoard();
+      const shared = new URL(window.location.href).searchParams.get("w");
+      if (shared || session.wallet) return open(shared ?? session.wallet);
+      open(null);
+      provider()
+        ?.connect({ onlyIfTrusted: true })
+        .then((r) => open(r.publicKey.toString()))
+        .catch(() => {});
+    })();
+  }, [open, loadBoard]);
 
   useEffect(() => {
     const load = () =>
@@ -185,10 +227,11 @@ export default function Game() {
   }, []);
 
   useEffect(() => {
+    if (!local) return;
     try {
       localStorage.setItem(saveKey(owner), JSON.stringify(save));
     } catch {}
-  }, [save, owner]);
+  }, [save, owner, local]);
 
   useEffect(() => {
     if (!toast) return;
@@ -202,26 +245,70 @@ export default function Game() {
       window.open("https://phantom.app/", "_blank", "noopener");
       return;
     }
+    let addr: string;
     try {
-      const r = await p.connect();
-      open(r.publicKey.toString());
+      addr = (await p.connect()).publicKey.toString();
     } catch {
-      setToast("wallet said no");
+      return setToast("wallet said no");
+    }
+    if (dbRef.current && addr !== me) await signIn(addr);
+    open(addr);
+  }
+
+  /** Prove wallet ownership with a free message signature so purchases follow you to any device. */
+  async function signIn(addr: string) {
+    const p = provider();
+    if (!p?.signMessage) return setToast("this wallet can't sign messages");
+    try {
+      const { message } = await post<{ message: string }>("/api/auth/nonce", { wallet: addr });
+      const out = await p.signMessage(new TextEncoder().encode(message), "utf8");
+      const sig = out instanceof Uint8Array ? out : out.signature;
+      await post("/api/auth/verify", { wallet: addr, signature: btoa(String.fromCharCode(...sig)) });
+      setMe(addr);
+      setToast("signed in");
+    } catch (e) {
+      setToast(e instanceof Error && !/reject|denied|cancel/i.test(e.message) ? e.message : "sign in skipped, view only");
     }
   }
 
   async function disconnect() {
     await provider()?.disconnect?.().catch(() => {});
+    if (me) await post("/api/auth/logout").catch(() => {});
+    setMe(null);
     open(null);
   }
 
-  function buy(id: string) {
-    if (!sel) return;
+  async function buy(id: string) {
+    if (!sel || busy) return;
     const item = itemById(id)!;
-    const r = buyAndPlace(save, item, sel.mint, tierFor(sel.heldSince, now), cash);
-    if (!r.ok) return setToast(r.reason);
-    setSave(r.save);
-    setToast(save.owned.includes(id) ? `${item.name} moved in` : `bought ${item.name}`);
+    const owned = save.owned.includes(id);
+    if (local) {
+      const r = buyAndPlace(save, item, sel.mint, tierFor(sel.heldSince, now), cash);
+      if (!r.ok) return setToast(r.reason);
+      setSave(r.save);
+    } else {
+      setBusy(true);
+      try {
+        setSave((await post<{ save: Save }>("/api/buy", { item: id, mint: sel.mint })).save);
+      } catch (e) {
+        return setToast(e instanceof Error ? e.message : "could not buy");
+      } finally {
+        setBusy(false);
+      }
+    }
+    setToast(owned ? `${item.name} moved in` : `bought ${item.name}`);
+  }
+
+  async function moveOut(mint: string, id: string) {
+    if (local) return setSave(removeFurniture(save, mint, id));
+    setBusy(true);
+    try {
+      setSave((await post<{ save: Save }>("/api/remove", { item: id, mint })).save);
+    } catch (e) {
+      setToast(e instanceof Error ? e.message : "could not move it");
+    } finally {
+      setBusy(false);
+    }
   }
 
   const shareUrl = owner ? `${SITE}/?w=${owner}` : SITE;
@@ -268,13 +355,18 @@ export default function Game() {
             ["#ladder", "ladder"],
             ["#catalog", "catalog"],
             ["#coin", "coin"],
+            ["#skyline", "skyline"],
           ].map(([href, label]) => (
             <a key={href} href={href}>
               <HoverText text={label} />
             </a>
           ))}
         </nav>
-        {owner ? (
+        {me ? (
+          <button className="btn ghost" onClick={disconnect} title="sign out">
+            {shortAddr(me)}
+          </button>
+        ) : owner && !db ? (
           <button className="btn ghost" onClick={disconnect}>
             {shortAddr(owner)}
           </button>
@@ -329,7 +421,9 @@ export default function Game() {
               <div className="tower-bar">
                 {owner ? (
                   <span className="dim">
-                    tower of <span className="green">{shortAddr(owner)}</span>
+                    {owner === me ? "your tower " : "tower of "}
+                    <span className="green">{shortAddr(owner)}</span>
+                    {owner === me && <span className="chip live">saved to cloud</span>}
                   </span>
                 ) : (
                   <span className="dim">
@@ -410,7 +504,7 @@ export default function Game() {
                   {placement && placement.furniture.length > 0 && (
                     <div className="placed">
                       {placement.furniture.map((id) => (
-                        <button key={id} className="chip" title="move out" onClick={() => setSave(removeFurniture(save, sel.mint, id))}>
+                        <button key={id} className="chip" title="move out" disabled={!canEdit || busy} onClick={() => moveOut(sel.mint, id)}>
                           {itemById(id)?.name} x
                         </button>
                       ))}
@@ -419,6 +513,21 @@ export default function Game() {
                 </div>
               ) : (
                 <div className="panel dim">Tap a floor to manage it.</div>
+              )}
+
+              {!canEdit && (
+                <div className="panel visit-note">
+                  <span className="dim">You're visiting. Only the owner can decorate this tower.</span>
+                  {me ? (
+                    <button className="btn small ghost" onClick={() => open(me)}>
+                      back to my tower
+                    </button>
+                  ) : (
+                    <button className="btn small" onClick={connect}>
+                      sign in with wallet
+                    </button>
+                  )}
+                </div>
               )}
 
               <div className="panel shop">
@@ -448,7 +557,7 @@ export default function Game() {
                         <ItemIcon id={i.id} kind={i.kind} size={32} />
                         <span className="item-name">{i.name}</span>
                         <span className="item-req">{locked ? `${TIERS[i.minTier].minDays}d hold` : owned ? "owned" : ""}</span>
-                        <button className="btn small" disabled={!sel || locked || !!equipped || broke} onClick={() => buy(i.id)}>
+                        <button className="btn small" disabled={!canEdit || busy || !sel || locked || !!equipped || broke} onClick={() => buy(i.id)}>
                           {equipped ? "placed" : owned ? "place" : locked ? "locked" : `$${fmtCash(i.price)}`}
                         </button>
                       </li>
@@ -558,13 +667,63 @@ export default function Game() {
             </a>
           </div>
         </Reveal>
+
+        <Reveal id="skyline" className="sec">
+          <div className="sec-head">
+            <span className="kicker">05 / the skyline</span>
+            <HoverText as="h2" text="the tallest rent in the city" className="pixel display sm" />
+            <HoverText
+              as="p"
+              by="word"
+              className="lede"
+              text="Every tower that moves in gets ranked by the rent it pays each hour. Hold longer to climb."
+            />
+          </div>
+          {board && board.rows.length > 0 ? (
+            <div className="sky">
+              <div className="sky-row sky-head">
+                <span>#</span>
+                <span>tower</span>
+                <span className="hide-sm">top floor</span>
+                <span>floors</span>
+                <span className="hide-sm">citizens</span>
+                <span>longest</span>
+                <span>rent</span>
+              </div>
+              {board.rows.map((r, i) => (
+                <button
+                  key={r.wallet}
+                  className={`sky-row${r.wallet === owner ? " me" : ""}${i < 3 ? " podium" : ""}`}
+                  onClick={() => {
+                    open(r.wallet);
+                    document.getElementById("tower")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                >
+                  <span className="pixel rank">{i + 1}</span>
+                  <span className="green">
+                    {shortAddr(r.wallet)}
+                    {r.house && <span className="chip">house</span>}
+                  </span>
+                  <span className="hide-sm">${r.top.toUpperCase()}</span>
+                  <span>{r.floors}</span>
+                  <span className="hide-sm">{r.citizens}</span>
+                  <span>{Math.floor(r.longest)}d</span>
+                  <span className="pixel green">${fmtCash(r.rate)}/hr</span>
+                </button>
+              ))}
+              <p className="dim tiny sky-foot">{board.total} towers in the city. Tap one to visit.</p>
+            </div>
+          ) : (
+            <div className="panel dim">{db ? "The skyline is empty. Connect a wallet to build the first tower." : "The skyline opens soon."}</div>
+          )}
+        </Reveal>
       </main>
 
       <footer className="foot">
         <Logo size={22} />
         <span className="dim tiny">
-          Pump Tower only reads your wallet. It never asks you to sign anything and cannot move your tokens. Items you place are saved in
-          this browser.
+          Pump Tower only reads your wallet. Signing in is a free message signature, never a transaction, and it cannot move your tokens.
+          {db ? " Purchases are saved to your wallet and follow you to any device." : " Items you place are saved in this browser."}
         </span>
       </footer>
 

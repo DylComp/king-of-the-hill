@@ -1,4 +1,4 @@
-import type { ElementType } from "react";
+import { Fragment, type ElementType } from "react";
 
 type Props = { text: string; as?: ElementType; by?: "char" | "word"; className?: string };
 
@@ -16,14 +16,17 @@ export default function HoverText({ text, as: Tag = "span", by = "char", classNa
   return (
     <Tag className={`hc ${className}`} aria-label={text}>
       {text.split(" ").map((word, wi) => (
-        <span key={wi} className="hcw" aria-hidden>
+        <Fragment key={wi}>
+          {/* the space sits outside the nowrap wrapper so the line can break there */}
           {wi > 0 && " "}
-          {[...word].map((ch) => (
-            <span key={n} className="ch" style={{ ["--i" as string]: n++ }}>
-              {ch}
-            </span>
-          ))}
-        </span>
+          <span className="hcw" aria-hidden>
+            {[...word].map((ch) => (
+              <span key={n} className="ch" style={{ ["--i" as string]: n++ }}>
+                {ch}
+              </span>
+            ))}
+          </span>
+        </Fragment>
       ))}
     </Tag>
   );

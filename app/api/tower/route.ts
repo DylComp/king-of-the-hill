@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
-import { buildTower, isAddress } from "@/lib/chain";
+import { isAddress } from "@/lib/chain";
+import { towerFor } from "@/lib/store";
 
 export const maxDuration = 60;
 
 export async function GET(req: Request) {
-  const owner = new URL(req.url).searchParams.get("owner")?.trim() ?? "";
+  const params = new URL(req.url).searchParams;
+  const owner = params.get("owner")?.trim() ?? "";
   if (!isAddress(owner)) return NextResponse.json({ error: "not a solana address" }, { status: 400 });
   try {
-    const floors = await buildTower(owner);
+    const floors = await towerFor(owner, params.has("fresh"));
     return NextResponse.json(
       { owner, floors, at: Date.now() },
-      { headers: { "cache-control": "public, s-maxage=120, stale-while-revalidate=600" } },
+      { headers: { "cache-control": "public, s-maxage=60, stale-while-revalidate=300" } },
     );
   } catch (e) {
     console.error("tower", owner, e);

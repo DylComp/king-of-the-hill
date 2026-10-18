@@ -842,6 +842,83 @@ button.chip:hover {
   animation: drop 0.25s steps(3);
 }
 
+
+.chip.live {
+  margin-left: 8px;
+  font-size: 14px;
+}
+button.chip:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.visit-note {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+  border-color: var(--line-strong);
+}
+
+/* skyline leaderboard */
+.sky {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sky-row {
+  display: grid;
+  grid-template-columns: 44px 1.4fr 1fr 70px 80px 80px 120px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, background 0.15s;
+}
+.sky-row:hover {
+  transform: translateX(4px);
+  border-color: var(--line-strong);
+  background: var(--panel-2);
+}
+.sky-row .chip {
+  margin-left: 8px;
+  font-size: 13px;
+}
+.sky-head {
+  background: transparent;
+  border-color: transparent;
+  cursor: default;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  font-size: 15px;
+  letter-spacing: 0.08em;
+}
+.sky-head:hover {
+  transform: none;
+  background: transparent;
+  border-color: transparent;
+}
+.sky-row.me {
+  border-color: var(--green);
+}
+.rank {
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.podium .rank {
+  color: var(--green);
+  text-shadow: 0 0 12px rgba(74, 222, 128, 0.5);
+}
+.sky-foot {
+  margin-top: 10px;
+}
+
 @media (max-width: 1000px) {
   .board,
   .how-grid {
@@ -893,6 +970,14 @@ button.chip:hover {
   }
   .ca-short {
     display: inline;
+  }
+  .sky-row {
+    grid-template-columns: 30px 1.4fr 50px 50px 1fr;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .hide-sm {
+    display: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {
