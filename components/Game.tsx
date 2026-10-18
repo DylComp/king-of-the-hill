@@ -427,7 +427,7 @@ export default function Game() {
             ["#ladder", "ladder"],
             ["#catalog", "catalog"],
             ["#coin", "coin"],
-            ["#how", "how it works"],
+            ["#docs", "docs"],
           ].map(([href, label]) => (
             <a key={href} href={href}>
               <HoverText text={label} />
@@ -957,10 +957,10 @@ export default function Game() {
           </div>
         </Reveal>
 
-        <Reveal id="how" className="sec">
+        <Reveal id="docs" className="sec">
           <div className="sec-head">
-            <span className="kicker">07 / how it works</span>
-            <HoverText as="h2" text="the docs" className="pixel display sm" />
+            <span className="kicker">07 / docs</span>
+            <HoverText as="h2" text="every feature, explained" className="pixel display sm" />
           </div>
           <p className="docs-intro">{DOCS_INTRO}</p>
           <div className="docs">

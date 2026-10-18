@@ -1,4 +1,4 @@
-// The docs shown in the "how it works" section: what Pump Tower is, then every
+// The docs shown in the "docs" section: what Pump Tower is, then every
 // section of the site and its features, in page order. Kept next to the rules so each change
 // updates it in the same commit; numbers are read from the rules, not typed in.
 import {
