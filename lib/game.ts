@@ -2,6 +2,9 @@
 // Shared by the server route, the canvas renderer and the tests.
 
 export const HOUSE_MINT = "AE3RYXQ1ACGvLj63mmwkCtGdPNhWR6XsmgFAZfZgpump";
+export const HOUSE_SYMBOL = "PTWR";
+/** Every signed-in resident gets a free floor whose clock starts the day they move in. */
+export const LOBBY_MINT = "lobby";
 
 const DAY = 86_400_000;
 
@@ -201,4 +204,76 @@ export function skylineRow(r: Resident, now = Date.now()): SkylineRow {
     longest: r.f.length ? daysHeld(r.f[0][0], now) : 0,
     house: r.f.some(([, h]) => h === 1),
   };
+}
+
+export function lobbyFloor(joinedAt: number): Floor {
+  return { mint: LOBBY_MINT, symbol: "RESIDENT", name: "your first floor", image: null, amount: 0, usd: null, heldSince: joinedAt, isHouse: false };
+}
+
+/** A tower counts as "empty" when the only floor is the free resident floor. */
+export const tokenFloors = (floors: Floor[]) => floors.filter((f) => f.mint !== LOBBY_MINT);
+
+// ---- daily rent streak -------------------------------------------------------
+
+export type Streak = { last: number | null; n: number; best: number; total: number };
+export const emptyStreak = (): Streak => ({ last: null, n: 0, best: 0, total: 0 });
+export const STREAK_STEP = 25;
+export const STREAK_CAP = 7;
+
+export const dayIndex = (now = Date.now()) => Math.floor(now / DAY);
+export const streakReward = (n: number) => STREAK_STEP * Math.min(n, STREAK_CAP);
+export const canCollect = (s: Streak, now = Date.now()) => s.last !== dayIndex(now);
+/** Ms until the next UTC day, when the next bonus opens. */
+export const msToNextCollect = (now = Date.now()) => (dayIndex(now) + 1) * DAY - now;
+/** The streak a wallet would be on if it collected now (missing a day resets it). */
+export const nextStreakDay = (s: Streak, now = Date.now()) => (s.last === dayIndex(now) - 1 ? s.n + 1 : 1);
+
+export function collect(s: Streak, now = Date.now()): { ok: true; streak: Streak; reward: number } | { ok: false } {
+  if (!canCollect(s, now)) return { ok: false };
+  const n = nextStreakDay(s, now);
+  const reward = streakReward(n);
+  return { ok: true, reward, streak: { last: dayIndex(now), n, best: Math.max(s.best, n), total: s.total + reward } };
+}
+
+/** Streak is broken (for display) once a full day has been skipped. */
+export const liveStreak = (s: Streak, now = Date.now()) => (s.last != null && dayIndex(now) - s.last <= 1 ? s.n : 0);
+
+// ---- weekly seasons ----------------------------------------------------------
+
+const WEEK = 7 * DAY;
+export const seasonOf = (now = Date.now()) => Math.max(1, Math.floor((now - GAME_EPOCH) / WEEK) + 1);
+export const seasonEnds = (season: number) => GAME_EPOCH + season * WEEK;
+/** Season points banked by one daily check-in: a full day of the tower's rent. */
+export const checkInPoints = (floors: Floor[], now = Date.now()) => Math.round(towerRate(floors, now) * 24);
+
+// ---- achievements ------------------------------------------------------------
+
+export type Achievement = { id: string; name: string; hint: string };
+export const ACHIEVEMENTS: Achievement[] = [
+  { id: "resident", name: "resident", hint: "sign in and move in" },
+  { id: "first-buy", name: "first purchase", hint: "buy anything" },
+  { id: "house", name: "house money", hint: "hold $PTWR" },
+  { id: "loft", name: "loft life", hint: "a floor held 7+ days" },
+  { id: "penthouse", name: "penthouse", hint: "a floor held 30+ days" },
+  { id: "skyscraper", name: "skyscraper", hint: "10+ floors" },
+  { id: "decorator", name: "decorator", hint: "own 8+ items" },
+  { id: "zoo", name: "zookeeper", hint: "3 floors with pets" },
+  { id: "streak3", name: "regular", hint: "3 day check-in streak" },
+  { id: "streak7", name: "landlord", hint: "7 day check-in streak" },
+];
+
+export function achievementsOf(floors: Floor[], save: Save, streak: Streak, signedIn: boolean, now = Date.now()): Set<string> {
+  const got = new Set<string>();
+  const tiers = floors.map((f) => tierFor(f.heldSince, now));
+  if (signedIn) got.add("resident");
+  if (save.owned.length) got.add("first-buy");
+  if (floors.some((f) => f.isHouse)) got.add("house");
+  if (tiers.some((t) => t >= 3)) got.add("loft");
+  if (tiers.some((t) => t >= 5)) got.add("penthouse");
+  if (tokenFloors(floors).length >= 10) got.add("skyscraper");
+  if (save.owned.length >= 8) got.add("decorator");
+  if (Object.values(save.placed).filter((p) => p.pet).length >= 3) got.add("zoo");
+  if (streak.best >= 3) got.add("streak3");
+  if (streak.best >= 7) got.add("streak7");
+  return got;
 }

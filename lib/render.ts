@@ -1,6 +1,6 @@
 // Canvas renderer for the tower. Everything is drawn at logical pixel size
 // and scaled up by CSS with image-rendering: pixelated.
-import { type Floor, type Placement, type TierId, tierFor, citizensFor, floorRate } from "./game";
+import { type Floor, type Placement, type TierId, tierFor, citizensFor, floorRate, LOBBY_MINT } from "./game";
 import { ACCESSORY, CITIZEN, FURNITURE, HAIRS, OUTFIT_BODY, PETS, SKINS, baked } from "./sprites";
 
 export const W = 240;
@@ -406,7 +406,7 @@ export function drawTower(ctx: CanvasRenderingContext2D, o: DrawOpts) {
     rect(ctx, BX, y + FLOOR_H - 4, BW, 4, "#2a2c33");
     rect(ctx, BX, y + FLOOR_H - 4, BW, 1, "#3a3d46");
     ctx.font = `8px ${PIXEL_FONT}`;
-    const label = `${String(floors.length - i).padStart(2, "0")} $${f.symbol.toUpperCase().slice(0, 9)}`;
+    const label = `${String(floors.length - i).padStart(2, "0")} ${f.mint === LOBBY_MINT ? "" : "$"}${f.symbol.toUpperCase().slice(0, 9)}`;
     const lw = ctx.measureText(label).width;
     rect(ctx, IX + 1, y + 1, lw + 4, 10, "rgba(5,6,8,0.75)");
     ctx.fillStyle = f.isHouse ? GREEN : "#e5e7eb";

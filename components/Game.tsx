@@ -8,6 +8,17 @@ import {
   TIERS,
   type Floor,
   type SkylineRow,
+  type Streak,
+  ACHIEVEMENTS,
+  HOUSE_SYMBOL,
+  achievementsOf,
+  canCollect,
+  emptyStreak,
+  liveStreak,
+  msToNextCollect,
+  nextStreakDay,
+  streakReward,
+  tokenFloors,
   DEMO_BONUS,
   WALLET_BONUS,
   type ItemKind,
@@ -48,7 +59,7 @@ function demoFloors(now: number): Floor[] {
     heldSince: now - days * DAY,
     isHouse,
   });
-  return [f("TOWER", 41, true, HOUSE_MINT), f("GRUNT", 18), f("NOODL", 9), f("MOGGY", 4), f("SLURP", 1.4), f("ZAP", 0.1)];
+  return [f(HOUSE_SYMBOL, 41, true, HOUSE_MINT), f("GRUNT", 18), f("NOODL", 9), f("MOGGY", 4), f("SLURP", 1.4), f("ZAP", 0.1)];
 }
 
 type Coin = { symbol: string; price: number | null; mcap: number | null; change: number | null };
@@ -66,7 +77,11 @@ async function post<T>(url: string, data?: unknown): Promise<T> {
   return json as T;
 }
 
-type Skyline = { rows: SkylineRow[]; total: number };
+type Skyline = {
+  rows: SkylineRow[];
+  total: number;
+  season?: { n: number; ends: number; rows: (SkylineRow & { points: number })[]; total: number };
+};
 
 function provider(): PhantomLike | null {
   const w = window as unknown as { phantom?: { solana?: PhantomLike }; solana?: PhantomLike; solflare?: PhantomLike };
@@ -118,6 +133,8 @@ export default function Game() {
   const [me, setMe] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [board, setBoard] = useState<Skyline | null>(null);
+  const [boardTab, setBoardTab] = useState<"season" | "all">("season");
+  const [streak, setStreak] = useState<Streak>(emptyStreak);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const dbRef = useRef(false);
   // Without a database (or on the demo) the browser keeps the save; otherwise the server owns it.
@@ -130,7 +147,7 @@ export default function Game() {
     [floors],
   );
   const rate = useMemo(() => towerRate(sorted, now), [sorted, now]);
-  const cash = cashOf(sorted, save.owned, owner ? WALLET_BONUS : DEMO_BONUS, now);
+  const cash = cashOf(sorted, save.owned, owner ? WALLET_BONUS + streak.total : DEMO_BONUS, now);
   const sel = sorted.find((f) => f.mint === selected) ?? null;
   const citizens = sorted.reduce((n, f) => n + citizensFor(tierFor(f.heldSince, now)), 0);
   const longest = sorted[0] ? daysHeld(sorted[0].heldSince, now) : 0;
@@ -138,7 +155,7 @@ export default function Game() {
   const loadBoard = useCallback(() => {
     fetch("/api/leaderboard")
       .then((r) => r.json())
-      .then((j: Skyline & { db: boolean }) => j.db && setBoard({ rows: j.rows, total: j.total }))
+      .then((j: Skyline & { db: boolean }) => j.db && setBoard(j))
       .catch(() => {});
   }, []);
 
@@ -147,11 +164,18 @@ export default function Game() {
     setOwner(addr);
     if (addr && dbRef.current) {
       setSave(emptySave());
+      setStreak(emptyStreak());
       fetch(`/api/save?w=${addr}`)
         .then((r) => r.json())
-        .then((j: { save: Save | null }) => j.save && setSave(j.save))
+        .then((j: { save: Save | null; streak: Streak | null }) => {
+          if (j.save) setSave(j.save);
+          if (j.streak) setStreak(j.streak);
+        })
         .catch(() => {});
-    } else setSave(loadSave(addr));
+    } else {
+      setSave(loadSave(addr));
+      setStreak(emptyStreak());
+    }
     const url = new URL(window.location.href);
     if (addr) url.searchParams.set("w", addr);
     else url.searchParams.delete("w");
@@ -299,6 +323,20 @@ export default function Game() {
     setToast(owned ? `${item.name} moved in` : `bought ${item.name}`);
   }
 
+  async function checkIn() {
+    setBusy(true);
+    try {
+      const r = await post<{ streak: Streak; reward: number; points: number }>("/api/checkin");
+      setStreak(r.streak);
+      setToast(`+$${r.reward} rent bonus, day ${r.streak.n}`);
+      loadBoard();
+    } catch (e) {
+      setToast(e instanceof Error ? e.message : "could not collect");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function moveOut(mint: string, id: string) {
     if (local) return setSave(removeFurniture(save, mint, id));
     setBusy(true);
@@ -339,6 +377,13 @@ export default function Game() {
   const progress =
     !sel || nextMs == null ? 1 : Math.min(1, Math.max(0, 1 - nextMs / ((TIERS[selTier + 1].minDays - TIERS[selTier].minDays) * DAY)));
   const holdsHouse = sorted.some((f) => f.isHouse);
+  const launched = coin != null;
+  const pumpUrl = `https://pump.fun/coin/${HOUSE_MINT}`;
+  const empty = !!owner && !loading && !error && tokenFloors(sorted).length === 0;
+  const earned = achievementsOf(sorted, save, streak, !!owner && owner === me, now);
+  const streakNow = liveStreak(streak, now);
+  const nextDay = nextStreakDay(streak, now);
+  const seasonLeft = board?.season ? Math.max(0, board.season.ends - now) : 0;
 
   return (
     <>
@@ -467,20 +512,56 @@ export default function Game() {
                   <span className="label">citizens</span>
                   <span className="pixel">{citizens}</span>
                 </div>
+                {owner && owner === me && (
+                  <div className="stat wide checkin">
+                    <span className="label">
+                      daily rent bonus{streakNow > 0 && <span className="green"> · {streakNow} day streak</span>}
+                    </span>
+                    {canCollect(streak, now) ? (
+                      <button className="btn small" disabled={busy} onClick={checkIn}>
+                        collect +${streakReward(nextDay)}
+                      </button>
+                    ) : (
+                      <span className="dim">next bonus in {fmtWait(msToNextCollect(now))}</span>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {!holdsHouse && owner && !loading && (
-                <a className="panel house-cta" href={`https://pump.fun/coin/${HOUSE_MINT}`} target="_blank" rel="noreferrer">
-                  <span className="pixel green tiny-pixel">no house coin floor</span>
-                  <span className="dim">The house coin floor earns triple. Pick some up on pump.fun and it moves in.</span>
-                </a>
+              {empty && (
+                <div className="panel house-cta">
+                  <span className="pixel green tiny-pixel">empty lot</span>
+                  <span className="dim">
+                    No bags big enough for a floor yet. Any listed coin worth $0.50 or more moves in as a floor
+                    {launched ? `, and $${HOUSE_SYMBOL} floors pay triple.` : `, and $${HOUSE_SYMBOL} floors will pay triple once it launches.`}
+                  </span>
+                  {owner !== me && db && (
+                    <button className="btn small" onClick={connect}>
+                      sign in for a free resident floor
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {!holdsHouse && owner && !loading && !empty && (
+                launched ? (
+                  <a className="panel house-cta" href={pumpUrl} target="_blank" rel="noreferrer">
+                    <span className="pixel green tiny-pixel">no ${HOUSE_SYMBOL} floor</span>
+                    <span className="dim">A ${HOUSE_SYMBOL} floor earns triple rent. Pick some up on pump.fun and it moves in.</span>
+                  </a>
+                ) : (
+                  <div className="panel house-cta">
+                    <span className="pixel green tiny-pixel">${HOUSE_SYMBOL} launches soon</span>
+                    <span className="dim">When it does, holding it adds a neon floor that earns triple rent.</span>
+                  </div>
+                )
               )}
 
               {sel ? (
                 <div className="panel floor-card">
                   <div className="floor-title">
                     <span className="pixel">${sel.symbol.toUpperCase()}</span>
-                    {sel.isHouse && <span className="chip">house coin x3</span>}
+                    {sel.isHouse && <span className="chip">${HOUSE_SYMBOL} x3</span>}
                   </div>
                   <div className="tier-row">
                     <span className="green">{TIERS[selTier].name}</span>
@@ -513,6 +594,21 @@ export default function Game() {
                 </div>
               ) : (
                 <div className="panel dim">Tap a floor to manage it.</div>
+              )}
+
+              {owner && (
+                <div className="panel">
+                  <div className="label badges-head">
+                    achievements <span className="green">{earned.size}/{ACHIEVEMENTS.length}</span>
+                  </div>
+                  <div className="badges">
+                    {ACHIEVEMENTS.map((a) => (
+                      <span key={a.id} className={earned.has(a.id) ? "badge on" : "badge"} title={a.hint}>
+                        {a.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               )}
 
               {!canEdit && (
@@ -624,13 +720,13 @@ export default function Game() {
 
         <Reveal id="coin" className="sec coin">
           <div className="sec-head center">
-            <span className="kicker">04 / the house coin</span>
+            <span className="kicker">04 / ${HOUSE_SYMBOL}</span>
             <HoverText as="h2" text="the floor that pays triple" className="pixel display sm" />
             <HoverText
               as="p"
               by="word"
               className="lede"
-              text="Hold the house coin and it gets its own neon trimmed floor in your tower, paying three times the rent of any other bag."
+              text={`Hold $${HOUSE_SYMBOL} and it gets its own neon trimmed floor in your tower, paying three times the rent of any other bag.${launched ? "" : " Launching on pump.fun soon."}`}
             />
           </div>
           <div className="coin-tiles">
@@ -662,9 +758,13 @@ export default function Game() {
               <span className="ca-short">{shortAddr(HOUSE_MINT)}</span>
               <span className="pixel green tiny-pixel">{copied ? "copied" : "copy"}</span>
             </button>
-            <a className="btn" href={`https://pump.fun/coin/${HOUSE_MINT}`} target="_blank" rel="noreferrer">
-              buy on pump.fun
-            </a>
+            {launched ? (
+              <a className="btn" href={pumpUrl} target="_blank" rel="noreferrer">
+                buy ${HOUSE_SYMBOL} on pump.fun
+              </a>
+            ) : (
+              <span className="btn ghost soon">launching soon</span>
+            )}
           </div>
         </Reveal>
 
@@ -676,10 +776,59 @@ export default function Game() {
               as="p"
               by="word"
               className="lede"
-              text="Every tower that moves in gets ranked by the rent it pays each hour. Hold longer to climb."
+              text="Check in every day to bank a full day of your tower's rent as season points. Seasons reset every week. All time ranks by rent per hour."
             />
           </div>
-          {board && board.rows.length > 0 ? (
+          {board && (
+            <div className="tabs sky-tabs">
+              <button className={boardTab === "season" ? "tab on" : "tab"} onClick={() => setBoardTab("season")}>
+                season {board.season?.n ?? 1}
+              </button>
+              <button className={boardTab === "all" ? "tab on" : "tab"} onClick={() => setBoardTab("all")}>
+                all time
+              </button>
+              {boardTab === "season" && board.season && <span className="dim sky-ends">ends in {fmtWait(seasonLeft)}</span>}
+            </div>
+          )}
+          {board && boardTab === "season" ? (
+            board.season && board.season.rows.length > 0 ? (
+              <div className="sky">
+                <div className="sky-row sky-head">
+                  <span>#</span>
+                  <span>tower</span>
+                  <span className="hide-sm">top floor</span>
+                  <span>floors</span>
+                  <span className="hide-sm">citizens</span>
+                  <span>longest</span>
+                  <span>points</span>
+                </div>
+                {board.season.rows.map((r, i) => (
+                  <button
+                    key={r.wallet}
+                    className={`sky-row${r.wallet === owner ? " me" : ""}${i < 3 ? " podium" : ""}`}
+                    onClick={() => {
+                      open(r.wallet);
+                      document.getElementById("tower")?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                  >
+                    <span className="pixel rank">{i + 1}</span>
+                    <span className="green">
+                      {shortAddr(r.wallet)}
+                      {r.house && <span className="chip">{HOUSE_SYMBOL}</span>}
+                    </span>
+                    <span className="hide-sm">{r.top === "RESIDENT" ? r.top : `$${r.top.toUpperCase()}`}</span>
+                    <span>{r.floors}</span>
+                    <span className="hide-sm">{r.citizens}</span>
+                    <span>{Math.floor(r.longest)}d</span>
+                    <span className="pixel green">{fmtCash(r.points)}</span>
+                  </button>
+                ))}
+                <p className="dim tiny sky-foot">{board.season.total} towers checked in this season. Tap one to visit.</p>
+              </div>
+            ) : (
+              <div className="panel dim">Nobody has checked in this season yet. Sign in and collect your daily bonus to take first place.</div>
+            )
+          ) : board && board.rows.length > 0 ? (
             <div className="sky">
               <div className="sky-row sky-head">
                 <span>#</span>
@@ -702,9 +851,9 @@ export default function Game() {
                   <span className="pixel rank">{i + 1}</span>
                   <span className="green">
                     {shortAddr(r.wallet)}
-                    {r.house && <span className="chip">house</span>}
+                    {r.house && <span className="chip">{HOUSE_SYMBOL}</span>}
                   </span>
-                  <span className="hide-sm">${r.top.toUpperCase()}</span>
+                  <span className="hide-sm">{r.top === "RESIDENT" ? r.top : `$${r.top.toUpperCase()}`}</span>
                   <span>{r.floors}</span>
                   <span className="hide-sm">{r.citizens}</span>
                   <span>{Math.floor(r.longest)}d</span>

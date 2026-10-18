@@ -4,6 +4,12 @@ import { buildTower } from "./chain";
 import { getJson, hasDb, pipeline, redis, setJson } from "./redis";
 import {
   type Floor,
+  type Streak,
+  checkInPoints,
+  collect as collectStreak,
+  emptyStreak,
+  lobbyFloor,
+  seasonOf,
   type Resident,
   type Save,
   type SkylineRow,
@@ -26,18 +32,30 @@ const k = {
   lock: (w: string) => `pt:lock:${w}`,
   board: "pt:skyline",
   residents: "pt:residents",
+  joined: (w: string) => `pt:joined:${w}`,
+  streak: (w: string) => `pt:streak:${w}`,
+  season: (n: number) => `pt:season:${n}`,
 };
+
+/** First sign-in stamps the resident floor's clock; later sign-ins keep the original date. */
+export async function markJoined(owner: string) {
+  await redis("SET", k.joined(owner), Date.now(), "NX");
+}
+
+export async function joinedAt(owner: string): Promise<number | null> {
+  const v = await redis<string | null>("GET", k.joined(owner));
+  return v ? Number(v) : null;
+}
 
 /** Read a wallet's tower, served from a 5 minute cache so buys and reloads don't hammer the RPC. */
 export async function towerFor(owner: string, fresh = false): Promise<Floor[]> {
-  if (hasDb() && !fresh) {
-    const hit = await getJson<Floor[]>(k.tower(owner)).catch(() => null);
-    if (hit) return hit;
-  }
-  const floors = await buildTower(owner);
-  if (hasDb()) {
-    await Promise.all([setJson(k.tower(owner), floors, TOWER_TTL), rank(owner, floors)]).catch((e) => console.error("cache", e));
-  }
+  if (!hasDb()) return buildTower(owner);
+  const [hit, joined] = await Promise.all([fresh ? null : getJson<Floor[]>(k.tower(owner)).catch(() => null), joinedAt(owner).catch(() => null)]);
+  const chain = hit ?? (await buildTower(owner));
+  const floors = joined ? [...chain, lobbyFloor(joined)] : chain;
+  const writes: Promise<unknown>[] = [rank(owner, floors)];
+  if (!hit) writes.push(setJson(k.tower(owner), chain, TOWER_TTL));
+  await Promise.all(writes).catch((e) => console.error("cache", e));
   return floors;
 }
 
@@ -63,6 +81,43 @@ export async function skyline(limit = 25): Promise<SkylineRow[]> {
     .map((r) => skylineRow(JSON.parse(r) as Resident, now))
     .sort((a, b) => b.rate - a.rate || b.longest - a.longest)
     .slice(0, limit);
+}
+
+export type SeasonRow = SkylineRow & { points: number };
+
+/** This week's ranking: points banked by daily check-ins. */
+export async function seasonBoard(season: number, limit = 25): Promise<{ rows: SeasonRow[]; total: number }> {
+  const flat = await redis<string[]>("ZREVRANGE", k.season(season), 0, limit - 1, "WITHSCORES");
+  const ids = flat.filter((_, i) => i % 2 === 0);
+  const total = await redis<number>("ZCARD", k.season(season));
+  if (!ids.length) return { rows: [], total };
+  const raw = await redis<(string | null)[]>("HMGET", k.residents, ...ids);
+  const now = Date.now();
+  const rows = ids.flatMap((w, i) => {
+    const r = raw[i];
+    return r ? [{ ...skylineRow(JSON.parse(r) as Resident, now), points: Number(flat[i * 2 + 1]) }] : [];
+  });
+  return { rows, total };
+}
+
+export async function loadStreak(owner: string): Promise<Streak> {
+  return (await getJson<Streak>(k.streak(owner))) ?? emptyStreak();
+}
+
+/** Starting cash plus every daily bonus collected. */
+const bonusOf = (s: Streak) => WALLET_BONUS + s.total;
+
+export type CollectOutcome = { ok: true; streak: Streak; reward: number; points: number } | { ok: false; reason: string };
+
+export function checkIn(owner: string): Promise<CollectOutcome> {
+  return withLock(owner, async () => {
+    const [floors, streak] = await Promise.all([towerFor(owner), loadStreak(owner)]);
+    const r = collectStreak(streak);
+    if (!r.ok) return { ok: false, reason: "already collected today" };
+    const points = checkInPoints(floors);
+    await Promise.all([setJson(k.streak(owner), r.streak), redis("ZINCRBY", k.season(seasonOf()), points, owner)]);
+    return { ok: true, streak: r.streak, reward: r.reward, points };
+  });
 }
 
 export const totalResidents = () => redis<number>("ZCARD", k.board);
@@ -93,22 +148,22 @@ export function buy(owner: string, itemId: string, mint: string): Promise<Outcom
   return withLock(owner, async () => {
     const item = itemById(itemId);
     if (!item) return { ok: false, reason: "no such item" };
-    const [floors, save] = await Promise.all([towerFor(owner), loadSave(owner)]);
+    const [floors, save, streak] = await Promise.all([towerFor(owner), loadSave(owner), loadStreak(owner)]);
     const floor = floors.find((f) => f.mint === mint);
     if (!floor) return { ok: false, reason: "that floor isn't in your tower" };
-    const cash = cashOf(floors, save.owned, WALLET_BONUS);
+    const cash = cashOf(floors, save.owned, bonusOf(streak));
     const r = buyAndPlace(save, item, mint, tierFor(floor.heldSince), cash);
     if (!r.ok) return r;
     await setJson(k.save(owner), r.save);
-    return { ok: true, save: r.save, cash: cashOf(floors, r.save.owned, WALLET_BONUS) };
+    return { ok: true, save: r.save, cash: cashOf(floors, r.save.owned, bonusOf(streak)) };
   });
 }
 
 export function remove(owner: string, mint: string, itemId: string): Promise<Outcome> {
   return withLock(owner, async () => {
-    const [floors, save] = await Promise.all([towerFor(owner), loadSave(owner)]);
+    const [floors, save, streak] = await Promise.all([towerFor(owner), loadSave(owner), loadStreak(owner)]);
     const next = removeFurniture(save, mint, itemId);
     await setJson(k.save(owner), next);
-    return { ok: true, save: next, cash: cashOf(floors, next.owned, WALLET_BONUS) };
+    return { ok: true, save: next, cash: cashOf(floors, next.owned, bonusOf(streak)) };
   });
 }

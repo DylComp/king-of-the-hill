@@ -71,3 +71,43 @@ test("floors hold a limited amount of furniture", () => {
   assert.equal(save.placed.a.furniture.length, MAX_FURNITURE);
   assert.equal(buyAndPlace(save, itemById("couch")!, "a", 5, 1e9).ok, false);
 });
+
+import { collect, emptyStreak, liveStreak, streakReward, seasonOf, seasonEnds, GAME_EPOCH, achievementsOf, lobbyFloor, tokenFloors } from "./game.ts";
+
+test("daily streak grows, caps and resets after a missed day", () => {
+  const D = 86_400_000;
+  const t0 = Date.UTC(2026, 9, 20, 12);
+  let s = emptyStreak();
+  const a = collect(s, t0);
+  assert.ok(a.ok);
+  if (!a.ok) return;
+  assert.equal(a.reward, 25);
+  assert.equal(collect(a.streak, t0 + 3600_000).ok, false, "once per UTC day");
+  s = a.streak;
+  for (let d = 1; d < 9; d++) {
+    const r = collect(s, t0 + d * D);
+    assert.ok(r.ok);
+    if (r.ok) s = r.streak;
+  }
+  assert.equal(s.n, 9);
+  assert.equal(streakReward(9), 175);
+  assert.equal(s.total, 25 + 50 + 75 + 100 + 125 + 150 + 175 * 3);
+  const late = collect(s, t0 + 11 * D);
+  assert.ok(late.ok && late.streak.n === 1 && late.streak.best === 9);
+  assert.equal(liveStreak(s, t0 + 11 * D), 0);
+});
+
+test("seasons are weekly from launch", () => {
+  assert.equal(seasonOf(GAME_EPOCH), 1);
+  assert.equal(seasonOf(GAME_EPOCH + 6.9 * 86_400_000), 1);
+  assert.equal(seasonOf(GAME_EPOCH + 7 * 86_400_000), 2);
+  assert.equal(seasonEnds(1), GAME_EPOCH + 7 * 86_400_000);
+});
+
+test("resident floor counts for achievements but not as a bag", () => {
+  const now = Date.UTC(2026, 10, 30);
+  const floors = [lobbyFloor(now - 31 * 86_400_000)];
+  assert.equal(tokenFloors(floors).length, 0);
+  const got = achievementsOf(floors, emptySave(), emptyStreak(), true, now);
+  assert.ok(got.has("resident") && got.has("penthouse") && !got.has("house"));
+});

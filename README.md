@@ -1,6 +1,6 @@
 # pump tower
 
-Your Solana bags become a pixel skyscraper. Every token a wallet holds is a floor, and the longer it has been held the fancier the floor gets: bare walls on day zero, studio at 1 day, apartment at 3, loft at 7, suite at 14, penthouse at 30. Citizens on each floor earn in-game cash that buys furniture, pets and outfits; the best items only unlock on long-held floors. The house coin (`AE3RYXQ1ACGvLj63mmwkCtGdPNhWR6XsmgFAZfZgpump`) floor earns triple.
+Your Solana bags become a pixel skyscraper. Every token a wallet holds is a floor, and the longer it has been held the fancier the floor gets: bare walls on day zero, studio at 1 day, apartment at 3, loft at 7, suite at 14, penthouse at 30. Citizens on each floor earn in-game cash that buys furniture, pets and outfits; the best items only unlock on long-held floors. The house coin $PTWR (`AE3RYXQ1ACGvLj63mmwkCtGdPNhWR6XsmgFAZfZgpump`, launching on pump.fun) floor earns triple. Signed-in residents also get a free floor whose clock starts the day they move in, a daily check-in bonus (+$25 per streak day, capped at $175), weekly seasons ranked by checked-in rent, and achievements.
 
 ## Run
 

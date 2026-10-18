@@ -919,6 +919,53 @@ button.chip:disabled {
   margin-top: 10px;
 }
 
+
+.checkin {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.badges-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.badge {
+  font-family: var(--term);
+  font-size: 16px;
+  padding: 2px 8px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 4px;
+  color: var(--ink-faint);
+  cursor: help;
+}
+.badge.on {
+  border-style: solid;
+  color: var(--green);
+  background: var(--green-ghost);
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.15);
+}
+.sky-tabs {
+  align-items: center;
+  margin-bottom: 12px;
+}
+.sky-ends {
+  margin-left: auto;
+  padding-right: 8px;
+}
+.btn.soon {
+  cursor: default;
+  opacity: 0.7;
+}
+
 @media (max-width: 1000px) {
   .board,
   .how-grid {

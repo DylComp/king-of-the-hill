@@ -1,6 +1,6 @@
 // Server-only: reads a wallet's SPL holdings and how long each has been held.
 // Read-only RPC calls; nothing here signs or sends a transaction.
-import { HOUSE_MINT, type Floor } from "./game";
+import { HOUSE_MINT, HOUSE_SYMBOL, type Floor } from "./game";
 
 const TOKEN_PROGRAMS = [
   "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
@@ -220,8 +220,8 @@ export async function buildTower(owner: string): Promise<Floor[]> {
 
   return candidates.map((c, i) => ({
     mint: c.h.mint,
-    symbol: (c.m?.symbol ?? c.h.mint.slice(0, 4)).trim(),
-    name: (c.m?.name ?? "unknown").trim(),
+    symbol: c.isHouse ? HOUSE_SYMBOL : (c.m?.symbol ?? c.h.mint.slice(0, 4)).trim(),
+    name: c.isHouse ? "Pump Tower" : (c.m?.name ?? "unknown").trim(),
     image: c.m?.image ?? null,
     amount: c.h.amount,
     usd: c.usd,
