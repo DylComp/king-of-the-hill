@@ -221,7 +221,7 @@ export async function buildTower(owner: string): Promise<Floor[]> {
     .sort((a, b) => Number(b.isHouse) - Number(a.isHouse) || (b.usd ?? 0) - (a.usd ?? 0))
     .slice(0, MAX_FLOORS);
 
-  const since = await pool(candidates, 4, (c) => heldSince(c.h.account).catch(() => null));
+  const since = await pool(candidates, 8, (c) => heldSince(c.h.account).catch(() => null));
 
   return candidates.map((c, i) => ({
     mint: c.h.mint,

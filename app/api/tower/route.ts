@@ -13,7 +13,7 @@ export async function GET(req: Request) {
   const slow = await limited(req, params.has("fresh") ? "fresh" : "tower");
   if (slow) return slow;
   try {
-    const floors = await towerFor(owner, params.has("fresh"));
+    const floors = await towerFor(owner, { fresh: params.has("fresh"), stale: true });
     return NextResponse.json(
       { owner, floors, at: Date.now() },
       // Redis caches the chain read; skipping the CDN means every visit lands on the skyline.

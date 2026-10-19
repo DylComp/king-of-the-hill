@@ -1,5 +1,6 @@
 // Server-side game state. Cash is never stored: it is recomputed from on-chain hold time
 // minus what the wallet has bought, so the database only holds purchases and placements.
+import { after } from "next/server";
 import { buildTower } from "./chain";
 import { getJson, hasDb, pipeline, redis, setJson } from "./redis";
 import { rewardsFor } from "./rewards";
@@ -28,8 +29,9 @@ import {
 } from "./game";
 
 const TOWER_TTL = 300;
+const TOWER_KEEP = 3600;
 const k = {
-  tower: (w: string) => `pt:tower:${w}`,
+  tower: (w: string) => `pt:tw:${w}`,
   save: (w: string) => `pt:save:${w}`,
   lock: (w: string) => `pt:lock:${w}`,
   board: "pt:skyline",
@@ -49,16 +51,39 @@ export async function joinedAt(owner: string): Promise<number | null> {
   return v ? Number(v) : null;
 }
 
-/** Read a wallet's tower, served from a 5 minute cache so buys and reloads don't hammer the RPC. */
-export async function towerFor(owner: string, fresh = false): Promise<Floor[]> {
+type CachedTower = { at: number; chain: Floor[] };
+
+/**
+ * Read a wallet's tower. Chain reads are cached for 5 minutes so buys and reloads don't hammer
+ * the RPC. With `stale`, a cached copy up to an hour old is served at once and refreshed after the
+ * response, so big wallets don't wait on a full rescan. Buys never use stale data.
+ */
+export async function towerFor(owner: string, o: { fresh?: boolean; stale?: boolean } = {}): Promise<Floor[]> {
   if (!hasDb()) return buildTower(owner);
-  const [hit, joined] = await Promise.all([fresh ? null : getJson<Floor[]>(k.tower(owner)).catch(() => null), joinedAt(owner).catch(() => null)]);
-  const chain = hit ?? (await buildTower(owner));
-  const floors = joined ? [...chain, lobbyFloor(joined)] : chain;
-  const writes: Promise<unknown>[] = [rank(owner, floors)];
-  if (!hit) writes.push(setJson(k.tower(owner), chain, TOWER_TTL));
-  await Promise.all(writes).catch((e) => console.error("cache", e));
-  return floors;
+  const [hit, joined] = await Promise.all([
+    getJson<CachedTower>(k.tower(owner)).catch(() => null),
+    joinedAt(owner).catch(() => null),
+  ]);
+  const age = hit ? Date.now() - hit.at : Infinity;
+  const withLobby = (chain: Floor[]) => (joined ? [...chain, lobbyFloor(joined)] : chain);
+  const refresh = async () => {
+    const chain = await buildTower(owner);
+    await Promise.all([setJson(k.tower(owner), { at: Date.now(), chain } satisfies CachedTower, TOWER_KEEP), rank(owner, withLobby(chain))]);
+    return chain;
+  };
+
+  if (hit && !o.fresh && (age < TOWER_TTL * 1000 || o.stale)) {
+    const floors = withLobby(hit.chain);
+    if (age >= TOWER_TTL * 1000) after(() => refresh().catch((e) => console.error("refresh", owner, e)));
+    else await rank(owner, floors).catch((e) => console.error("cache", e));
+    return floors;
+  }
+  const chain = await refresh().catch(async (e) => {
+    // Chain read failed: a cached copy, however old, beats an error.
+    if (hit) return hit.chain;
+    throw e;
+  });
+  return withLobby(chain);
 }
 
 async function rank(owner: string, floors: Floor[]) {

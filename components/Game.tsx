@@ -80,7 +80,9 @@ function demoFloors(now: number): Floor[] {
 type Coin = { symbol: string; price: number | null; mcap: number | null; change: number | null };
 
 type PhantomLike = {
-  connect: (o?: { onlyIfTrusted?: boolean }) => Promise<{ publicKey: { toString(): string } }>;
+  // Phantom resolves with the key; Solflare resolves empty and sets `publicKey` on itself.
+  connect: (o?: { onlyIfTrusted?: boolean }) => Promise<{ publicKey?: { toString(): string } } | void>;
+  publicKey?: { toString(): string } | null;
   disconnect?: () => Promise<void>;
   signMessage?: (msg: Uint8Array, display?: string) => Promise<{ signature: Uint8Array } | Uint8Array>;
 };
@@ -99,8 +101,27 @@ type Skyline = {
 };
 
 function provider(): PhantomLike | null {
-  const w = window as unknown as { phantom?: { solana?: PhantomLike }; solana?: PhantomLike; solflare?: PhantomLike };
-  return w.phantom?.solana ?? w.solana ?? w.solflare ?? null;
+  const w = window as unknown as { phantom?: { solana?: PhantomLike }; solana?: PhantomLike; solflare?: PhantomLike; backpack?: PhantomLike };
+  return w.phantom?.solana ?? w.solflare ?? w.backpack ?? w.solana ?? null;
+}
+
+async function connectWallet(p: PhantomLike, o?: { onlyIfTrusted?: boolean }): Promise<string> {
+  const r = await p.connect(o);
+  const key = (r && r.publicKey) || p.publicKey;
+  if (!key) throw new Error("no wallet key");
+  return key.toString();
+}
+
+const isMobile = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+/** Phone browsers have no wallet extension: these open this page inside the wallet app's browser. */
+function walletLinks() {
+  const url = encodeURIComponent(window.location.href);
+  const ref = encodeURIComponent(window.location.origin);
+  return [
+    { name: "Phantom", href: `https://phantom.app/ul/browse/${url}?ref=${ref}` },
+    { name: "Solflare", href: `https://solflare.com/ul/v1/browse/${url}?ref=${ref}` },
+  ];
 }
 
 const saveKey = (owner: string | null) => `pumptower:v2:${owner ?? "demo"}`;
@@ -140,6 +161,7 @@ export default function Game() {
   const [selected, setSelected] = useState<string | null>(null);
   const [tab, setTab] = useState<ItemKind>("furniture");
   const [shopOpen, setShopOpen] = useState(false);
+  const [walletPick, setWalletPick] = useState(false);
   useEffect(() => {
     if (!shopOpen) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setShopOpen(false);
@@ -245,10 +267,12 @@ export default function Game() {
       const shared = new URL(window.location.href).searchParams.get("w");
       if (shared || session.wallet) return open(shared ?? session.wallet);
       open(null);
-      provider()
-        ?.connect({ onlyIfTrusted: true })
-        .then((r) => open(r.publicKey.toString()))
-        .catch(() => {});
+      const p = provider();
+      // Solflare has no silent reconnect and would pop a prompt on page load.
+      if (p && !(p as { isSolflare?: boolean }).isSolflare)
+        connectWallet(p, { onlyIfTrusted: true })
+          .then(open)
+          .catch(() => {});
     })();
   }, [open, loadBoard]);
 
@@ -296,12 +320,13 @@ export default function Game() {
   async function connect() {
     const p = provider();
     if (!p) {
+      if (isMobile()) return setWalletPick(true);
       window.open("https://phantom.app/", "_blank", "noopener");
       return;
     }
     let addr: string;
     try {
-      addr = (await p.connect()).publicKey.toString();
+      addr = await connectWallet(p);
     } catch {
       return setToast("wallet said no");
     }
@@ -1044,6 +1069,23 @@ export default function Game() {
             </div>
             <ul className="card-items">{ITEMS.filter((i) => i.kind === tab).map((i) => shopItem(i, true))}</ul>
             {!canEdit && <p className="dim tiny">This is someone else's tower. Sign in to shop for your own.</p>}
+          </div>
+        </div>
+      )}
+
+      {walletPick && (
+        <div className="shop-modal" role="dialog" aria-label="open in a wallet" onClick={(e) => e.target === e.currentTarget && setWalletPick(false)}>
+          <div className="panel wallet-pick">
+            <p className="pixel green">connect on your phone</p>
+            <p className="dim">Phone browsers can't talk to wallets. Open Pump Tower inside your wallet app instead:</p>
+            {walletLinks().map((l) => (
+              <a key={l.name} className="btn" href={l.href}>
+                open in {l.name}
+              </a>
+            ))}
+            <button className="btn ghost" onClick={() => setWalletPick(false)}>
+              not now
+            </button>
           </div>
         </div>
       )}
