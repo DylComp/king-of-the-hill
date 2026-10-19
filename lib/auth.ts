@@ -22,10 +22,11 @@ export function signInMessage(wallet: string, nonce: string) {
   return `Pump Tower sign in\n\nThis only proves you own this wallet. It does not send a transaction or cost anything.\n\nWallet: ${wallet}\nNonce: ${nonce}`;
 }
 
+/** Each request gets its own nonce, so someone else asking for one can't cancel your sign-in. */
 export async function newNonce(wallet: string) {
   const nonce = randomBytes(12).toString("hex");
-  await redis("SET", `pt:nonce:${wallet}`, nonce, "EX", NONCE_TTL);
-  return signInMessage(wallet, nonce);
+  await redis("SET", `pt:nonce:${wallet}:${nonce}`, 1, "EX", NONCE_TTL);
+  return { message: signInMessage(wallet, nonce), nonce };
 }
 
 function ed25519Verify(wallet: string, message: string, signature: Uint8Array) {
@@ -35,9 +36,10 @@ function ed25519Verify(wallet: string, message: string, signature: Uint8Array) {
   return verify(null, Buffer.from(message, "utf8"), key, signature);
 }
 
-export async function checkSignature(wallet: string, signatureB64: string): Promise<boolean> {
-  const nonce = await redis<string | null>("GETDEL", `pt:nonce:${wallet}`);
-  if (!nonce) return false;
+export async function checkSignature(wallet: string, nonce: string, signatureB64: string): Promise<boolean> {
+  if (!/^[0-9a-f]{24}$/.test(nonce)) return false;
+  // GETDEL makes each nonce single use.
+  if (!(await redis<string | null>("GETDEL", `pt:nonce:${wallet}:${nonce}`))) return false;
   try {
     return ed25519Verify(wallet, signInMessage(wallet, nonce), Buffer.from(signatureB64, "base64"));
   } catch {

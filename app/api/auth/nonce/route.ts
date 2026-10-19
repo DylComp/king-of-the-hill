@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   const { wallet } = await body<{ wallet: string }>(req);
   if (!wallet || !isAddress(wallet)) return json({ error: "not a solana address" }, 400);
   try {
-    return json({ message: await newNonce(wallet) });
+    return json(await newNonce(wallet));
   } catch (e) {
     return fail(e, "nonce");
   }

@@ -7,10 +7,10 @@ import { markJoined } from "@/lib/store";
 export async function POST(req: Request) {
   const slow = await limited(req, "verify");
   if (slow) return slow;
-  const { wallet, signature } = await body<{ wallet: string; signature: string }>(req);
-  if (!wallet || !isAddress(wallet) || typeof signature !== "string") return json({ error: "bad request" }, 400);
+  const { wallet, signature, nonce } = await body<{ wallet: string; signature: string; nonce: string }>(req);
+  if (!wallet || !isAddress(wallet) || typeof signature !== "string" || typeof nonce !== "string" || signature.length > 200) return json({ error: "bad request" }, 400);
   try {
-    if (!(await checkSignature(wallet, signature))) return json({ error: "signature didn't check out, try again" }, 401);
+    if (!(await checkSignature(wallet, nonce, signature))) return json({ error: "signature didn't check out, try again" }, 401);
     await Promise.all([startSession(wallet), markJoined(wallet)]);
     return json({ wallet });
   } catch (e) {

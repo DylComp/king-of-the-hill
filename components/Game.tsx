@@ -1,7 +1,7 @@
 "use client";
 
 import { GITHUB_URL } from "@/lib/site";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   HOUSE_MINT,
   CASH_PER_SOL,
@@ -43,9 +43,8 @@ import {
   towerRate,
 } from "@/lib/game";
 import TowerView from "./TowerView";
-import TierLadder from "./TierLadder";
+import { CatalogSection, DocsSection, KIND_LABEL, KINDS, LadderSection } from "./Sections";
 import City from "./City";
-import { DOCS, DOCS_INTRO } from "@/lib/howto";
 import Logo from "./Logo";
 import HoverText from "./HoverText";
 import Reveal from "./Reveal";
@@ -162,8 +161,6 @@ function fmtWait(ms: number) {
   return h >= 48 ? `${Math.ceil(h / 24)} days` : `${h} hr`;
 }
 
-const KIND_LABEL: Record<ItemKind, string> = { furniture: "furniture", pet: "pets", outfit: "outfits" };
-const KINDS: ItemKind[] = ["furniture", "pet", "outfit"];
 
 export default function Game() {
   const [owner, setOwner] = useState<string | null>(null);
@@ -352,10 +349,10 @@ export default function Game() {
     const p = provider();
     if (!p?.signMessage) return setToast("this wallet can't sign messages");
     try {
-      const { message } = await post<{ message: string }>("/api/auth/nonce", { wallet: addr });
+      const { message, nonce } = await post<{ message: string; nonce: string }>("/api/auth/nonce", { wallet: addr });
       const out = await p.signMessage(new TextEncoder().encode(message), "utf8");
       const sig = out instanceof Uint8Array ? out : out.signature;
-      await post("/api/auth/verify", { wallet: addr, signature: btoa(String.fromCharCode(...sig)) });
+      await post("/api/auth/verify", { wallet: addr, nonce, signature: btoa(String.fromCharCode(...sig)) });
       setMe(addr);
       setToast("signed in");
     } catch (e) {
@@ -455,6 +452,14 @@ export default function Game() {
   const nextDay = nextStreakDay(streak, now);
   const seasonLeft = board?.season ? Math.max(0, board.season.ends - now) : 0;
 
+  const visit = useCallback(
+    (w: string) => {
+      open(w);
+      document.getElementById("tower")?.scrollIntoView({ behavior: "smooth" });
+    },
+    [open],
+  );
+
   const tabHint =
     tab === "furniture"
       ? `Up to ${MAX_FURNITURE} pieces per floor.`
@@ -474,7 +479,7 @@ export default function Game() {
     );
     if (big)
       return (
-        <li key={i.id} className={`card-item${locked ? " locked" : ""}${equipped ? " on" : ""}`}>
+        <li key={i.id} className={`card-item${locked ? " locked" : ""}${equipped ? " on" : ""}`} style={{ "--i": ITEMS.indexOf(i) % 12 } as CSSProperties}>
           <ItemIcon id={i.id} kind={i.kind} size={102} />
           <span className="item-name">{i.name}</span>
           <span className="dim tiny">
@@ -766,7 +771,7 @@ export default function Game() {
                   </button>
                 </div>
                 <p className="dim tiny">{tabHint}</p>
-                <ul className="items">{ITEMS.filter((i) => i.kind === tab).map((i) => shopItem(i, false))}</ul>
+                <ul className="items swap" key={tab}>{ITEMS.filter((i) => i.kind === tab).map((i) => shopItem(i, false))}</ul>
               </div>
             </aside>
           </div>
@@ -783,13 +788,7 @@ export default function Game() {
               text="Every ranked tower in Pump Tower, side by side. Green floors hold $PTWR, gold floors are penthouses. Tap any building to walk in."
             />
           </div>
-          <City
-            me={me}
-            onVisit={(w) => {
-              open(w);
-              document.getElementById("tower")?.scrollIntoView({ behavior: "smooth" });
-            }}
-          />
+          <City me={me} onVisit={visit} />
         </Reveal>
 
         <Reveal id="skyline" className="sec">
@@ -816,7 +815,7 @@ export default function Game() {
           )}
           {board && boardTab === "season" ? (
             board.season && board.season.rows.length > 0 ? (
-              <div className="sky">
+              <div className="sky swap" key="season">
                 <div className="sky-row sky-head">
                   <span>#</span>
                   <span>tower</span>
@@ -830,10 +829,8 @@ export default function Game() {
                   <button
                     key={r.wallet}
                     className={`sky-row${r.wallet === owner ? " me" : ""}${i < 3 ? " podium" : ""}`}
-                    onClick={() => {
-                      open(r.wallet);
-                      document.getElementById("tower")?.scrollIntoView({ behavior: "smooth" });
-                    }}
+                    style={{ "--i": i } as CSSProperties}
+                    onClick={() => visit(r.wallet)}
                   >
                     <span className="pixel rank">{i + 1}</span>
                     <span className="green">
@@ -853,7 +850,7 @@ export default function Game() {
               <div className="panel dim">Nobody has checked in this season yet. Sign in and collect your daily bonus to take first place.</div>
             )
           ) : board && board.rows.length > 0 ? (
-            <div className="sky">
+            <div className="sky swap" key="all">
               <div className="sky-row sky-head">
                 <span>#</span>
                 <span>tower</span>
@@ -867,10 +864,8 @@ export default function Game() {
                 <button
                   key={r.wallet}
                   className={`sky-row${r.wallet === owner ? " me" : ""}${i < 3 ? " podium" : ""}`}
-                  onClick={() => {
-                    open(r.wallet);
-                    document.getElementById("tower")?.scrollIntoView({ behavior: "smooth" });
-                  }}
+                  style={{ "--i": i } as CSSProperties}
+                  onClick={() => visit(r.wallet)}
                 >
                   <span className="pixel rank">{i + 1}</span>
                   <span className="green">
@@ -891,58 +886,9 @@ export default function Game() {
           )}
         </Reveal>
 
-        <Reveal id="ladder" className="sec">
-          <div className="sec-head">
-            <span className="kicker">04 / the ladder</span>
-            <HoverText as="h2" text="hold longer, live higher" className="pixel display sm" />
-          </div>
-          <div className="how-grid">
-            <div className="lore">
-              <HoverText
-                as="p"
-                by="word"
-                text="Every token in your wallet is a floor. The clock starts the moment the bag lands, and it starts over if you sell it all. Day zero is bare concrete and a flickering bulb. A day gets you a studio, three an apartment, a week a loft, two weeks a suite."
-              />
-              <HoverText as="p" by="word" text="Thirty days and you move into the penthouse at the very top, because the longest hold always lives highest." />
-              <HoverText
-                as="p"
-                by="word"
-                text="Citizens move in as a floor gets nicer and pay rent every hour. Fancier floors pay more. Your cash is worked out from your hold time on chain, so nobody can fake it and nobody can buy their way up. You have to sit in it."
-              />
-            </div>
-            <TierLadder />
-          </div>
-        </Reveal>
+        <LadderSection />
 
-        <Reveal id="catalog" className="sec">
-          <div className="sec-head">
-            <span className="kicker">05 / the catalog</span>
-            <HoverText as="h2" text="the good stuff waits for diamond hands" className="pixel display sm" />
-            <HoverText
-              as="p"
-              by="word"
-              className="lede"
-              text="Furniture, pets and outfits unlock per floor by how long that floor has been held. Buy once, place it anywhere it qualifies."
-            />
-          </div>
-          {KINDS.map((k) => (
-            <div key={k} className="cat-group">
-              <div className="cat-label">{KIND_LABEL[k]}</div>
-              <div className="cat-grid">
-                {ITEMS.filter((i) => i.kind === k).map((i) => (
-                  <div key={i.id} className={`cat-card t${i.minTier}`}>
-                    <ItemIcon id={i.id} kind={i.kind} size={56} />
-                    <span className="cat-name">{i.name}</span>
-                    <span className="cat-meta">
-                      <span className="green">${fmtCash(i.price)}</span>
-                      <span className="dim">{TIERS[i.minTier].name}</span>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </Reveal>
+        <CatalogSection />
 
         <Reveal id="coin" className="sec coin">
           <div className="sec-head center">
@@ -1024,29 +970,7 @@ export default function Game() {
           </div>
         </Reveal>
 
-        <Reveal id="docs" className="sec">
-          <div className="sec-head">
-            <span className="kicker">07 / docs</span>
-            <HoverText as="h2" text="every feature, explained" className="pixel display sm" />
-          </div>
-          <p className="docs-intro">{DOCS_INTRO}</p>
-          <div className="docs">
-            {DOCS.map((d) => (
-              <section key={d.id} className="panel doc">
-                <h3 className="pixel green tiny-pixel">{d.title}</h3>
-                <p className="dim doc-sum">{d.summary}</p>
-                <dl>
-                  {d.items.map(([k, v]) => (
-                    <div key={k} className="doc-row">
-                      <dt>{k}</dt>
-                      <dd className="dim">{v}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </section>
-            ))}
-          </div>
-        </Reveal>
+        <DocsSection />
       </main>
 
       <footer className="foot">
@@ -1086,7 +1010,7 @@ export default function Game() {
               ))}
               <span className="dim tiny sheet-hint">{tabHint}</span>
             </div>
-            <ul className="card-items">{ITEMS.filter((i) => i.kind === tab).map((i) => shopItem(i, true))}</ul>
+            <ul className="card-items swap" key={tab}>{ITEMS.filter((i) => i.kind === tab).map((i) => shopItem(i, true))}</ul>
             {!canEdit && <p className="dim tiny">This is someone else's tower. Sign in to shop for your own.</p>}
           </div>
         </div>

@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { type CityTower, arrange, buildingAt, cityHeight, cityWidth, drawCity } from "@/lib/city";
 import { HOUSE_SYMBOL, fmtCash, shortAddr } from "@/lib/game";
 
 type Props = { me: string | null; onVisit: (wallet: string) => void };
 
 /** Every tower in the city as one skyline. Tap a building to walk into it. */
-export default function City({ me, onVisit }: Props) {
+function City({ me, onVisit }: Props) {
   const [towers, setTowers] = useState<CityTower[] | null>(null);
   const [total, setTotal] = useState(0);
   const [hover, setHover] = useState<number | null>(null);
@@ -103,3 +103,5 @@ export default function City({ me, onVisit }: Props) {
     </div>
   );
 }
+
+export default memo(City);

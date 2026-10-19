@@ -10,7 +10,13 @@ export function fail(e: unknown, where: string) {
   return json({ error: e instanceof Error && e.message === "busy, try again" ? e.message : "something broke, try again" }, 500);
 }
 
+/**
+ * JSON request body. Requiring a JSON content type means a cross-site form can't post here
+ * (browsers preflight JSON), on top of the SameSite session cookie. Bodies over 16 KB are dropped.
+ */
 export async function body<T>(req: Request): Promise<Partial<T>> {
+  if (!req.headers.get("content-type")?.includes("application/json")) return {};
+  if (Number(req.headers.get("content-length") ?? 0) > 16_384) return {};
   try {
     return (await req.json()) as Partial<T>;
   } catch {

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Floor, Placement } from "@/lib/game";
 import { drawTower, floorAt, newScene, towerHeight, widthFor } from "@/lib/render";
+import { useOnScreen } from "./useOnScreen";
 
 type Props = {
   floors: Floor[];
@@ -20,6 +21,7 @@ const COMPACT_BELOW = 560;
 export default function TowerView({ floors, placed, selected, onSelect, onCanvas, rewardsSol, houseLive }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const wrap = useRef<HTMLDivElement>(null);
+  const onScreen = useOnScreen(wrap, "100px");
   const scene = useRef(newScene());
   const latest = useRef({ floors, placed, selected, rewardsSol, houseLive, compact: false });
   const [scale, setScale] = useState(2);
@@ -51,6 +53,11 @@ export default function TowerView({ floors, placed, selected, onSelect, onCanvas
     let raf = 0;
     let last = performance.now();
     const loop = (t: number) => {
+      raf = requestAnimationFrame(loop);
+      if (!onScreen.current) {
+        last = t;
+        return;
+      }
       const { floors, placed, selected, rewardsSol, houseLive, compact } = latest.current;
       const h = towerHeight(floors.length);
       const w = widthFor(compact);
@@ -65,7 +72,6 @@ export default function TowerView({ floors, placed, selected, onSelect, onCanvas
       const top = Math.max(0, (Math.max(wrapBox.top, 0) - box.top) * k);
       const bottom = (Math.min(wrapBox.bottom, window.innerHeight) - box.top) * k;
       drawTower(ctx, { floors, placed, selected, now: Date.now(), t, dt, scene: scene.current, compact, rewardsSol, houseLive, view: { top, bottom } });
-      raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
