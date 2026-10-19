@@ -22,8 +22,6 @@ export const LIMITS = {
   tokens: 60,
   collect: 10,
   quests: 60,
-  treasury: 30,
-  buyback: 6,
 } as const;
 
 export type LimitName = keyof typeof LIMITS;

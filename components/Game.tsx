@@ -1039,9 +1039,6 @@ export default function Game() {
         <a className="gh-link" href="/tokens">
           tokens
         </a>
-        <a className="gh-link" href="/treasury">
-          treasury
-        </a>
         <a className="gh-link" href={GITHUB_URL} target="_blank" rel="noopener">
           <GitHubMark /> source on github
         </a>
