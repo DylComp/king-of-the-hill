@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import type { CoinView } from "@/lib/launch/registry";
+import type { CoinView, ProfileSummary } from "@/lib/launch/registry";
 import { FEE_TIERS, FEE_TIER_NAMES } from "@/lib/launch/model";
-import CoinCard, { fmtSol } from "./CoinCard";
+import { shortAddr } from "@/lib/game";
+import CoinCard, { ago, fmtSol, fmtUsd } from "./CoinCard";
 import SiteNav from "./SiteNav";
 import { useMe } from "./useMe";
 
-type Sort = "new" | "fees";
+type View = "coins" | "profiles";
 
 export default function Tokens() {
   const wallet = useMe();
@@ -15,7 +16,8 @@ export default function Tokens() {
   const [page, setPage] = useState(0);
   const [more, setMore] = useState(false);
   const [q, setQ] = useState("");
-  const [sort, setSort] = useState<Sort>("new");
+  const [tab, setTab] = useState<View>("coins");
+  const [profiles, setProfiles] = useState<ProfileSummary[] | null>(null);
 
   useEffect(() => {
     fetch(`/api/tokens?page=${page}`)
@@ -28,14 +30,29 @@ export default function Tokens() {
       .catch(() => setCoins((prev) => prev ?? []));
   }, [page]);
 
+  useEffect(() => {
+    if (tab !== "profiles" || profiles) return;
+    fetch("/api/tokens?view=profiles")
+      .then((r) => r.json())
+      .then((j: { profiles?: ProfileSummary[] }) => setProfiles(j.profiles ?? []))
+      .catch(() => setProfiles([]));
+  }, [tab, profiles]);
+
+  const people = useMemo(() => {
+    const term = q.trim().toLowerCase().replace(/^@/, "");
+    return (profiles ?? []).filter((p) => !term || (p.profile.username ?? "").toLowerCase().includes(term) || p.profile.wallet === q.trim());
+  }, [profiles, q]);
+
   const shown = useMemo(() => {
     const term = q.trim().toLowerCase().replace(/^\$/, "");
     const list = (coins ?? []).filter(
       (c) => !term || c.name.toLowerCase().includes(term) || c.ticker.toLowerCase().includes(term) || (c.recipient.username ?? "").toLowerCase().includes(term) || c.mint === q.trim(),
     );
-    return sort === "fees" ? [...list].sort((a, b) => b.feesSol - a.feesSol) : list;
-  }, [coins, q, sort]);
+    return list;
+  }, [coins, q]);
   const fees = (coins ?? []).reduce((n, c) => n + c.feesSol, 0);
+  const mcap = (coins ?? []).reduce((n, c) => n + (c.mcapUsd ?? 0), 0);
+  const users = new Set((coins ?? []).map((c) => c.recipient.wallet)).size;
 
   return (
     <>
@@ -53,24 +70,31 @@ export default function Tokens() {
               <span className="pixel big">{total}</span>
             </div>
             <div className="panel tile">
+              <span className="label">pump users paid</span>
+              <span className="pixel big">{users}</span>
+            </div>
+            <div className="panel tile">
               <span className="label">creator fees</span>
               <span className="pixel big green">{fmtSol(fees)} SOL</span>
+              <span className="dim">{fmtSol(fees * 0.8)} to pump users</span>
             </div>
             <div className="panel tile">
-              <span className="label">to pump users</span>
-              <span className="pixel big">{fmtSol(fees * 0.8)} SOL</span>
-            </div>
-            <div className="panel tile">
-              <span className="label">to $PTWR buybacks</span>
-              <span className="pixel big">{fmtSol(fees * 0.2)} SOL</span>
+              <span className="label">market cap</span>
+              <span className="pixel big">{fmtUsd(mcap)}</span>
+              <span className="dim">all coins combined</span>
             </div>
           </div>
           <div className="token-tools">
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="search name, ticker or pump user" aria-label="search coins" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={tab === "coins" ? "search name, ticker or pump user" : "search pump username or wallet"}
+              aria-label="search"
+            />
             <div className="tabs">
-              {(["new", "fees"] as Sort[]).map((s) => (
-                <button key={s} className={`tab${sort === s ? " on" : ""}`} onClick={() => setSort(s)}>
-                  {s === "new" ? "newest" : "most fees"}
+              {(["coins", "profiles"] as View[]).map((v) => (
+                <button key={v} className={`tab${tab === v ? " on" : ""}`} onClick={() => setTab(v)}>
+                  {v === "coins" ? "coins" : "pump profiles"}
                 </button>
               ))}
             </div>
@@ -78,10 +102,27 @@ export default function Tokens() {
               launch a coin
             </a>
           </div>
+          {tab === "profiles" ? (
+            profiles == null ? (
+              <p className="pixel blink tiny-pixel">loading pump profiles</p>
+            ) : people.length ? (
+              <div className="profile-grid swap" key={"p" + q}>
+                {people.map((p, i) => (
+                  <ProfileCard key={p.profile.wallet} p={p} i={i} />
+                ))}
+              </div>
+            ) : (
+              <div className="panel empty-coins">
+                <p className="pixel green">{profiles.length ? "nobody matches" : "no pump profiles yet"}</p>
+                <p className="dim">{profiles.length ? "Try another username." : "Every pump user a coin is launched for shows up here."}</p>
+              </div>
+            )
+          ) : (
+            <>
           {coins == null ? (
             <p className="pixel blink tiny-pixel">loading coins</p>
           ) : shown.length ? (
-            <div className="coin-grid swap" key={sort + q}>
+            <div className="coin-grid swap" key={q}>
               {shown.map((c, i) => (
                 <CoinCard key={c.mint} c={c} i={i} />
               ))}
@@ -92,10 +133,12 @@ export default function Tokens() {
               <p className="dim">{coins.length ? "Try another name or ticker." : "Be the first: launch one for your favorite pump user."}</p>
             </div>
           )}
-          {more && !q && (
+          {more && !q && tab === "coins" && (
             <button className="btn ghost more" onClick={() => setPage((p) => p + 1)}>
               load more
             </button>
+          )}
+            </>
           )}
           <div className="panel tier-key">
             <span className="label">floor milestones, by lifetime creator fees</span>
@@ -110,5 +153,49 @@ export default function Tokens() {
         </section>
       </main>
     </>
+  );
+}
+
+/** One pump user: picture, name, and their totals across every coin launched for them. */
+function ProfileCard({ p, i }: { p: ProfileSummary; i: number }) {
+  const name = p.profile.username ? `@${p.profile.username}` : shortAddr(p.profile.wallet);
+  return (
+    <a className="panel profile-card" href={`/u/${p.profile.wallet}`} style={{ ["--i" as string]: i }}>
+      <span className="profile-top">
+        {p.profile.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img className="pump-avatar" src={p.profile.image} alt="" width={48} height={48} loading="lazy" referrerPolicy="no-referrer" />
+        ) : (
+          <span className="pump-avatar">{name.replace("@", "").slice(0, 2)}</span>
+        )}
+        <span className="profile-name">
+          <span className="pixel">{name}</span>
+          <span className="dim">
+            {p.profile.followers != null ? `${p.profile.followers.toLocaleString()} followers · ` : ""}last launch {ago(p.latest)}
+          </span>
+        </span>
+      </span>
+      <span className="profile-stats">
+        <span>
+          <span className="label">coins</span>
+          <span className="pixel">{p.coins}</span>
+        </span>
+        <span>
+          <span className="label">fees</span>
+          <span className="pixel green">{fmtSol(p.feesSol)} SOL</span>
+        </span>
+        <span>
+          <span className="label">earned</span>
+          <span className="pixel">{fmtSol(p.earnedSol)} SOL</span>
+        </span>
+        <span>
+          <span className="label">market cap</span>
+          <span className="pixel">{fmtUsd(p.mcapUsd)}</span>
+        </span>
+      </span>
+      <span className="dim">
+        top coin <span className="green">${p.top.ticker}</span> {p.top.mcapUsd != null ? `at ${fmtUsd(p.top.mcapUsd)}` : ""}
+      </span>
+    </a>
   );
 }
