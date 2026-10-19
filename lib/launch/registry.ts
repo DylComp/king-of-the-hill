@@ -91,9 +91,9 @@ export async function paidOut(mint: string, vault: string, force = false, requir
           signal: AbortSignal.timeout(8000),
           body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getTransaction", params: [signature, { commitment: "finalized", encoding: "json", maxSupportedTransactionVersion: 1 }] }),
         });
-        if (!response.ok) throw Error("Fee receipt RPC unavailable");
-        const result = await response.json() as { error?: unknown; result?: { meta?: { err: unknown; logMessages: string[] | null } } };
-        if (result.error) throw Error("Fee receipt RPC rejected request");
+        if (!response.ok) throw Error(`Fee receipt HTTP ${response.status}`);
+        const result = await response.json() as { error?: { code?: number }; result?: { meta?: { err: unknown; logMessages: string[] | null } } };
+        if (result.error) throw Error(`Fee receipt RPC code ${result.error.code}`);
         const tx = result.result;
         if (!tx?.meta || !tx.meta.logMessages || tx.meta.logMessages.some(l => /log truncated/i.test(l))) throw Error("Finalized fee receipt unavailable");
         if (tx.meta.err) return 0n;
@@ -116,7 +116,7 @@ export async function paidOut(mint: string, vault: string, force = false, requir
     return next.sol;
   } catch (e) {
     if (force) throw e;
-    console.error("coin fee receipt refresh failed");
+    console.error("coin fee receipt refresh failed", { mint, cached: prev?.sol ?? null, reason: e instanceof Error && /^(Fee |Finalized |Claim |redis )/.test(e.message) ? e.message : e instanceof Error ? e.name : "unknown" });
     return prev?.sol ?? 0;
   }
 }
