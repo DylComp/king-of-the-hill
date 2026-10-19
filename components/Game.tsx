@@ -607,6 +607,7 @@ export default function Game() {
                 onSelect={setSelected}
                 onCanvas={(c) => (canvasRef.current = c)}
                 houseLive={launched}
+                owner={owner ? (nameOf(owner)?.username ?? null) : null}
               />
             </div>
 
