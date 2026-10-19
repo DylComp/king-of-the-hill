@@ -1,9 +1,9 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import type { CoinView, ProfileSummary } from "@/lib/launch/registry";
+import type { TokenTotals } from "@/app/api/tokens/route";
 import { FEE_TIERS, FEE_TIER_NAMES } from "@/lib/launch/model";
 import CoinCard, { ago, fmtSol, fmtUsd } from "./CoinCard";
-import FeeTracker from "./FeeTracker";
 import { CoinLogo, ProfilePic, profileName } from "./Pics";
 import SiteNav from "./SiteNav";
 import { useMe } from "./useMe";
@@ -14,6 +14,7 @@ export default function Tokens() {
   const wallet = useMe();
   const [coins, setCoins] = useState<CoinView[] | null>(null);
   const [total, setTotal] = useState(0);
+  const [sums, setSums] = useState<TokenTotals | null>(null);
   const [page, setPage] = useState(0);
   const [more, setMore] = useState(false);
   const [q, setQ] = useState("");
@@ -23,9 +24,10 @@ export default function Tokens() {
   useEffect(() => {
     fetch(`/api/tokens?page=${page}`)
       .then((r) => r.json())
-      .then((j: { coins?: CoinView[]; total?: number }) => {
+      .then((j: { coins?: CoinView[]; total?: number; totals?: TokenTotals }) => {
         setCoins((prev) => [...(page ? prev ?? [] : []), ...(j.coins ?? [])]);
         setTotal(j.total ?? 0);
+        if (j.totals) setSums(j.totals);
         setMore((j.coins?.length ?? 0) === 30);
       })
       .catch(() => setCoins((prev) => prev ?? []));
@@ -51,9 +53,7 @@ export default function Tokens() {
     );
     return list;
   }, [coins, q]);
-  const fees = (coins ?? []).reduce((n, c) => n + c.feesSol, 0);
-  const mcap = (coins ?? []).reduce((n, c) => n + (c.mcapUsd ?? 0), 0);
-  const users = new Set((coins ?? []).map((c) => c.recipient.wallet)).size;
+  const fees = sums?.feesSol ?? 0;
 
   return (
     <>
@@ -72,20 +72,25 @@ export default function Tokens() {
             </div>
             <div className="panel tile">
               <span className="label">pump profiles</span>
-              <span className="pixel big">{users}</span>
+              <span className="pixel big">{sums?.profiles ?? 0}</span>
+              <span className="dim">{fmtSol(sums?.earnedSol ?? 0)} SOL earned</span>
             </div>
             <div className="panel tile">
               <span className="label">creator fees</span>
               <span className="pixel big green">{fmtSol(fees)} SOL</span>
-              <span className="dim">{fmtSol(fees * 0.8)} to pump profiles</span>
+              <span className="dim">all coins, lifetime</span>
+            </div>
+            <div className="panel tile">
+              <span className="label">24h volume</span>
+              <span className="pixel big">{fmtUsd(sums?.volUsd ?? 0)}</span>
+              <span className="dim">all coins combined</span>
             </div>
             <div className="panel tile">
               <span className="label">market cap</span>
-              <span className="pixel big">{fmtUsd(mcap)}</span>
+              <span className="pixel big">{fmtUsd(sums?.mcapUsd ?? 0)}</span>
               <span className="dim">all coins combined</span>
             </div>
           </div>
-          <FeeTracker />
           <div className="token-tools">
             <input
               value={q}
@@ -168,7 +173,7 @@ function ProfileCard({ p, i }: { p: ProfileSummary; i: number }) {
         <span className="profile-name">
           <span className="pixel">{name}</span>
           <span className="dim">
-            {p.profile.followers != null ? `${p.profile.followers.toLocaleString()} followers · ` : ""}last launch {ago(p.latest)}
+            {p.profile.followers != null ? `${p.profile.followers.toLocaleString()} followers on pump` : "pump.fun profile"}
           </span>
         </span>
       </span>
@@ -188,6 +193,14 @@ function ProfileCard({ p, i }: { p: ProfileSummary; i: number }) {
         <span>
           <span className="label">market cap</span>
           <span className="pixel">{fmtUsd(p.mcapUsd)}</span>
+        </span>
+        <span>
+          <span className="label">24h volume</span>
+          <span className="pixel">{fmtUsd(p.volUsd ?? 0)}</span>
+        </span>
+        <span>
+          <span className="label">last launch</span>
+          <span className="pixel">{ago(p.latest)}</span>
         </span>
       </span>
       <span className="profile-coins">

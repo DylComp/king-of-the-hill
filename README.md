@@ -54,11 +54,12 @@ Pump Tower turns any Solana wallet into a pixel skyscraper, and turns pump.fun c
 - On confirm, the pump user's tower goes up in the city straight away, with the coin as a floor that climbs a room tier at 0.1, 1, 5, 25 and 100 SOL of lifetime fees.
 
 **Tokens and pump profiles** ([/tokens](https://pumptowers.fun/tokens))
-- Every coin launched here with its logo, fee tier, creator fees and market cap.
-- A pump profiles tab with each user's picture, coins, fees, earnings, combined market cap and top coin.
-- A fees-routed tracker following every fee from creator fees to burned $PTWR.
+- Every coin launched here with its logo, fee tier, creator fees, market cap and 24h volume.
+- Totals across all coins: coins, pump profiles, creator fees, 24h volume and market cap.
+- A pump profiles tab with each user's picture, coins, fees, earnings, combined market cap and volume, latest launch and top coin.
 
 **Activity** ([/activity](https://pumptowers.fun/activity))
+- A fees-routed tracker following every fee from creator fees to burned $PTWR.
 - Live totals: fees collected, $PTWR burned and its share of supply, SOL spent on buybacks, SOL paid to pump profiles.
 - The buy & burn wallet's transactions, labelled and linked to Solscan, plus every recent buyback.
 
