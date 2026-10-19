@@ -79,11 +79,15 @@ export async function paidOut(mint: string, vault: string, force = false, requir
   if (!force && prev && Date.now() - prev.at < 10 * 60_000) return prev.sol;
   try {
     const conn = new Connection(rpcUrl(), "finalized");
+    const launch = await getCoin(mint);
     const parser = new EventParser(sdk.PUMP_PROGRAM_ID, sdk.getPumpProgram(conn).coder);
     const history = await feeHistory(prev?.last ?? null, {
       requiredSignature,
       page: (before) => conn.getSignaturesForAddress(new PublicKey(vault), { limit: 50, before }, "finalized"),
       amount: async (signature) => {
+        // The registered atomic create has no pre-existing fees to pay out. Its
+        // long creation logs can be truncated; it is not a payout receipt.
+        if (signature === launch?.signature) return 0n;
         // Read receipt JSON directly: web3.js's message decoder only supports v0,
         // while a vault's history can also contain newer transaction versions.
         const response = await fetch(rpcUrl(), {
