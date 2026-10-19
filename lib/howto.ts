@@ -114,7 +114,7 @@ export const DOCS: DocSection[] = [
     items: [
       ["Pick a user", "Search a pump.fun username, paste a profile link or a wallet. Their picture, name and wallet show up before you launch."],
       ["Fee split", `${SPLIT.recipientBps / 100}% of the coin's creator fees go to that user's wallet, ${SPLIT.treasuryBps / 100}% to the Pump Tower treasury to buy back $${HOUSE_SYMBOL}. Set and locked in the launch transaction itself; nobody can change it after.`],
-      ["One approval", "Coin, fee split and optional dev buy happen in one transaction, so nobody can buy before you. Your wallet and a one-time mint key made in your browser are the only signers."],
+      ["One approval", "Coin, fee split and optional dev buy happen in one transaction, so nobody can buy before you. Your wallet and a one-time mint key made in your browser are the only signers. No setup: launching is open to every wallet."],
       ["Kept", "Bonding curve, graduation to PumpSwap, dev buy, name, ticker, picture, description, X and Telegram links."],
       ["Off", "Custom websites (every coin's site is its page here), and mayhem mode, cashback and holder rewards mode, which would take the creator fees away from the split."],
       ["Payouts", "Fees collect on pump.fun until someone pays them out. Anyone can press pay out on the coin's page; it costs only the network fee."],

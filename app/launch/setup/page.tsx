@@ -1,8 +1,6 @@
-import type { Metadata } from "next";
-import LaunchSetup from "@/components/LaunchSetup";
+// The launchpad no longer needs a setup step. Old links land on the launchpad.
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "launchpad setup · pump tower", robots: { index: false } };
-
-export default function Page() {
-  return <LaunchSetup />;
+export default function SetupPage() {
+  redirect("/launch");
 }

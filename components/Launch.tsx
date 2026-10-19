@@ -12,7 +12,7 @@ import { useMe } from "./useMe";
 import { fromB64, post, provider, rejected, toB64 } from "./wallet";
 
 type Status = { open: boolean; reason: string | null; treasury: string | null };
-type Prepared = { tx: string; mint: string; recipient: Profile };
+type Prepared = { tx: string; mint: string; recipient: Profile; setup: string[] | null };
 
 // Programs a launch may call. Anything else in the transaction means it was tampered with.
 const ALLOWED_PROGRAMS = new Set([
@@ -22,6 +22,7 @@ const ALLOWED_PROGRAMS = new Set([
   "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
   "11111111111111111111111111111111",
 ]);
+const LOOKUP_TABLE_PROGRAM = "AddressLookupTab1e1111111111111111111111111";
 
 const STEPS = ["saving the image", "building the launch", "approve in your wallet", "sending to Solana", "locking the fee split"] as const;
 
@@ -179,11 +180,19 @@ export default function Launch() {
       const programs = tx.message.compiledInstructions.map((ix) => keys[ix.programIdIndex].toBase58());
       if (!keys[0].equals(new (await import("@solana/web3.js")).PublicKey(addr)) || !keys.some((k) => k.equals(mint.publicKey)) || programs.some((id) => !ALLOWED_PROGRAMS.has(id)))
         throw new Error("The launch didn't match what was asked for, so it wasn't signed.");
+      // The site's very first launch also creates the shared lookup table, in the same approval.
+      const setup = (prepared.setup ?? []).map((s) => VersionedTransaction.deserialize(fromB64(s)));
+      for (const s of setup) {
+        const k = s.message.staticAccountKeys;
+        if (k[0].toBase58() !== addr || s.message.compiledInstructions.some((ix) => k[ix.programIdIndex].toBase58() !== LOOKUP_TABLE_PROGRAM))
+          throw new Error("The launch didn't match what was asked for, so it wasn't signed.");
+      }
       setStep(2);
-      const signed = await p.signTransaction(tx);
+      const all = setup.length && p.signAllTransactions ? await p.signAllTransactions([...setup, tx]) : [...(await Promise.all(setup.map((s) => p.signTransaction!(s)))), await p.signTransaction(tx)];
+      const signed = all[all.length - 1];
       signed.sign([mint]);
       setStep(3);
-      await post("/api/launch/send", { mint: mintAddr, tx: toB64(signed.serialize()) });
+      await post("/api/launch/send", { mint: mintAddr, tx: toB64(signed.serialize()), setup: all.slice(0, -1).map((s) => toB64(s.serialize())) });
       setStep(4);
       for (let i = 0; i < 40; i++) {
         await new Promise((r) => setTimeout(r, 2500));
@@ -409,15 +418,9 @@ export default function Launch() {
                   <b className="pixel">{buySol == null ? "check dev buy" : `~${(0.025 + buySol).toFixed(3)} SOL`}</b>
                 </div>
 
-                {status && !status.open && status.treasury ? (
-                  <a className="btn launch-go" href="/launch/setup">
-                    open the launchpad (one time)
-                  </a>
-                ) : (
-                  <button className="btn launch-go" type="submit" disabled={step != null || !recipient || !!problem || !status?.open}>
-                    {step != null ? STEPS[step] : status && !status.open ? "launching opens soon" : !recipient ? "pick who gets the fees" : problem ? problem : me ? "launch on pump.fun" : "connect and launch"}
-                  </button>
-                )}
+                <button className="btn launch-go" type="submit" disabled={step != null || !recipient || !!problem || !status?.open}>
+                  {step != null ? STEPS[step] : status && !status.open ? "launching opens soon" : !recipient ? "pick who gets the fees" : problem ? problem : me ? "launch on pump.fun" : "connect and launch"}
+                </button>
                 {step != null && (
                   <ol className="launch-steps">
                     {STEPS.map((st, i) => (

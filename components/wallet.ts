@@ -9,6 +9,7 @@ export type WalletLike = {
   disconnect?: () => Promise<void>;
   signMessage?: (msg: Uint8Array, display?: string) => Promise<{ signature: Uint8Array } | Uint8Array>;
   signTransaction?: <T>(tx: T) => Promise<T>;
+  signAllTransactions?: <T>(txs: T[]) => Promise<T[]>;
   signAndSendTransaction?: <T>(tx: T) => Promise<{ signature: string | Uint8Array }>;
   isSolflare?: boolean;
 };

@@ -6,7 +6,7 @@ import { createRequire } from "node:module";
 import { AddressLookupTableAccount, AddressLookupTableProgram, Keypair, PublicKey, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
 import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, createAssociatedTokenAccountIdempotentInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import type { Global } from "@pump-fun/pump-sdk";
-import { getJson, hasDb, redis, setJson } from "../redis";
+import { hasDb, redis } from "../redis";
 import { connection } from "./pump";
 
 const require = createRequire(import.meta.url);
@@ -62,42 +62,47 @@ export async function loadLookupTable(): Promise<AddressLookupTableAccount | nul
   return res.value && res.value.isActive() ? res.value : null;
 }
 
+/** Every account the table should hold, read from pump.fun's live config. */
+export async function tableAddresses(treasury: string) {
+  const g = await connection().getAccountInfo(GLOBAL_PDA, "confirmed");
+  if (!g?.owner.equals(PUMP_PROGRAM_ID)) throw Error("pump.fun is unavailable right now.");
+  return (await sampleKeys(PUMP_SDK.decodeGlobal(g), new PublicKey(treasury))).map((a) => new PublicKey(a));
+}
+
 /**
  * Unsigned transactions that create, fill and then freeze the table, paid for by `authority`.
- * Freezing drops the authority for good, so whoever opens the launchpad keeps no control
- * over the table: nobody can change, deactivate or close it afterwards.
+ * Freezing drops the authority for good, so whoever pays for it keeps no control over the
+ * table: nobody can change, deactivate or close it afterwards. The first launch on the site
+ * signs these together with the launch itself, so no launcher ever sees a setup step.
  */
-export async function lookupTableSetup(authority: string, treasury: string) {
+export async function buildTable(authority: string, addresses: PublicKey[], blockhash: string) {
   const auth = new PublicKey(authority);
-  const conn = connection();
-  const g = await conn.getAccountInfo(GLOBAL_PDA, "confirmed");
-  if (!g?.owner.equals(PUMP_PROGRAM_ID)) throw Error("pump.fun is unavailable right now.");
-  const addresses = (await sampleKeys(PUMP_SDK.decodeGlobal(g), new PublicKey(treasury))).map((a) => new PublicKey(a));
-  const slot = await conn.getSlot("finalized");
+  const slot = await connection().getSlot("finalized");
   const [create, table] = AddressLookupTableProgram.createLookupTable({ authority: auth, payer: auth, recentSlot: slot });
-  const latest = await conn.getLatestBlockhash("confirmed");
-  const txs: string[] = [];
+  const txs: VersionedTransaction[] = [];
   const CHUNK = 20;
   for (let i = 0; i < addresses.length; i += CHUNK) {
     const extend = AddressLookupTableProgram.extendLookupTable({ lookupTable: table, authority: auth, payer: auth, addresses: addresses.slice(i, i + CHUNK) });
     const last = i + CHUNK >= addresses.length;
     const freeze = AddressLookupTableProgram.freezeLookupTable({ lookupTable: table, authority: auth });
     const ixs = [...(i === 0 ? [create] : []), extend, ...(last ? [freeze] : [])];
-    const msg = new TransactionMessage({ payerKey: auth, recentBlockhash: latest.blockhash, instructions: ixs }).compileToV0Message();
-    txs.push(Buffer.from(new VersionedTransaction(msg).serialize()).toString("base64"));
+    txs.push(new VersionedTransaction(new TransactionMessage({ payerKey: auth, recentBlockhash: blockhash, instructions: ixs }).compileToV0Message()));
   }
-  await setJson(`${KEY}:pending:${authority}`, { table: table.toBase58(), authority, expected: addresses.map((a) => a.toBase58()), at: Date.now() }, 3600);
-  return { table: table.toBase58(), addresses: addresses.length, txs };
+  // The launch is compiled against the table before it exists; the addresses are known.
+  const account = new AddressLookupTableAccount({ key: table, state: { deactivationSlot: BigInt("18446744073709551615"), lastExtendedSlot: 0, lastExtendedSlotStartIndex: 0, authority: undefined, addresses } });
+  return { table: table.toBase58(), account, txs };
 }
 
-/** Saves the table once it is on chain, holds every shared launch account, and is frozen. */
-export async function confirmLookupTable(authority: string) {
-  const pending = await getJson<{ table: string; authority: string; expected: string[] }>(`${KEY}:pending:${authority}`);
-  if (!pending) throw Error("No lookup table setup in progress.");
-  const res = await connection().getAddressLookupTable(new PublicKey(pending.table));
-  const have = new Set(res.value?.state.addresses.map((a) => a.toBase58()) ?? []);
-  if (!res.value || !pending.expected.every((a) => have.has(a))) throw Error("The table isn't on chain yet, try again in a few seconds.");
-  if (res.value.state.authority) throw Error("The table isn't frozen yet, try again in a few seconds.");
-  await redis("SET", KEY, pending.table);
-  return { table: pending.table, addresses: res.value.state.addresses.length };
+/** True once the table is on chain, holds every expected address, is frozen and usable. */
+export async function tableReady(table: string, expected: string[]) {
+  const conn = connection();
+  const [res, slot] = await Promise.all([conn.getAddressLookupTable(new PublicKey(table)), conn.getSlot("confirmed")]);
+  if (!res.value || res.value.state.authority) return false;
+  const have = new Set(res.value.state.addresses.map((a) => a.toBase58()));
+  return expected.every((a) => have.has(a)) && slot > res.value.state.lastExtendedSlot;
+}
+
+/** Records the table for every later launch. The first one recorded stays. */
+export async function saveTable(table: string) {
+  if (hasDb()) await redis("SET", KEY, table, "NX");
 }

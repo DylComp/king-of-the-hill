@@ -14,7 +14,7 @@ import {
 import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, createAssociatedTokenAccountIdempotentInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import type { BondingCurve, SharingConfig } from "@pump-fun/pump-sdk";
 import { rpcUrl } from "../chain";
-import { loadLookupTable } from "./alt";
+import { buildTable, loadLookupTable, tableAddresses } from "./alt";
 import { type Draft, initialBuyLamports, shares } from "./model";
 
 // CommonJS avoids the SDK's Anchor ESM named-export problem on Node.
@@ -31,7 +31,18 @@ function key(value: string, what: string) {
   return k;
 }
 
-export type Prepared = { tx: string; message: string; mint: string; lastValidBlockHeight: number; tokens: string; maxLamports: string };
+/** `setup` is only set on the site's very first launch: the lookup table, signed in the same approval. */
+export type Prepared = {
+  tx: string;
+  message: string;
+  mint: string;
+  lastValidBlockHeight: number;
+  tokens: string;
+  maxLamports: string;
+  setup: { table: string; expected: string[]; txs: string[]; messages: string[] } | null;
+};
+
+const b64 = (b: Uint8Array) => Buffer.from(b).toString("base64");
 
 /**
  * One atomic transaction: create the coin, open its fee-sharing config, set the shares to
@@ -106,9 +117,21 @@ export async function prepareLaunch(o: { draft: Draft; launcher: string; mint: s
     );
   }
 
-  const table = await loadLookupTable();
-  if (!table) throw Error("The launchpad isn't set up yet.");
   const latest = await conn.getLatestBlockhash({ commitment: "confirmed", minContextSlot: accounts.context.slot });
+  let table = await loadLookupTable();
+  let setup: Prepared["setup"] = null;
+  if (!table) {
+    // First launch on the site: the same approval also creates the shared lookup table.
+    const addresses = await tableAddresses(o.treasury);
+    const built = await buildTable(o.launcher, addresses, latest.blockhash);
+    table = built.account;
+    setup = {
+      table: built.table,
+      expected: addresses.map((a) => a.toBase58()),
+      txs: built.txs.map((t) => b64(t.serialize())),
+      messages: built.txs.map((t) => b64(t.message.serialize())),
+    };
+  }
   const message = new TransactionMessage({ payerKey: user, recentBlockhash: latest.blockhash, instructions: ixs }).compileToV0Message([table]);
   const tx = new VersionedTransaction(message);
   let bytes: Uint8Array;
@@ -119,14 +142,20 @@ export async function prepareLaunch(o: { draft: Draft; launcher: string; mint: s
   }
   if (bytes.length > 1232 || message.header.numRequiredSignatures !== 2) throw Error("Launch transaction is the wrong shape.");
 
-  const sim = await conn.simulateTransaction(tx, { sigVerify: false, commitment: "confirmed" });
-  if (sim.value.err) {
-    const logs = sim.value.logs ?? [];
-    const broke = logs.some((l) => /insufficient lamports|InsufficientFunds/i.test(l));
-    console.error("launch simulation", JSON.stringify(sim.value.err), logs.slice(-6));
-    throw Error(broke ? "Not enough SOL in this wallet for the launch and dev buy." : "pump.fun rejected this launch in a dry run, try again.");
+  if (setup) {
+    // The table isn't on chain yet so the launch can't be dry run; check the wallet can pay.
+    const need = 0.05e9 + Number(lamports);
+    if ((await conn.getBalance(user, "confirmed")) < need) throw Error("Not enough SOL in this wallet for the launch and dev buy.");
+  } else {
+    const sim = await conn.simulateTransaction(tx, { sigVerify: false, commitment: "confirmed" });
+    if (sim.value.err) {
+      const logs = sim.value.logs ?? [];
+      const broke = logs.some((l) => /insufficient lamports|InsufficientFunds/i.test(l));
+      console.error("launch simulation", JSON.stringify(sim.value.err), logs.slice(-6));
+      throw Error(broke ? "Not enough SOL in this wallet for the launch and dev buy." : "pump.fun rejected this launch in a dry run, try again.");
+    }
   }
-  return { tx: Buffer.from(bytes).toString("base64"), message: Buffer.from(message.serialize()).toString("base64"), mint: o.mint, lastValidBlockHeight: latest.lastValidBlockHeight, tokens, maxLamports: lamports.toString() };
+  return { tx: b64(bytes), message: b64(message.serialize()), mint: o.mint, lastValidBlockHeight: latest.lastValidBlockHeight, tokens, maxLamports: lamports.toString(), setup };
 }
 
 function decodeCurve(a: AccountInfo<Buffer>): BondingCurve {
@@ -200,4 +229,22 @@ export async function broadcastLaunch(signedB64: string, expectedMessage: string
   if (Buffer.from(tx.message.serialize()).toString("base64") !== expectedMessage) throw Error("That isn't the launch we prepared. Start over.");
   if (tx.signatures.length !== 2 || tx.signatures.some((s) => s.every((b) => b === 0))) throw Error("The launch is missing a signature.");
   return connection().sendRawTransaction(raw, { skipPreflight: false, maxRetries: 3 });
+}
+
+/**
+ * First launch only: sends the signed lookup-table transactions in order and waits until the
+ * table is usable. Each must be exactly the message we built and signed by the launcher.
+ */
+export async function broadcastSetup(signed: string[], expectedMessages: string[]) {
+  if (signed.length !== expectedMessages.length) throw Error("The launch is missing a signature.");
+  const conn = connection();
+  for (let i = 0; i < signed.length; i++) {
+    const raw = Buffer.from(signed[i], "base64");
+    const tx = VersionedTransaction.deserialize(raw);
+    if (b64(tx.message.serialize()) !== expectedMessages[i]) throw Error("That isn't the launch we prepared. Start over.");
+    if (tx.signatures.length !== 1 || tx.signatures[0].every((b) => b === 0)) throw Error("The launch is missing a signature.");
+    const sig = await conn.sendRawTransaction(raw, { skipPreflight: false, maxRetries: 3 });
+    const res = await conn.confirmTransaction(sig, "confirmed");
+    if (res.value.err) throw Error("The network rejected the launch. Try again.");
+  }
 }
