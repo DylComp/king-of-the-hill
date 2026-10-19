@@ -44,7 +44,7 @@ Profile launches permanently split creator fees 80% to the selected pump profile
 
 The official PTWR coin is planned with standard creator fees. Its own creator fees are never collected by this worker.
 
-The worker runs every five minutes on Vercel, with an authenticated `CRON_SECRET`. It is deployed disabled, awaiting the official mint. It never guesses the mint from a ticker or metadata. Secrets are production-only sensitive environment variables; dev wallet keys are never uploaded.
+The worker runs every five minutes on Vercel, with an authenticated `CRON_SECRET`. It is deployed disabled, awaiting the official mint. It never guesses the mint from a ticker or metadata. Signing keys are production-only sensitive environment variables: the treasury key is used only by the buyback worker, and the dev key only by the separate dev-fee collector.
 
 | Variable | Value |
 | --- | --- |
@@ -65,3 +65,11 @@ Before activation:
 Redis stores the fenced worker lease, pinned mint, receipt credits, confirmed debits, last buyback receipt and pending signed attempts under `pt:buyback:v1`. Signed attempts are persisted before submission; retries send identical bytes. An expired attempt with no finalized receipt stays unresolved and holds new execution. Investigate with an archival RPC; never delete the pending attempt or reset the ledger to retry blindly. A missing/pruned fee receipt holds the scan cursor. Receipt IDs and credits commit atomically. To pause, set `PTWR_BUYBACK_ENABLED=false` and redeploy; already broadcast transactions can still finalize.
 
 Atomic curve/AMM plan construction and verification are adapted from the user's FUB project. New tests cover revenue exclusions, budget boundaries, and rejection of altered buy/burn transactions. No real purchase can be tested before the official mint exists.
+
+### Automatic dev creator-fee collection
+
+`/api/cron/dev-fees` runs every five minutes, offset two minutes from buybacks. It claims standard SOL creator fees into the configured dev wallet, with no transfer to treasury and no purchase or burn. It validates that the official mint (and canonical pool after graduation) names the dev wallet as creator; shared-fee, Holder Rewards, cashback, mayhem and non-SOL configurations are refused. It sweeps newer curve/pool creator-fee buckets before collecting. Creator vaults are wallet-scoped: fees already in those vaults can include other coins using this same creator wallet. It sweeps only the configured official mint's unclaimed curve/pool buckets.
+
+Production variables: `PTWR_DEV_SECRET_KEY` (sensitive JSON keypair) and `PTWR_DEV_FEE_COLLECTION_ENABLED=true`. The existing `PTWR_OFFICIAL_MINT`, RPC and `CRON_SECRET` are shared. With no official mint it returns `awaiting_official_mint` without loading a key or sending anything. Claims require at least 0.001 SOL in a source and a dev balance of at least 0.01 SOL for gas/rent, and simulation must show positive net proceeds. Curve and AMM claims alternate when both have sufficient fees. AMM fees are unwrapped through a fresh temporary token account, created and closed atomically; the dev wallet's existing WSOL account is untouched.
+
+The independent `pt:dev-fees:v1` ledger pins the mint and dev address, stores signed attempts before broadcasting, records finalized net proceeds, and caps network fees at 0.0001 SOL per attempt and 0.001 SOL per UTC day. A pending attempt is retried with identical signed bytes; expired attempts lacking a finalized receipt stop for reconciliation. This ledger never credits the buyback budget. Set `PTWR_DEV_FEE_COLLECTION_ENABLED=false` and redeploy to pause new collections. Previously broadcast transactions may still finalize.
