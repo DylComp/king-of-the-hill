@@ -4,6 +4,8 @@ import { isAddress } from "@/lib/launch/model";
 import { findProfile } from "@/lib/launch/profile";
 
 const MAX_BYTES = 2_000_000;
+/** Pump's own image hosts. Pictures elsewhere aren't proxied; the page links those directly. */
+const HOSTS = new Set(["pump.mypinata.cloud", "gateway.pinata.cloud", "ipfs.io", "cf-ipfs.com", "images.pump.fun"]);
 const notFound = () => new Response("not found", { status: 404, headers: { "cache-control": "public, s-maxage=600" } });
 
 export async function GET(_req: Request, ctx: { params: Promise<{ wallet: string }> }) {
@@ -11,8 +13,16 @@ export async function GET(_req: Request, ctx: { params: Promise<{ wallet: string
   if (!isAddress(wallet)) return notFound();
   const profile = await findProfile(wallet).catch(() => null);
   if (!profile?.image) return notFound();
+  let url: URL;
+  try {
+    url = new URL(profile.image);
+  } catch {
+    return notFound();
+  }
+  if (url.protocol !== "https:" || !HOSTS.has(url.hostname.toLowerCase())) return notFound();
   for (let attempt = 0; attempt < 3; attempt++) {
-    const res = await fetch(profile.image, { signal: AbortSignal.timeout(8000) }).catch(() => null);
+    const res = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(8000) }).catch(() => null);
+    if (res && res.status >= 300 && res.status < 400) return notFound();
     if (res?.ok) {
       const type = res.headers.get("content-type") ?? "";
       // Raster images only: no SVG, no HTML passed off as a picture.
