@@ -26,7 +26,9 @@ async function scanRevenue(store: Store, conn: ReturnType<typeof connection>, tr
   const parser = new EventParser(sdk.PUMP_PROGRAM_ID, sdk.getPumpProgram(conn).coder);
   for (const entry of list) {
     if (entry.err || await store.seen(entry.signature)) continue;
-    const tx = await conn.getTransaction(entry.signature, { commitment: "finalized", maxSupportedTransactionVersion: 0 });
+    // Treasury history can include v1 transfers unrelated to our v0 buybacks.
+    // Read them without skipping receipts or weakening fee-event validation.
+    const tx = await conn.getTransaction(entry.signature, { commitment: "finalized", maxSupportedTransactionVersion: 1 });
     // Never advance a cursor past a pruned/missing receipt.
     if (!tx?.meta) throw Error("Finalized treasury receipt unavailable; scan held");
     if (tx.meta.err) continue;
