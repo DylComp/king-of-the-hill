@@ -320,9 +320,9 @@ function roof(ctx: CanvasRenderingContext2D, w: number, t: number, compact: bool
     rect(ctx, bx + 52, top - 6, 2, 6, "#27272a");
     box(ctx, bx, top - 30, 62, 24, "#0b1510");
     outline(ctx, bx, top - 30, 62, 24, "#166534");
-    tiny(ctx, "$PTWR", bx + 6, top - 25, GREEN);
-    tiny(ctx, houseLive ? "HOLD = SOL" : "LAUNCHING", bx + 6, top - 17, houseLive ? GOLD : "#e2e8f0");
-    tiny(ctx, houseLive ? "REWARDS" : "SOON", bx + 6, top - 11, "#94a3b8");
+    tiny(ctx, "$PTWR", bx + 6, top - 27, GREEN);
+    tiny(ctx, houseLive ? "BUY + BURN" : "LAUNCHING", bx + 6, top - 20, houseLive ? GOLD : "#e2e8f0");
+    tiny(ctx, houseLive ? "3X RENT" : "SOON", bx + 6, top - 13, "#94a3b8");
     glow(ctx, bx + 31, top - 18, 34, GREEN_HI, 0.06 + 0.03 * Math.sin(t / 500));
   }
   // neon sign, glitches now and then

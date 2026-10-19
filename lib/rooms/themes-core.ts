@@ -172,14 +172,14 @@ export const pumpHQ: Theme = {
     rect(ctx, dx + 2, BACK - 7, 2, 7, "#111827");
     rect(ctx, dx + deskW - 4, BACK - 7, 2, 7, "#111827");
     for (let i = 0; i < screens; i++) monitor(room, dx + 6 + i * 18, BACK - 30, 16, 12, true);
-    // tier unlocks: plants, server racks, a vault of rewards
+    // tier unlocks: plants, server racks, a vault of burned $PTWR
     if (tier >= 1) plant(room, 8, "m");
     if (tier >= 2) serverRack(room, 22);
     if (tier >= 3) serverRack(room, 220);
     if (tier >= 4) tvWall(room, 196, 12);
     if (tier >= 5) {
       box(ctx, 30, 14, 34, 24, "#14532d");
-      tiny(ctx, "REWARDS", 33, 17, GREEN);
+      tiny(ctx, "BURNED", 33, 17, GREEN);
       room.fx.push((c, t) => {
         for (let i = 0; i < 6; i++) {
           const k = (t / 1200 + i / 6) % 1;

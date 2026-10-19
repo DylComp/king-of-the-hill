@@ -77,7 +77,7 @@ export default function Tokens() {
             <div className="panel tile">
               <span className="label">creator fees</span>
               <span className="pixel big green">{fmtSol(fees)} SOL</span>
-              <span className="dim">{fmtSol(fees * 0.8)} to pump users</span>
+              <span className="dim">{fmtSol(fees * 0.8)} to pump profiles</span>
             </div>
             <div className="panel tile">
               <span className="label">market cap</span>

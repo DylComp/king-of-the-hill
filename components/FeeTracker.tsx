@@ -28,7 +28,7 @@ export default function FeeTracker() {
   const live = !!f?.houseMint;
   const steps: { label: string; value: string; note: string; tone?: string }[] = [
     { label: "creator fees", value: `${fmtSol(f?.creatorSol ?? 0)} SOL`, note: `from ${f?.coins ?? 0} coin${f?.coins === 1 ? "" : "s"} launched here` },
-    { label: `${SPLIT.recipientBps / 100}% to pump users`, value: `${fmtSol(f?.toUsersSol ?? 0)} SOL`, note: "straight to their wallets", tone: "green" },
+    { label: `${SPLIT.recipientBps / 100}% to pump profiles`, value: `${fmtSol(f?.toUsersSol ?? 0)} SOL`, note: "straight to their wallets", tone: "green" },
     { label: `${SPLIT.treasuryBps / 100}% to treasury`, value: `${fmtSol(f?.toTreasurySol ?? 0)} SOL`, note: `${fmtSol(f?.buybackEligibleSol ?? 0)} SOL verified for buybacks` },
     { label: `bought back $${HOUSE_SYMBOL}`, value: `${fmtSol(f?.buybackSpentSol ?? 0)} SOL`, note: live ? "market buys by the worker" : `starts when $${HOUSE_SYMBOL} launches`, tone: "gold" },
     { label: `$${HOUSE_SYMBOL} burned forever`, value: fmtTokens(f?.burnedPtwr ?? 0), note: "bought and burned in one transaction", tone: "fire" },
@@ -52,7 +52,7 @@ export default function FeeTracker() {
         ))}
       </ol>
       <div className="ft-split" aria-hidden>
-        <span style={{ flex: SPLIT.recipientBps }}>{SPLIT.recipientBps / 100}% pump users</span>
+        <span style={{ flex: SPLIT.recipientBps }}>{SPLIT.recipientBps / 100}% pump profiles</span>
         <span style={{ flex: SPLIT.treasuryBps }}>{SPLIT.treasuryBps / 100}%</span>
       </div>
       <footer className="ft-foot">

@@ -248,7 +248,7 @@ export function lineFor(r: () => number, t: Talk): string {
     if ((t.usd ?? 0) >= 10_000) lines.push("whale alert", "need a bigger vault");
     if (t.tier >= 5) lines.push("view is crazy", "penthouse life");
     else lines.push(`${sym} to the top`, "wen penthouse");
-    if (t.isHouse) lines.push("gm tower", "rewards day", "hold the tower");
+    if (t.isHouse) lines.push("gm tower", "burn day", "hold the tower");
     lines.push("gm", "wagmi", "lfg");
   }
   return lines[Math.floor(r() * lines.length)].toUpperCase();
