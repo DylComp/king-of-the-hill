@@ -71,7 +71,7 @@ export default function Activity() {
             <div className="panel tile">
               <span className="label">SOL spent on buybacks</span>
               <span className="pixel big gold">{fmtSol(burns?.sol ?? fees?.buybackSpentSol ?? 0)} SOL</span>
-              <span className="dim">{burns?.recent.length ? `${burns.recent.length} recent buybacks` : "starts when buybacks switch on"}</span>
+              <span className="dim">{burns?.recent.length ? `${burns.recent.length} recent buybacks` : "bought on the market as fees arrive"}</span>
             </div>
             <div className="panel tile">
               <span className="label">to pump profiles</span>
@@ -137,7 +137,7 @@ export default function Activity() {
                   ))}
                 </ol>
               ) : (
-                <p className="dim">The first buyback lands once ${HOUSE_SYMBOL} is live and the worker switches on.</p>
+                <p className="dim">Each buyback shows up here as launch fees come in, with its burn transaction.</p>
               )}
             </div>
           </div>

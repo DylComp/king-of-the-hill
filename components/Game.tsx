@@ -108,7 +108,7 @@ function loadSave(owner: string | null): Save {
 }
 
 function fmtUsd(n: number | null) {
-  if (n == null) return "soon";
+  if (n == null) return "--";
   if (n >= 1e6) return `$${(n / 1e6).toFixed(2)}m`;
   if (n >= 1e3) return `$${(n / 1e3).toFixed(1)}k`;
   return n >= 1 ? `$${n.toFixed(2)}` : `$${n.toPrecision(3)}`;
@@ -277,7 +277,7 @@ export default function Game() {
   }, [open, loadBoard]);
 
   useEffect(() => {
-    if (!HOUSE_MINT) return; // pre-launch: nothing to price yet
+    if (!HOUSE_MINT) return;
     const load = () =>
       fetch(`https://api.dexscreener.com/tokens/v1/solana/${HOUSE_MINT}`)
         .then((r) => r.json())
@@ -433,7 +433,8 @@ export default function Game() {
   const progress =
     !sel || nextMs == null ? 1 : Math.min(1, Math.max(0, 1 - nextMs / ((TIERS[selTier + 1].minDays - TIERS[selTier].minDays) * DAY)));
   const holdsHouse = sorted.some((f) => f.isHouse);
-  const launched = coin != null;
+  // $PTWR is live: its floors, buy links and the rooftop billboard are on.
+  const launched = HOUSE_MINT != null;
   const empty = !!owner && !loading && !error && tokenFloors(sorted).length === 0;
   const earned = achievementsOf(sorted, save, streak, !!owner && owner === me, now);
   const streakNow = liveStreak(streak, now);

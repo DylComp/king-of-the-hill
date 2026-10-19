@@ -8,8 +8,11 @@
   <a href="https://pumptowers.fun/tokens">tokens</a> ·
   <a href="https://pumptowers.fun/activity">activity</a> ·
   <a href="https://pumptowers.fun/#docs">docs</a> ·
-  <a href="https://x.com/PumpTowerz">x</a>
+  <a href="https://x.com/PumpTowerz">x</a> ·
+  <a href="https://pump.fun/coin/5ChT61vPfByx2NApxSNT4iPMTRCV39m5z88bXYcppump">buy $PTWR</a>
 </p>
+
+<p align="center"><b>$PTWR CA:</b> <code>5ChT61vPfByx2NApxSNT4iPMTRCV39m5z88bXYcppump</code></p>
 
 # pump tower
 
@@ -125,11 +128,11 @@ Import `DylComp/pump-tower` into Vercel (framework Next.js, root directory left 
 - `/api/tokens`, `/api/fees`, `/api/burns` and `/api/activity` feed the tokens, fees-routed and activity views. They only read the registry, the buyback and fee-collection ledgers and the chain; none of them write to a ledger or sign anything.
 - `lib/game.ts` holds all rules (tiers, rent, item catalog, buying). `lib/render.ts` and `lib/sprites.ts` draw the tower and item icons. `lib/howto.ts` holds the in-site docs, with numbers read from the rules.
 
-## Launch checklist
+## Live status
 
-1. Launch $PTWR, then set `HOUSE_MINT` in `lib/game.ts` and `PTWR_OFFICIAL_MINT` in Vercel.
-2. Provision and switch on buybacks and fee collection as described under [Operations](#operations).
-3. Launch one coin for a real pump user and check it on /tokens, pump profiles, /activity and in the city.
+- $PTWR is live at `5ChT61vPfByx2NApxSNT4iPMTRCV39m5z88bXYcppump` (`HOUSE_MINT` in `lib/game.ts`). The site shows its contract with copy buttons, buy links, the 3x HQ floor and the BUY + BURN billboard.
+- Buybacks and fee collection run once `PTWR_OFFICIAL_MINT` is set in Vercel and the workers are provisioned and enabled, as described under [Operations](#operations).
+- Launching is open to everyone; every launch is listed on /tokens and pump profiles, tracked on /activity and stands in the city.
 
 ## Known limits
 

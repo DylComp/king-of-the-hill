@@ -1,10 +1,7 @@
 // Pure game rules: hold-time tiers, citizens, cash and the item catalog.
 // Shared by the server route, the canvas renderer and the tests.
 
-/**
- * $PTWR's official mint. Buy links only appear once it trades on DexScreener, so the site
- * reads "launching soon" until the coin is live on pump.fun.
- */
+/** $PTWR's official mint, live on pump.fun. */
 export const HOUSE_MINT: string | null = "5ChT61vPfByx2NApxSNT4iPMTRCV39m5z88bXYcppump";
 export const HOUSE_SYMBOL = "PTWR";
 export const isHouseMint = (mint: string) => HOUSE_MINT != null && mint === HOUSE_MINT;
