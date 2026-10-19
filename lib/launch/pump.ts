@@ -215,7 +215,7 @@ export async function pendingFees(mint: string): Promise<number> {
 export const vaultOf = (mint: string) => creatorVaultPda(feeSharingConfigPda(key(mint, "mint"))).toBase58();
 
 /** Unsigned payout transaction. Anyone can send it; the payer only covers the network fee. */
-export async function collectTx(mint: string, payer: string) {
+export async function collectTx(mint: string, payer: string, priorityMicroLamports?: number) {
   const m = key(mint, "mint");
   const p = key(payer, "payer");
   const conn = connection();
@@ -225,7 +225,7 @@ export async function collectTx(mint: string, payer: string) {
   const message = new TransactionMessage({
     payerKey: p,
     recentBlockhash: latest.blockhash,
-    instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }), ComputeBudgetProgram.setComputeUnitPrice({ microLamports: await priorityFee(conn) }), ...instructions],
+    instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }), ComputeBudgetProgram.setComputeUnitPrice({ microLamports: priorityMicroLamports ?? await priorityFee(conn) }), ...instructions],
   }).compileToV0Message();
   const tx = new VersionedTransaction(message);
   const sim = await conn.simulateTransaction(tx, { sigVerify: false, commitment: "confirmed" });

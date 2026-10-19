@@ -1,10 +1,10 @@
 import { createRequire } from "node:module";
 import { Keypair, PublicKey, VersionedTransaction } from "@solana/web3.js";
 import { NATIVE_MINT } from "@solana/spl-token";
-import bs58 from "bs58";
+import { collection } from "./profile-claims.ts";
 import { TREASURY_WALLET } from "../game";
-import { connection, collectTx, verifyLaunch } from "../launch/pump";
-import { getCoin, latestCoins } from "../launch/registry";
+import { connection, verifyLaunch } from "../launch/pump";
+import { getCoin } from "../launch/registry";
 import { buybackChain, verifyBuybackPlan } from "./buyback-chain.ts";
 import { buybackId, buybackReservation, verifyBuybackSigned, type BuybackPolicy } from "./buyback-model.ts";
 import { eligibleRevenue } from "./revenue.ts";
@@ -59,41 +59,6 @@ async function scanRevenue(store: Store, conn: ReturnType<typeof connection>, tr
   await store.save();
 }
 
-async function collection(store: Store, conn: ReturnType<typeof connection>, signer: Keypair) {
-  const s = store.state;
-  if (s.collection) {
-    const pending = s.collection;
-    const tx = await conn.getTransaction(pending.signature, { commitment: "finalized", maxSupportedTransactionVersion: 0 });
-    if (tx) {
-      if (!tx.meta) throw Error("Collection receipt metadata unavailable");
-      s.collection = null;
-      await store.save();
-      return tx.meta.err ? "collection_failed" : "collection_confirmed";
-    }
-    if (await conn.getBlockHeight("finalized") > pending.lastValidBlockHeight) return "collection_expired_unresolved";
-    await store.maySend();
-    await conn.sendRawTransaction(Buffer.from(pending.signed, "base64"), { skipPreflight: false, maxRetries: 3 });
-    return "collection_pending";
-  }
-  const coins = await latestCoins(s.coinOffset, 1);
-  s.coinOffset = coins.length ? s.coinOffset + 1 : 0;
-  await store.save();
-  const coin = coins[0];
-  if (!coin || coin.mint === s.mint) return "no_eligible_collection";
-  const treasury = signer.publicKey.toBase58();
-  if (!(await verifyLaunch(coin.mint, coin.recipient.wallet, treasury)).ok) return "ineligible_collection";
-  const built = await collectTx(coin.mint, treasury);
-  const tx = VersionedTransaction.deserialize(Buffer.from(built.tx, "base64"));
-  const sim = await conn.simulateTransaction(tx, { sigVerify: false, commitment: "confirmed", accounts: { encoding: "base64", addresses: [treasury] } });
-  const before = await conn.getBalance(signer.publicKey, "confirmed");
-  if (sim.value.err || !sim.value.accounts?.[0] || sim.value.accounts[0].lamports - before < 100_000) return "collection_below_threshold";
-  tx.sign([signer]);
-  s.collection = { mint: coin.mint, signed: Buffer.from(tx.serialize()).toString("base64"), signature: bs58.encode(tx.signatures[0]), lastValidBlockHeight: built.lastValidBlockHeight };
-  await store.save();
-  await store.maySend();
-  await conn.sendRawTransaction(tx.serialize(), { skipPreflight: false, maxRetries: 3 });
-  return "collection_submitted";
-}
 
 export async function runBuybacks() {
   const mint = process.env.PTWR_OFFICIAL_MINT?.trim();
@@ -155,7 +120,7 @@ export async function runBuybacks() {
         return { outcome: "buy_and_burn_submitted", signature: s.pending.signature };
       }
     }
-    const outcome = await collection(store, conn, signer);
+    const outcome = "awaiting_eligible_revenue";
     s.lastOutcome = outcome;
     await store.save();
     return { outcome, eligibleLamports: s.credit, spentLamports: s.debit, burnedRaw: s.burned };

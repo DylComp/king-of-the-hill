@@ -11,8 +11,8 @@ export type State = {
   coinOffset: number; lastOutcome: string; updatedAt: number;
   lastBuyback?: { signature: string; slot: number; debit: string; burned: string; success: boolean };
 };
-const KEY = "pt:buyback:v1", LOCK = `${KEY}:lock`;
-export async function openStore(mint: string) {
+export async function openStore(mint: string, namespace: "buyback" | "profile-fees" = "buyback") {
+  const KEY = `pt:${namespace}:v1`, LOCK = `${KEY}:lock`;
   const lease = randomUUID();
   if (await redis("SET", LOCK, lease, "NX", "EX", 180) !== "OK") return null;
   let expected = await redis<string | null>("GET", KEY);

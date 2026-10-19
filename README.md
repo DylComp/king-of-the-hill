@@ -170,3 +170,22 @@ Atomic curve/AMM plan construction and verification are adapted from the user's 
 Production variables: `PTWR_DEV_SECRET_KEY` (sensitive JSON keypair) and `PTWR_DEV_FEE_COLLECTION_ENABLED=true`. The existing `PTWR_OFFICIAL_MINT`, RPC and `CRON_SECRET` are shared. With no official mint it returns `awaiting_official_mint` without loading a key or sending anything. Claims require at least 0.001 SOL in a source and a dev balance of at least 0.01 SOL for gas/rent, and simulation must show positive net proceeds. Curve and AMM claims alternate when both have sufficient fees. AMM fees are unwrapped through a fresh temporary token account, created and closed atomically; the dev wallet's existing WSOL account is untouched.
 
 The independent `pt:dev-fees:v1` ledger pins the mint and dev address, stores signed attempts before broadcasting, records finalized net proceeds, and caps network fees at 0.0001 SOL per attempt and 0.001 SOL per UTC day. A pending attempt is retried with identical signed bytes; expired attempts lacking a finalized receipt stop for reconciliation. This ledger never credits the buyback budget. Set `PTWR_DEV_FEE_COLLECTION_ENABLED=false` and redeploy to pause new collections. Previously broadcast transactions may still finalize.
+
+### Profile fee claims before the official mint launches
+
+`/api/cron/profile-fees` runs every minute independently of `PTWR_OFFICIAL_MINT`
+and `PTWR_BUYBACK_ENABLED`. Set `PTWR_PROFILE_CLAIMS_ENABLED=true` and fund the
+configured treasury signer (0.01 SOL is enough to start). It visits registered
+coins in rotation, verifies the locked 80% profile recipient / 20% treasury split,
+and uses the official SDK to sweep and distribute creator fees. One transaction
+can be in flight at a time; signed bytes are saved before broadcast and reused
+on retries. A finalized receipt is reconciled on a later invocation. Unresolved
+expired transactions halt collection for inspection. The separate ledger is
+`pt:profile-fees:v1`, pinned to the treasury wallet rather than the future mint.
+
+Claims require at least 0.002 SOL in the fee payer, cap the transaction network
+fee at 0.0001 SOL, and require a simulated net treasury gain of 0.0001 SOL.
+Official-token fees are excluded. Buybacks and official dev claims remain on
+separate five-minute schedules, awaiting the official mint. Existing fee totals
+refresh within their ten-minute cache after payouts; treasury activity refreshes
+within a minute. Treasury deposits for gas never count as buyback revenue.
