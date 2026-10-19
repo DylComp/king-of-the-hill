@@ -7,6 +7,7 @@ import { rewardCash, shortAddr } from "@/lib/game";
 import CoinCard, { fmtSol } from "./CoinCard";
 import SiteNav from "./SiteNav";
 import { useMe } from "./useMe";
+import { getRetry } from "./retry";
 
 /** A pump user's page: their pump profile, the coins launched for them, and what they've earned. */
 export default function UserPage({ wallet: addr }: { wallet: string }) {
@@ -15,7 +16,7 @@ export default function UserPage({ wallet: addr }: { wallet: string }) {
   const [coins, setCoins] = useState<CoinView[] | null>(null);
 
   useEffect(() => {
-    fetch(`/api/pump/profile?q=${addr}`)
+    getRetry(`/api/pump/profile?q=${addr}`)
       .then((r) => r.json())
       .then((j: { profile?: Profile }) => setProfile(j.profile ?? null))
       .catch(() => {});

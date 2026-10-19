@@ -12,7 +12,10 @@ export async function GET(req: Request) {
   const slow = await limited(req, "names");
   if (slow) return slow;
   try {
-    const found = await Promise.all(wallets.map((w) => findProfile(w).catch(() => null)));
+    // A few at a time, so a cold skyline doesn't fire 40 lookups at pump.fun at once.
+    const found: (Awaited<ReturnType<typeof findProfile>> | null)[] = [];
+    for (let i = 0; i < wallets.length; i += 8)
+      found.push(...(await Promise.all(wallets.slice(i, i + 8).map((w) => findProfile(w).catch(() => null)))));
     const names: Record<string, { username: string; image: string | null }> = {};
     found.forEach((p, i) => {
       if (p?.username) names[wallets[i]] = { username: p.username, image: p.image };
