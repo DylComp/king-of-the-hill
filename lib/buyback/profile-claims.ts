@@ -2,11 +2,11 @@ import { Keypair } from "@solana/web3.js";
 import { collection as collectProfileFees } from "./collection.ts";
 import { TREASURY_WALLET } from "../game";
 import { connection, collectTx, verifyLaunch } from "../launch/pump";
-import { latestCoins } from "../launch/registry";
+import { latestCoins, refreshClaimedFees } from "../launch/registry";
 import { openStore, type Store } from "./store.ts";
 
 export const collection = (store: Store, conn: ReturnType<typeof connection>, signer: Keypair) =>
-  collectProfileFees(store, conn, signer, { latestCoins, verifyLaunch, collectTx, officialMint: process.env.PTWR_OFFICIAL_MINT?.trim() });
+  collectProfileFees(store, conn, signer, { latestCoins, verifyLaunch, collectTx, refreshFees: refreshClaimedFees, officialMint: process.env.PTWR_OFFICIAL_MINT?.trim() });
 
 /** Profile payouts are independent of the unlaunched official token and buyback switch. */
 export async function runProfileClaims() {

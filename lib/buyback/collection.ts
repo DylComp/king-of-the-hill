@@ -3,6 +3,7 @@ import bs58 from "bs58";
 import type { Store } from "./store.ts";
 export type CollectionDeps = {
   officialMint?: string;
+  refreshFees: (mint: string, signature: string) => Promise<void>;
   latestCoins: (offset: number, count: number) => Promise<{ mint: string; recipient: { wallet: string } }[]>;
   verifyLaunch: (mint: string, recipient: string, treasury: string) => Promise<{ ok: boolean }>;
   collectTx: (mint: string, payer: string, priority: number) => Promise<{ tx: string; lastValidBlockHeight: number }>;
@@ -14,6 +15,7 @@ export async function collection(store: Store, conn: Connection, signer: Keypair
     const tx = await conn.getTransaction(pending.signature, { commitment: "finalized", maxSupportedTransactionVersion: 0 });
     if (tx) {
       if (!tx.meta) throw Error("Collection receipt metadata unavailable");
+      if (!tx.meta.err) await deps.refreshFees(pending.mint, pending.signature);
       s.collection = null;
       await store.save();
       return tx.meta.err ? "collection_failed" : "collection_confirmed";

@@ -10,7 +10,7 @@ function fixture() {
   const unsigned = new VersionedTransaction(new TransactionMessage({payerKey: signer.publicKey, recentBlockhash: PublicKey.default.toBase58(), instructions: []}).compileToV0Message());
   const events: string[] = [];
   const store = {state: {coinOffset: 0, collection: null}, save: async () => {events.push("save");}, maySend: async () => {events.push("lease");}} as unknown as Store;
-  const deps: CollectionDeps = {latestCoins: async () => [{mint, recipient: {wallet: Keypair.generate().publicKey.toBase58()}}], verifyLaunch: async () => ({ok:true}), collectTx: async () => ({tx:Buffer.from(unsigned.serialize()).toString("base64"),lastValidBlockHeight:123})};
+  const deps: CollectionDeps = {refreshFees: async () => {events.push("refresh");},latestCoins: async () => [{mint, recipient: {wallet: Keypair.generate().publicKey.toBase58()}}], verifyLaunch: async () => ({ok:true}), collectTx: async () => ({tx:Buffer.from(unsigned.serialize()).toString("base64"),lastValidBlockHeight:123})};
   const conn = {getBalance:async()=>10_000_000,getFeeForMessage:async()=>({value:85_000}),simulateTransaction:async()=>({value:{err:null,accounts:[{lamports:12_000_000}]}}),sendRawTransaction:async()=>{events.push("send");}} as unknown as Connection;
   return {signer,mint,store,deps,conn,events};
 }
@@ -30,4 +30,12 @@ test("pending claims retry identical bytes without building another payout",asyn
   const f=fixture();await collection(f.store,f.conn,f.signer,f.deps);const saved=f.store.state.collection!.signed;
   f.deps.collectTx=async()=>{throw Error("must not rebuild");};f.conn.getTransaction=async()=>null;f.conn.getBlockHeight=async()=>100;
   f.conn.sendRawTransaction=async(raw)=>{assert.equal(Buffer.from(raw).toString("base64"),saved);return "sig";};assert.equal(await collection(f.store,f.conn,f.signer,f.deps),"collection_pending");
+});
+test("confirmed claims refresh fees before clearing pending state, and retry a failed refresh",async()=>{
+  const f=fixture();await collection(f.store,f.conn,f.signer,f.deps);
+  f.conn.getTransaction=async()=>({meta:{err:null}} as never);
+  f.deps.refreshFees=async()=>{throw Error("RPC lag");};
+  await assert.rejects(collection(f.store,f.conn,f.signer,f.deps),/RPC lag/);assert.ok(f.store.state.collection);
+  f.deps.refreshFees=async(mint,sig)=>{assert.equal(mint,f.mint);assert.equal(sig,f.store.state.collection!.signature);f.events.push("refresh");};
+  assert.equal(await collection(f.store,f.conn,f.signer,f.deps),"collection_confirmed");assert.equal(f.store.state.collection,null);assert.deepEqual(f.events.slice(-2),["refresh","save"]);
 });

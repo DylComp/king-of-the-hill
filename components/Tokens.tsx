@@ -22,24 +22,49 @@ export default function Tokens() {
   const [profiles, setProfiles] = useState<ProfileSummary[] | null>(null);
 
   useEffect(() => {
-    fetch(`/api/tokens?page=${page}`)
-      .then((r) => r.json())
-      .then((j: { coins?: CoinView[]; total?: number; totals?: TokenTotals }) => {
-        setCoins((prev) => [...(page ? prev ?? [] : []), ...(j.coins ?? [])]);
-        setTotal(j.total ?? 0);
-        if (j.totals) setSums(j.totals);
-        setMore((j.coins?.length ?? 0) === 30);
-      })
-      .catch(() => setCoins((prev) => prev ?? []));
+    let active = true;
+    let loading = false;
+    const load = async () => {
+      if (loading || document.hidden) return;
+      loading = true;
+      try {
+        const pages = await Promise.all(Array.from({ length: page + 1 }, async (_, i) => {
+          const r = await fetch(`/api/tokens?page=${i}`, { cache: "no-store" });
+          if (!r.ok) throw Error("Token refresh failed");
+          return r.json() as Promise<{ coins: CoinView[]; total: number; totals: TokenTotals }>;
+        }));
+        if (!active) return;
+        setCoins(pages.flatMap(p => p.coins));
+        setTotal(pages[0].total);
+        setSums(pages[0].totals);
+        setMore(pages.at(-1)!.coins.length === 30);
+      } catch { /* Keep the last successful totals during transient failures. */ }
+      finally { loading = false; }
+    };
+    void load();
+    // Keep deeper pagination below the shared API request budget.
+    const id = setInterval(load, Math.max(5_000, (page + 1) * 2_000));
+    return () => { active = false; clearInterval(id); };
   }, [page]);
 
   useEffect(() => {
-    if (tab !== "profiles" || profiles) return;
-    fetch("/api/tokens?view=profiles")
-      .then((r) => r.json())
-      .then((j: { profiles?: ProfileSummary[] }) => setProfiles(j.profiles ?? []))
-      .catch(() => setProfiles([]));
-  }, [tab, profiles]);
+    if (tab !== "profiles") return;
+    let active = true;
+    let loading = false;
+    const load = async () => {
+      if (loading || document.hidden) return;
+      loading = true;
+      try {
+        const r = await fetch("/api/tokens?view=profiles", { cache: "no-store" });
+        if (!r.ok) return;
+        const j = await r.json() as { profiles: ProfileSummary[] };
+        if (active) setProfiles(j.profiles);
+      } finally { loading = false; }
+    };
+    void load().catch(() => {});
+    const id = setInterval(() => { void load().catch(() => {}); }, 5_000);
+    return () => { active = false; clearInterval(id); };
+  }, [tab]);
 
   const people = useMemo(() => {
     const term = q.trim().toLowerCase().replace(/^@/, "");

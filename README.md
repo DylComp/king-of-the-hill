@@ -186,6 +186,9 @@ expired transactions halt collection for inspection. The separate ledger is
 Claims require at least 0.002 SOL in the fee payer, cap the transaction network
 fee at 0.0001 SOL, and require a simulated net treasury gain of 0.0001 SOL.
 Official-token fees are excluded. Buybacks and official dev claims remain on
-separate five-minute schedules, awaiting the official mint. Existing fee totals
-refresh within their ten-minute cache after payouts; treasury activity refreshes
-within a minute. Treasury deposits for gas never count as buyback revenue.
+separate five-minute schedules, awaiting the official mint. Successful finalized claims immediately invalidate and refill the affected fee
+total from on-chain distribution receipts, before clearing the pending claim.
+The fee tracker, coin and profile pages poll every five seconds. The token list
+also polls, with a longer interval when many pages are loaded. Background
+reconciliation retains a ten-minute cache for payouts made outside the worker;
+treasury activity refreshes within a minute. Treasury deposits for gas never count as buyback revenue.

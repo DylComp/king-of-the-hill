@@ -39,6 +39,8 @@ export default function CoinPage({ mint }: { mint: string }) {
   useEffect(() => {
     load();
     setFresh(new URL(window.location.href).searchParams.has("new"));
+    const id = setInterval(() => { if (!document.hidden) load(); }, 5_000);
+    return () => clearInterval(id);
   }, [load]);
 
   if (missing)

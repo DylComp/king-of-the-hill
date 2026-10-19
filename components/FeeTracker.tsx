@@ -1,7 +1,7 @@
 "use client";
 // The fees-routed tracker on /tokens: every creator fee from coins launched here, split
 // 80/20 between pump users and the treasury, and the treasury share turned into $PTWR
-// buybacks that are burned. Numbers come from /api/fees and refresh every minute.
+// buybacks that are burned. Numbers come from /api/fees and refresh every five seconds.
 import { useEffect, useState } from "react";
 import type { FeesRouted } from "@/lib/launch/routed";
 import { HOUSE_SYMBOL } from "@/lib/game";
@@ -15,14 +15,23 @@ const solscan = (sig: string) => `https://solscan.io/tx/${sig}`;
 export default function FeeTracker() {
   const [f, setF] = useState<FeesRouted | null>(null);
   useEffect(() => {
-    const load = () =>
-      fetch("/api/fees")
-        .then((r) => (r.ok ? r.json() : null))
-        .then((j: FeesRouted | null) => j && setF(j))
-        .catch(() => {});
-    load();
-    const id = setInterval(load, 60_000);
-    return () => clearInterval(id);
+    let active = true;
+    let loading = false;
+    const load = async () => {
+      if (loading || document.hidden) return;
+      loading = true;
+      try {
+        const r = await fetch("/api/fees", { cache: "no-store" });
+        if (r.ok) {
+          const j = await r.json() as FeesRouted;
+          if (active) setF(j);
+        }
+      } catch { /* Preserve the last successful totals. */ }
+      finally { loading = false; }
+    };
+    void load();
+    const id = setInterval(load, 5_000);
+    return () => { active = false; clearInterval(id); };
   }, []);
 
   const live = !!f?.houseMint;
@@ -40,7 +49,7 @@ export default function FeeTracker() {
         <span className="pixel green tiny-pixel">
           <span className={`ft-dot${live ? " on" : ""}`} aria-hidden /> fees routed
         </span>
-        <span className="dim">{f?.updatedAt ? `worker updated ${ago(f.updatedAt)}` : f ? "live totals, refreshed every minute" : "loading"}</span>
+        <span className="dim">{f?.updatedAt ? `worker updated ${ago(f.updatedAt)}` : f ? "live totals, refreshed every 5 seconds" : "loading"}</span>
       </header>
       <ol className="ft-flow">
         {steps.map((s, i) => (

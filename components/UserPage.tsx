@@ -18,10 +18,14 @@ export default function UserPage({ wallet: addr }: { wallet: string }) {
       .then((r) => r.json())
       .then((j: { profile?: Profile }) => setProfile(j.profile ?? null))
       .catch(() => {});
-    fetch(`/api/tokens?for=${addr}`)
+    let active = true;
+    const load = () => fetch(`/api/tokens?for=${addr}`)
       .then((r) => r.json())
-      .then((j: { coins?: CoinView[] }) => setCoins(j.coins ?? []))
-      .catch(() => setCoins([]));
+      .then((j: { coins?: CoinView[] }) => { if (active && j.coins) setCoins(j.coins); })
+      .catch(() => {});
+    void load();
+    const id = setInterval(() => { if (!document.hidden) void load(); }, 5_000);
+    return () => { active = false; clearInterval(id); };
   }, [addr]);
 
   const name = profile?.username ? `@${profile.username}` : shortAddr(addr);
