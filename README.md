@@ -40,8 +40,9 @@ Pump Tower turns any Solana wallet into a pixel skyscraper, and turns pump.fun c
 **The tower**
 - Floors for every listed coin worth $0.50 or more, ranked by hold time: bare walls on day zero, studio at 1 day, apartment at 3, loft at 7, suite at 14, penthouse at 30.
 - Themed rooms with live coin logos, colours and prices, citizens who talk about the coin, rain on red days and fireworks on green ones.
+- Every floor shows the bag it holds: a logo-stamped sack that grows with the bag, a ticker flag, a coin plush at a week, a diamond hands trophy at a month, and a rocket or HODL sign with the day's move.
 - Game cash from rent (derived from on-chain hold time, so it can't be faked), a daily check-in streak, daily quests and invite rewards.
-- A catalog of furniture, pets and outfits; the best items unlock only on long-held floors.
+- A catalog of 49 furniture pieces, pets and outfits, from the airdrop crate and pump pill to the lambo and golden phoenix; the best items unlock only on long-held floors.
 - A free home floor for every signed-in resident, weekly seasons, all-time leaderboards and achievements.
 - Visit any wallet with `?w=<address>`, share to X, copy a link or save the tower as a PNG.
 

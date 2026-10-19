@@ -43,6 +43,10 @@ function paintCitizen(ctx: C, k: Look, outfit: string | null, frame: number) {
   if (outfit === "suit") (shirt = "#17181d"), (pants = "#17181d"), (shoes = "#0b0b0e");
   if (outfit === "chain") shirt = "#101114";
   if (outfit === "crown") shirt = "#5b21b6";
+  if (outfit === "diamondtee") shirt = "#22d3ee";
+  if (outfit === "frogsuit") shirt = "#4ade80";
+  if (outfit === "moonsuit") (shirt = "#e5e7eb"), (pants = "#d1d5db"), (shoes = "#9ca3af");
+  if (outfit === "goldsuit") (shirt = GOLD), (pants = "#b8901c"), (shoes = "#78350f");
   const walking = frame > 0;
   const stride = frame === 1 ? 1 : frame === 3 ? -1 : 0;
 
@@ -78,7 +82,7 @@ function paintCitizen(ctx: C, k: Look, outfit: string | null, frame: number) {
   // hair
   const h = k.hair;
   const hd = shade(h, -0.25);
-  const style = outfit === "cap" || outfit === "crown" ? 0 : k.style;
+  const style = outfit === "cap" || outfit === "crown" || outfit === "frogsuit" || outfit === "moonsuit" ? 0 : k.style;
   if (style === 0) {
     rect(ctx, bx + 2, by, 6, 2, h);
     rect(ctx, bx + 2, by + 2, 1, 2, hd);
@@ -130,6 +134,44 @@ function paintCitizen(ctx: C, k: Look, outfit: string | null, frame: number) {
     px(ctx, bx + 6, by + 9, GOLD);
     px(ctx, bx + 5, by + 10, GOLD);
     rect(ctx, bx + 4, by + 11, 2, 2, "#fde68a");
+  } else if (outfit === "diamondtee") {
+    // a diamond on the chest
+    px(ctx, bx + 5, by + 9, "#ecfeff");
+    rect(ctx, bx + 4, by + 10, 3, 1, "#a5f3fc");
+    px(ctx, bx + 5, by + 11, "#0891b2");
+  } else if (outfit === "backpack") {
+    // a coin sack slung on the back, strap across the chest
+    rect(ctx, 0, by + 8, 2, 6, "#a27b4c");
+    px(ctx, 0, by + 7, "#6b4f2e");
+    px(ctx, 1, by + 10, GOLD);
+    for (let i = 0; i < 5; i++) px(ctx, bx + 1 + i, by + 8 + i, "#6b4f2e");
+  } else if (outfit === "lasers") {
+    // red eyes with beams shooting forward
+    px(ctx, bx + 4, by + 4, "#ef4444");
+    px(ctx, bx + 6, by + 4, "#ef4444");
+    rect(ctx, bx + 7, by + 4, 3, 1, "#fca5a5");
+    px(ctx, bx + 9, by + 3, "#fecaca");
+  } else if (outfit === "frogsuit") {
+    // a frog hood with eyes on top
+    rect(ctx, bx + 1, by - 1, 8, 3, "#4ade80");
+    rect(ctx, bx + 1, by + 2, 1, 5, "#22c55e");
+    for (const ex of [2, 6]) {
+      rect(ctx, bx + ex, by - 3, 2, 2, "#f8fafc");
+      px(ctx, bx + ex + 1, by - 2, "#111111");
+    }
+    rect(ctx, bx + 3, by + 11, 4, 2, "#16a34a");
+  } else if (outfit === "moonsuit") {
+    // a space helmet with a tinted visor and a patch
+    rect(ctx, bx + 1, by - 1, 8, 1, "#cbd5e1");
+    rect(ctx, bx + 1, by, 1, 7, "#cbd5e1");
+    rect(ctx, bx + 8, by, 1, 7, "#cbd5e1");
+    rect(ctx, bx + 3, by + 3, 5, 2, "rgba(56,189,248,0.55)");
+    px(ctx, bx + 3, by + 3, "#e0f2fe");
+    rect(ctx, bx + 2, by + 9, 2, 2, "#ef4444");
+  } else if (outfit === "goldsuit") {
+    rect(ctx, bx + 4, by + 8, 2, 4, "#fff7d6");
+    rect(ctx, bx + 4, by + 9, 1, 4, "#111111");
+    px(ctx, bx + 7, by + 9, "#fff1a8");
   } else if (outfit === "crown") {
     rect(ctx, bx + 2, by - 1, 6, 2, GOLD);
     px(ctx, bx + 2, by - 2, GOLD);
@@ -165,6 +207,57 @@ export const walkFrame = (step: number) => [0, 1, 0, 3][Math.floor(step * 8) % 4
 type PetDef = { frames: string[][]; pal: Record<string, string>; speed: number; hop?: boolean };
 
 export const PETS: Record<string, PetDef> = {
+  pill: {
+    speed: 10,
+    hop: true,
+    pal: { w: "#f4f4f5", h: "#ffffff", k: "#14532d", g: "#4ade80", e: "#111111", m: "#166534" },
+    frames: [
+      ["....wwww....", "...wwhwww...", "...wwwwww...", "...kkkkkk...", "...geggeg...", "...gggggg...", "...ggmmgg...", "....gggg...."],
+      ["....wwww....", "...wwhwww...", "...wwwwww...", "...kkkkkk...", "...gkggkg...", "...gggggg...", "...ggmmgg...", "....gggg...."],
+    ],
+  },
+  hamster: {
+    speed: 14,
+    pal: { a: "#d6a35c", b: "#a87a3d", w: "#fbe7c6", e: "#111111", n: "#f472b6" },
+    frames: [
+      ["...a..a....", "..aaaaaaa..", ".awwaaaeaa.", "awwwwaaaaan", ".aaaaaaaaa.", "..b.b..b.b."],
+      ["...a..a....", "..aaaaaaa..", ".awwaaaeaa.", "awwwwaaaaan", ".aaaaaaaaa.", ".b.b....b.b"],
+    ],
+  },
+  penguin: {
+    speed: 7,
+    pal: { k: "#1f2937", w: "#f8fafc", e: "#111111", y: "#f59e0b" },
+    frames: [
+      ["....kkkk....", "...kkkkkk...", "...kewwek...", "...kwyywk...", "..kkwwwwkk..", "..kkwwwwkk..", "...kwwwwk...", "...kwwwwk...", "....kkkk....", "...yy..yy..."],
+      ["....kkkk....", "...kkkkkk...", "...kewwek...", "...kwyywk...", "..kkwwwwkk..", "...kwwwwkk..", "...kwwwwk...", "...kwwwwk...", "....kkkk....", "....yy.yy..."],
+    ],
+  },
+  spacecat: {
+    speed: 11,
+    pal: { a: "#94a3b8", b: "#64748b", w: "#e2e8f0", e: "#111111", p: "#f472b6", o: "#f43f5e", h: "#7dd3fc" },
+    frames: [
+      [".........o..", "........h.h.", "a.......a.a.", "a.......aaa.", ".a......aeae", ".aaaaaaaawwp", ".aaaabaaaa..", ".a.a...a.a..", ".b.b...b.b.."],
+      [".........o..", "........h.h.", "a.......a.a.", "a.......aaa.", ".a......aeae", ".aaaaaaaawwp", ".aaaabaaaa..", "..a.a.a.a...", "..b.b.b.b..."],
+    ],
+  },
+  whale: {
+    speed: 6,
+    hop: true,
+    pal: { a: "#2563eb", b: "#1d4ed8", e: "#0b1020", w: "#93c5fd", s: "#e0f2fe" },
+    frames: [
+      ["...s.s......", "....s.....b.", ".aaaaaaa.bb.", "aaaaaaaaab..", "aeaaaaaaaa..", "awwwwwwwa...", ".wwwwwww...."],
+      ["....s.......", "...s.s.....b", ".aaaaaaa..bb", "aaaaaaaaabb.", "aeaaaaaaaa..", "awwwwwwwa...", ".wwwwwww...."],
+    ],
+  },
+  phoenix: {
+    speed: 12,
+    hop: true,
+    pal: { r: "#f97316", y: "#facc15", e: "#111111", o: "#ef4444" },
+    frames: [
+      ["r.........y.", "rr......yyy.", ".rrr...yyey.", "..rryyyyyyo.", "...ryyyyrr..", "....rr.rr...", "...r.....r.."],
+      [".rr.......y.", "..rr....yyy.", "..rrr..yyey.", "...ryyyyyyo.", "...ryyyyrr..", "....r..r....", "............"],
+    ],
+  },
   rat: {
     speed: 16,
     pal: { a: "#8a8f98", b: "#6b7079", p: "#f9a8d4", e: "#111111", t: "#f9a8d4" },
