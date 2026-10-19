@@ -1288,3 +1288,27 @@ button.chip.on {
 .wallet-pick p {
   margin: 0;
 }
+.gh {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  color: var(--ink-dim);
+}
+.gh:hover {
+  color: var(--green);
+  background: var(--green-ghost);
+}
+.gh-link {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  color: var(--ink-dim);
+}
+.gh-link:hover {
+  color: var(--green);
+}

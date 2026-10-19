@@ -4,3 +4,6 @@
 const host = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL || "pumptowers.fun";
 export const SITE_HOST = host.replace(/^https?:\/\//, "");
 export const SITE_URL = `https://${SITE_HOST}`;
+
+/** Source code, linked from the nav and footer. */
+export const GITHUB_URL = "https://github.com/DylComp/pump-tower";

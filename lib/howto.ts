@@ -107,6 +107,7 @@ export const DOCS: DocSection[] = [
       ["Read only", "Pump Tower reads balances and history. It never asks for a transaction."],
       ["Sign in", "A free message signature to prove the wallet is yours. It can't move tokens."],
       ["Wallets", "Phantom, Solflare and Backpack. On a phone, connect opens Pump Tower inside the Phantom or Solflare app."],
+      ["Source", "The full code is on GitHub, linked in the menu and footer."],
       ["Fair use", "Each connection gets a set number of requests a minute, so bots can't flood sign-in or the shop. Hit it and you wait a minute."],
     ],
   },

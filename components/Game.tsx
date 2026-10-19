@@ -1,5 +1,6 @@
 "use client";
 
+import { GITHUB_URL } from "@/lib/site";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   HOUSE_MINT,
@@ -99,6 +100,18 @@ type Skyline = {
   total: number;
   season?: { n: number; ends: number; rows: (SkylineRow & { points: number })[]; total: number };
 };
+
+/** GitHub's mark redrawn on a 16px pixel grid to match the site. */
+function GitHubMark() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 16 16" shapeRendering="crispEdges" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M5 1h6v1h2v1h1v2h1v6h-1v2h-1v1h-2v1H9v-3h1v-1h1v-1h1V6h-1V4h-1v1H6V4H5v2H4v3h1v1h1v1h1v1H5v-1H3v1h2v1h2v2H5v-1H3v-1H2v-2H1V5h1V3h1V2h2z"
+      />
+    </svg>
+  );
+}
 
 function provider(): PhantomLike | null {
   const w = window as unknown as { phantom?: { solana?: PhantomLike }; solana?: PhantomLike; solflare?: PhantomLike; backpack?: PhantomLike };
@@ -504,6 +517,9 @@ export default function Game() {
             </a>
           ))}
         </nav>
+        <a className="gh" href={GITHUB_URL} target="_blank" rel="noopener" title="source code on GitHub" aria-label="GitHub">
+          <GitHubMark />
+        </a>
         {me ? (
           <button className="btn ghost" onClick={disconnect} title="sign out">
             {shortAddr(me)}
@@ -1039,6 +1055,9 @@ export default function Game() {
           Pump Tower only reads your wallet. Signing in is a free message signature, never a transaction, and it cannot move your tokens.
           {db ? " Purchases are saved to your wallet and follow you to any device." : " Items you place are saved in this browser."}
         </span>
+        <a className="gh-link" href={GITHUB_URL} target="_blank" rel="noopener">
+          <GitHubMark /> source on github
+        </a>
       </footer>
 
       {shopOpen && (
