@@ -2285,3 +2285,7 @@ button.chip.on {
 .invite .btn {
   align-self: flex-start;
 }
+.doc-ca {
+  margin-top: 12px;
+  flex-wrap: wrap;
+}

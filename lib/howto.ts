@@ -101,7 +101,7 @@ export const DOCS: DocSection[] = [
       ["Holder rewards", "pump.fun pays SOL to holders with $20 or more, several times an hour, straight to the wallet."],
       ["In game", `Every SOL received also adds $${CASH_PER_SOL.toLocaleString("en-US")} of game cash. Your SOL stays yours.`],
       ["Buybacks", `${SPLIT.treasuryBps / 100}% of the creator fees from every coin launched on the launchpad go to the treasury to buy back $${HOUSE_SYMBOL}.`],
-      ["Contract", "Posted on this site on launch day."],
+      ["Contract", "Copy it just below on launch day, with a link to buy on pump.fun."],
     ],
   },
   {

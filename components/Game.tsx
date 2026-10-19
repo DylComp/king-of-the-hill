@@ -6,7 +6,6 @@ import { FEE_TIERS, FEE_TIER_NAMES } from "@/lib/launch/model";
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   HOUSE_MINT,
-  CASH_PER_SOL,
   ITEMS,
   floorLevel,
   holderRewardsLive,
@@ -137,7 +136,6 @@ export default function Game() {
   const [now, setNow] = useState(() => Date.now());
   const [coin, setCoin] = useState<Coin | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const [db, setDb] = useState(false);
   const [me, setMe] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -505,7 +503,6 @@ export default function Game() {
             ["#skyline", "skyline"],
             ["#ladder", "ladder"],
             ["#catalog", "catalog"],
-            ["#coin", "coin"],
             ["/launch", "launch"],
             ["/tokens", "tokens"],
             ["#docs", "docs"],
@@ -943,86 +940,6 @@ export default function Game() {
         <LadderSection />
 
         <CatalogSection />
-
-        <Reveal id="coin" className="sec coin">
-          <div className="sec-head center">
-            <span className="kicker">06 / ${HOUSE_SYMBOL}</span>
-            <HoverText as="h2" text="the floor that pays triple" className="pixel display sm" />
-            <HoverText
-              as="p"
-              by="word"
-              className="lede"
-              text={`Hold $${HOUSE_SYMBOL} and it gets its own neon trimmed floor in your tower, paying three times the rent of any other bag.${launched ? "" : " Launching on pump.fun soon."}`}
-            />
-          </div>
-          <div className="reward-steps">
-            <div className="panel tile">
-              <span className="pixel green tiny-pixel">01 hold</span>
-              <span className="dim">${HOUSE_SYMBOL} launches on pump.fun with holder rewards switched on. Every holder with $20 or more gets paid.</span>
-            </div>
-            <div className="panel tile">
-              <span className="pixel green tiny-pixel">02 get paid sol</span>
-              <span className="dim">pump.fun sends SOL from trading fees straight to holders' wallets, several times an hour. No claiming.</span>
-            </div>
-            <div className="panel tile">
-              <span className="pixel green tiny-pixel">03 spend it here too</span>
-              <span className="dim">
-                Every SOL you are paid also lands in the tower as ${fmtCash(CASH_PER_SOL)} cash for furniture, pets and outfits. Your real SOL stays yours.
-              </span>
-            </div>
-          </div>
-          {owner && holderRewardsLive() && (
-            <div className="panel reward-live">
-              <span className="label">paid to this wallet</span>
-              <span className="pixel gold">{rewardsSol.toFixed(4)} SOL</span>
-              <span className="green">+${fmtCash(rewardCash(rewardsSol))} tower cash</span>
-            </div>
-          )}
-          <div className="coin-tiles">
-            <div className="panel tile">
-              <span className="label">price</span>
-              <span className="pixel">{fmtUsd(coin?.price ?? null)}</span>
-            </div>
-            <div className="panel tile">
-              <span className="label">market cap</span>
-              <span className="pixel">{fmtUsd(coin?.mcap ?? null)}</span>
-            </div>
-            <div className="panel tile">
-              <span className="label">24h</span>
-              <span className={`pixel ${coin?.change != null && coin.change < 0 ? "red" : "green"}`}>
-                {coin?.change != null ? `${coin.change > 0 ? "+" : ""}${coin.change.toFixed(1)}%` : "soon"}
-              </span>
-            </div>
-          </div>
-          <div className="ca-row">
-            {HOUSE_MINT ? (
-              <button
-                className="ca"
-                onClick={() => {
-                  navigator.clipboard?.writeText(HOUSE_MINT!).then(() => setCopied(true));
-                  setTimeout(() => setCopied(false), 1500);
-                }}
-              >
-                <span className="label">ca</span>
-                <span className="ca-full">{HOUSE_MINT}</span>
-                <span className="ca-short">{shortAddr(HOUSE_MINT)}</span>
-                <span className="pixel green tiny-pixel">{copied ? "copied" : "copy"}</span>
-              </button>
-            ) : (
-              <div className="ca">
-                <span className="label">ca</span>
-                <span className="dim">drops on launch day, right here</span>
-              </div>
-            )}
-            {launched ? (
-              <a className="btn" href={pumpUrl} target="_blank" rel="noreferrer">
-                buy ${HOUSE_SYMBOL} on pump.fun
-              </a>
-            ) : (
-              <span className="btn ghost soon">launching soon</span>
-            )}
-          </div>
-        </Reveal>
 
         <DocsSection />
       </main>
