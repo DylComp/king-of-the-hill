@@ -15,6 +15,13 @@ export const isHouseMint = (mint: string) => HOUSE_MINT != null && mint === HOUS
  * the game as cash. Filled in once the first payout is seen on chain.
  */
 export const HOLDER_REWARD_SOURCES: string[] = [];
+/**
+ * The Pump Tower treasury: 20% of every launchpad coin's creator fees go here for $PTWR
+ * buybacks. Null until dlao sends the vanity treasury address; launching stays closed until then.
+ */
+export const TREASURY_WALLET: string | null = null;
+/** dlao's vanity dev wallet. Only it can set up the launchpad's address lookup table. */
+export const DEV_WALLET: string | null = null;
 export const CASH_PER_SOL = 10_000;
 /** Holder rewards land in the game too: every SOL paid out is worth this much cash. */
 export const rewardCash = (sol: number) => Math.floor(Math.max(0, sol) * CASH_PER_SOL);

@@ -12,11 +12,12 @@ import {
   floorRate,
   streakReward,
 } from "./game";
+import { FEE_TIERS, FEE_TIER_NAMES, SPLIT } from "./launch/model";
 
 export type DocSection = { id: string; title: string; summary: string; items: [string, string][] };
 
 export const DOCS_INTRO =
-  "Pump Tower turns a Solana wallet into a pixel skyscraper. Every coin you hold is a floor. The longer you hold it, the better the floor gets and the more rent it pays in game cash. It only reads wallets and never sends a transaction.";
+  "Pump Tower turns a Solana wallet into a pixel skyscraper. Every coin you hold is a floor. The longer you hold it, the better the floor gets and the more rent it pays in game cash. The launchpad lets anyone launch a pump.fun coin for any pump user, who gets most of its creator fees and a floor for it in their tower.";
 
 export const DOCS: DocSection[] = [
   {
@@ -96,7 +97,34 @@ export const DOCS: DocSection[] = [
       ["HQ floor", `Holding $${HOUSE_SYMBOL} adds a Pump HQ floor that earns ${HOUSE_BOOST}x rent.`],
       ["Holder rewards", "pump.fun pays SOL to holders with $20 or more, several times an hour, straight to the wallet."],
       ["In game", `Every SOL received also adds $${CASH_PER_SOL.toLocaleString("en-US")} of game cash. Your SOL stays yours.`],
+      ["Buybacks", `${SPLIT.treasuryBps / 100}% of the creator fees from every coin launched on the launchpad go to the treasury to buy back $${HOUSE_SYMBOL}.`],
       ["Contract", "Posted on this site on launch day."],
+    ],
+  },
+  {
+    id: "launchpad",
+    title: "Launchpad",
+    summary: "Launch a pump.fun coin for any pump user, at pumptowers.fun/launch.",
+    items: [
+      ["Pick a user", "Search a pump.fun username, paste a profile link or a wallet. Their picture, name and wallet show up before you launch."],
+      ["Fee split", `${SPLIT.recipientBps / 100}% of the coin's creator fees go to that user's wallet, ${SPLIT.treasuryBps / 100}% to the Pump Tower treasury to buy back $${HOUSE_SYMBOL}. Set and locked in the launch transaction itself; nobody can change it after.`],
+      ["One approval", "Coin, fee split and optional dev buy happen in one transaction, so nobody can buy before you. Your wallet and a one-time mint key made in your browser are the only signers."],
+      ["Kept", "Bonding curve, graduation to PumpSwap, dev buy, name, ticker, picture, description, X and Telegram links."],
+      ["Off", "Custom websites (every coin's site is its page here), and mayhem mode, cashback and holder rewards mode, which would take the creator fees away from the split."],
+      ["Payouts", "Fees collect on pump.fun until someone pays them out. Anyone can press pay out on the coin's page; it costs only the network fee."],
+      ["Tokens page", "Every coin launched here, newest or by fees, with totals sent to pump users and to buybacks."],
+      ["Coin page", "Chart, links, who it pays, fees so far and its floor milestone, at pumptowers.fun/t/ plus the coin's address."],
+      ["Profiles", "pumptowers.fun/u/ plus a wallet shows a pump user's coins, what they've earned and a link to their tower."],
+    ],
+  },
+  {
+    id: "launch-floors",
+    title: "Launch floors",
+    summary: "Coins launched for you live in your tower.",
+    items: [
+      ["Floor", "Every coin launched for a wallet becomes a floor in its tower, held or not. It ages from launch day like any bag."],
+      ["Milestones", FEE_TIER_NAMES.map((n, i) => `${n} at ${FEE_TIERS[i]} SOL`).join(", ") + " of lifetime creator fees. Each one lifts the floor a room tier at once."],
+      ["Cash", `Your share of fees paid out adds $${CASH_PER_SOL.toLocaleString("en-US")} of game cash per SOL, on top of the SOL itself.`],
     ],
   },
   {
@@ -104,7 +132,7 @@ export const DOCS: DocSection[] = [
     title: "Safety",
     summary: "What the site can and can't do.",
     items: [
-      ["Read only", "Pump Tower reads balances and history. It never asks for a transaction."],
+      ["Read only", "The game only reads balances and history. The launchpad and fee payouts are the only things that ask for a transaction, and your wallet shows exactly what each one does before you approve."],
       ["Sign in", "A free message signature to prove the wallet is yours. It can't move tokens."],
       ["Wallets", "Phantom, Solflare and Backpack. On a phone, connect opens Pump Tower inside the Phantom or Solflare app."],
       ["Source", "The full code is on GitHub, linked in the menu and footer."],

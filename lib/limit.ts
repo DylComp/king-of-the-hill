@@ -16,6 +16,11 @@ export const LIMITS = {
   fresh: 6,
   save: 60,
   og: 20,
+  profile: 30,
+  asset: 8,
+  launch: 12,
+  tokens: 60,
+  collect: 10,
 } as const;
 
 export type LimitName = keyof typeof LIMITS;

@@ -1,0 +1,203 @@
+// Server-only: builds and checks Pump Tower launches with pump.fun's official SDK.
+// The launcher's wallet and a fresh mint key are the only signers. We never hold a key:
+// the server builds an unsigned transaction, the browser signs it, the server reads
+// the result back off chain. Same shape as fub's 80/20 launches, SOL pairs only.
+import { createRequire } from "node:module";
+import {
+  ComputeBudgetProgram,
+  Connection,
+  PublicKey,
+  TransactionMessage,
+  VersionedTransaction,
+  type AccountInfo,
+} from "@solana/web3.js";
+import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, createAssociatedTokenAccountIdempotentInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
+import type { BondingCurve, SharingConfig } from "@pump-fun/pump-sdk";
+import { rpcUrl } from "../chain";
+import { loadLookupTable } from "./alt";
+import { type Draft, initialBuyLamports, shares } from "./model";
+
+// CommonJS avoids the SDK's Anchor ESM named-export problem on Node.
+const require = createRequire(import.meta.url);
+const sdk = require("@pump-fun/pump-sdk") as typeof import("@pump-fun/pump-sdk");
+const BN = require("bn.js") as typeof import("bn.js");
+const { PUMP_SDK, OnlinePumpSdk, GLOBAL_PDA, PUMP_FEE_CONFIG_PDA, PUMP_PROGRAM_ID, PUMP_FEE_PROGRAM_ID, feeSharingConfigPda, bondingCurvePda, creatorVaultPda } = sdk;
+
+export const connection = () => new Connection(rpcUrl(), "confirmed");
+
+function key(value: string, what: string) {
+  const k = new PublicKey(value);
+  if (k.toBase58() !== value) throw Error(`Bad ${what} address.`);
+  return k;
+}
+
+export type Prepared = { tx: string; message: string; mint: string; lastValidBlockHeight: number; tokens: string; maxLamports: string };
+
+/**
+ * One atomic transaction: create the coin, open its fee-sharing config, set the shares to
+ * 80% recipient / 20% treasury (which also revokes the admin, so the split is permanent),
+ * and optionally the dev buy. Simulated before it is returned.
+ */
+export async function prepareLaunch(o: { draft: Draft; launcher: string; mint: string; recipient: string; treasury: string; metadataUri: string }): Promise<Prepared> {
+  const user = key(o.launcher, "launcher");
+  const mint = key(o.mint, "mint");
+  if (!PublicKey.isOnCurve(user.toBytes()) || !PublicKey.isOnCurve(mint.toBytes())) throw Error("Launcher and mint must be signing keys.");
+  if ([o.launcher, o.recipient, o.treasury].includes(o.mint)) throw Error("The mint must be a new key.");
+  const uri = new URL(o.metadataUri);
+  if (uri.protocol !== "https:" || o.metadataUri.length > 200) throw Error("Metadata must be a short https link.");
+  const split = shares(o.recipient, o.treasury).map((s) => ({ address: key(s.address, "fee"), shareBps: s.shareBps }));
+  const lamports = initialBuyLamports(o.draft.initialBuy);
+
+  const conn = connection();
+  const accounts = await conn.getMultipleAccountsInfoAndContext([GLOBAL_PDA, PUMP_FEE_CONFIG_PDA, mint], "confirmed");
+  const [g, f, existing] = accounts.value;
+  if (!g?.owner.equals(PUMP_PROGRAM_ID) || !f?.owner.equals(PUMP_FEE_PROGRAM_ID)) throw Error("pump.fun is unavailable right now, try again.");
+  if (existing) throw Error("That mint already exists. Start over for a fresh one.");
+  const global = PUMP_SDK.decodeGlobal(g);
+  if (!global.initialized || !global.createV2Enabled) throw Error("pump.fun isn't accepting new coins right now.");
+
+  const ixs = [
+    ComputeBudgetProgram.setComputeUnitLimit({ units: 600_000 }),
+    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1_000 }),
+    await PUMP_SDK.createV2Instruction({
+      user,
+      creator: user,
+      mint,
+      name: o.draft.name,
+      symbol: o.draft.ticker,
+      uri: o.metadataUri,
+      // Each of these takes over creator fees and would break the 80/20 split.
+      mayhemMode: false,
+      cashback: false,
+      holderReward: false,
+      quoteMint: NATIVE_MINT,
+      quoteTokenProgram: TOKEN_PROGRAM_ID,
+    }),
+    await PUMP_SDK.createFeeSharingConfig({ creator: user, mint, pool: null }),
+    await PUMP_SDK.updateFeeShares({ authority: user, mint, currentShareholders: [user], newShareholders: split, bondingCurveComplete: false }),
+  ];
+
+  let tokens = "0";
+  if (lamports > 0n) {
+    const buyback = global.buybackFeeRecipients.find((k) => !k.equals(PublicKey.default));
+    if (!buyback) throw Error("pump.fun's fee settings are unavailable, try again.");
+    const amount = sdk.getBuyTokenAmountFromSolAmount({
+      global,
+      feeConfig: PUMP_SDK.decodeFeeConfig(f),
+      mintSupply: null,
+      bondingCurve: null,
+      amount: new BN(lamports.toString()),
+      quoteMint: NATIVE_MINT,
+    });
+    if (amount.lten(0)) throw Error("Dev buy is too small.");
+    tokens = amount.toString();
+    ixs.push(
+      createAssociatedTokenAccountIdempotentInstruction(user, getAssociatedTokenAddressSync(mint, user, false, TOKEN_2022_PROGRAM_ID), user, mint, TOKEN_2022_PROGRAM_ID),
+      await PUMP_SDK.getBuyInstructionRaw({
+        user,
+        mint,
+        creator: feeSharingConfigPda(mint),
+        amount,
+        solAmount: new BN(lamports.toString()),
+        feeRecipient: global.feeRecipient,
+        buybackFeeRecipient: buyback,
+        tokenProgram: TOKEN_2022_PROGRAM_ID,
+      }),
+    );
+  }
+
+  const table = await loadLookupTable();
+  if (!table) throw Error("The launchpad isn't set up yet.");
+  const latest = await conn.getLatestBlockhash({ commitment: "confirmed", minContextSlot: accounts.context.slot });
+  const message = new TransactionMessage({ payerKey: user, recentBlockhash: latest.blockhash, instructions: ixs }).compileToV0Message([table]);
+  const tx = new VersionedTransaction(message);
+  let bytes: Uint8Array;
+  try {
+    bytes = tx.serialize();
+  } catch {
+    throw Error("That coin doesn't fit in one transaction. Shorten the name or skip the dev buy.");
+  }
+  if (bytes.length > 1232 || message.header.numRequiredSignatures !== 2) throw Error("Launch transaction is the wrong shape.");
+
+  const sim = await conn.simulateTransaction(tx, { sigVerify: false, commitment: "confirmed" });
+  if (sim.value.err) {
+    const logs = sim.value.logs ?? [];
+    const broke = logs.some((l) => /insufficient lamports|InsufficientFunds/i.test(l));
+    console.error("launch simulation", JSON.stringify(sim.value.err), logs.slice(-6));
+    throw Error(broke ? "Not enough SOL in this wallet for the launch and dev buy." : "pump.fun rejected this launch in a dry run, try again.");
+  }
+  return { tx: Buffer.from(bytes).toString("base64"), message: Buffer.from(message.serialize()).toString("base64"), mint: o.mint, lastValidBlockHeight: latest.lastValidBlockHeight, tokens, maxLamports: lamports.toString() };
+}
+
+function decodeCurve(a: AccountInfo<Buffer>): BondingCurve {
+  return PUMP_SDK.decodeBondingCurve(a);
+}
+
+export function checkSharing(c: SharingConfig, mint: string, recipient: string, treasury: string) {
+  const want = shares(recipient, treasury);
+  return (
+    c.mint.toBase58() === mint &&
+    c.adminRevoked === true &&
+    c.shareholders.length === 2 &&
+    want.every((w) => c.shareholders.some((s) => s.address.toBase58() === w.address && s.shareBps === w.shareBps))
+  );
+}
+
+/** Reads a launched coin back off chain and confirms it is ours: 80/20 locked, no fee-diverting modes. */
+export async function verifyLaunch(mint: string, recipient: string, treasury: string) {
+  const m = key(mint, "mint");
+  const conn = connection();
+  const [sharing, curve] = await conn.getMultipleAccountsInfo([feeSharingConfigPda(m), bondingCurvePda(m)], "confirmed");
+  if (!sharing?.owner.equals(PUMP_FEE_PROGRAM_ID) || !curve?.owner.equals(PUMP_PROGRAM_ID)) return { ok: false as const, reason: "not on chain yet" };
+  const c = PUMP_SDK.decodeSharingConfig(sharing);
+  const b = decodeCurve(curve);
+  if (!checkSharing(c, mint, recipient, treasury)) return { ok: false as const, reason: "fee split doesn't match" };
+  if (!b.creator.equals(feeSharingConfigPda(m)) || b.isMayhemMode || b.isCashbackCoin) return { ok: false as const, reason: "coin settings don't match" };
+  return { ok: true as const, complete: b.complete };
+}
+
+/** SOL waiting in the coin's creator vault, ready to be paid out 80/20. */
+export async function pendingFees(mint: string): Promise<number> {
+  const vault = creatorVaultPda(feeSharingConfigPda(key(mint, "mint")));
+  const conn = connection();
+  const [lamports, rent] = await Promise.all([conn.getBalance(vault, "confirmed"), conn.getMinimumBalanceForRentExemption(0)]);
+  return Math.max(0, lamports - rent) / 1e9;
+}
+
+/** The creator vault every fee payout for this coin comes from (used to total fees per recipient). */
+export const vaultOf = (mint: string) => creatorVaultPda(feeSharingConfigPda(key(mint, "mint"))).toBase58();
+
+/** Unsigned payout transaction. Anyone can send it; the payer only covers the network fee. */
+export async function collectTx(mint: string, payer: string) {
+  const m = key(mint, "mint");
+  const p = key(payer, "payer");
+  const conn = connection();
+  const online = new OnlinePumpSdk(conn);
+  const { instructions } = await online.buildDistributeCreatorFeesInstructions(m, { payer: p });
+  const latest = await conn.getLatestBlockhash("confirmed");
+  const message = new TransactionMessage({
+    payerKey: p,
+    recentBlockhash: latest.blockhash,
+    instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }), ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1_000 }), ...instructions],
+  }).compileToV0Message();
+  const tx = new VersionedTransaction(message);
+  const sim = await conn.simulateTransaction(tx, { sigVerify: false, commitment: "confirmed" });
+  if (sim.value.err) {
+    console.error("collect simulation", JSON.stringify(sim.value.err), sim.value.logs?.slice(-6));
+    throw Error("Not enough fees to pay out yet, try again later.");
+  }
+  return { tx: Buffer.from(tx.serialize()).toString("base64"), lastValidBlockHeight: latest.lastValidBlockHeight };
+}
+
+/**
+ * Sends the signed launch through our RPC, but only if it is exactly the message we built
+ * (so nothing was swapped in the browser) and both the launcher and the mint signed it.
+ */
+export async function broadcastLaunch(signedB64: string, expectedMessage: string) {
+  const raw = Buffer.from(signedB64, "base64");
+  if (raw.length > 1232) throw Error("Transaction too large.");
+  const tx = VersionedTransaction.deserialize(raw);
+  if (Buffer.from(tx.message.serialize()).toString("base64") !== expectedMessage) throw Error("That isn't the launch we prepared. Start over.");
+  if (tx.signatures.length !== 2 || tx.signatures.some((s) => s.every((b) => b === 0))) throw Error("The launch is missing a signature.");
+  return connection().sendRawTransaction(raw, { skipPreflight: false, maxRetries: 3 });
+}

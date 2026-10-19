@@ -1,6 +1,8 @@
 "use client";
 
 import { GITHUB_URL } from "@/lib/site";
+import type { CoinView as LaunchCard } from "@/lib/launch/registry";
+import { FEE_TIERS, FEE_TIER_NAMES } from "@/lib/launch/model";
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   HOUSE_MINT,
@@ -46,6 +48,8 @@ import TowerView from "./TowerView";
 import { CatalogSection, DocsSection, KIND_LABEL, KINDS, LadderSection } from "./Sections";
 import City from "./City";
 import Logo from "./Logo";
+import GitHubMark from "./GitHubMark";
+import { connectWallet, isMobile, post, provider, walletLinks } from "./wallet";
 import HoverText from "./HoverText";
 import Reveal from "./Reveal";
 import Boot from "./Boot";
@@ -79,62 +83,12 @@ function demoFloors(now: number): Floor[] {
 
 type Coin = { symbol: string; price: number | null; mcap: number | null; change: number | null };
 
-type PhantomLike = {
-  // Phantom resolves with the key; Solflare resolves empty and sets `publicKey` on itself.
-  connect: (o?: { onlyIfTrusted?: boolean }) => Promise<{ publicKey?: { toString(): string } } | void>;
-  publicKey?: { toString(): string } | null;
-  disconnect?: () => Promise<void>;
-  signMessage?: (msg: Uint8Array, display?: string) => Promise<{ signature: Uint8Array } | Uint8Array>;
-};
-
-async function post<T>(url: string, data?: unknown): Promise<T> {
-  const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(data ?? {}) });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.error ?? "something broke");
-  return json as T;
-}
-
 type Skyline = {
   rows: SkylineRow[];
   total: number;
   season?: { n: number; ends: number; rows: (SkylineRow & { points: number })[]; total: number };
 };
 
-/** GitHub's mark redrawn on a 16px pixel grid to match the site. */
-function GitHubMark() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 16 16" shapeRendering="crispEdges" aria-hidden>
-      <path
-        fill="currentColor"
-        d="M5 1h6v1h2v1h1v2h1v6h-1v2h-1v1h-2v1H9v-3h1v-1h1v-1h1V6h-1V4h-1v1H6V4H5v2H4v3h1v1h1v1h1v1H5v-1H3v1h2v1h2v2H5v-1H3v-1H2v-2H1V5h1V3h1V2h2z"
-      />
-    </svg>
-  );
-}
-
-function provider(): PhantomLike | null {
-  const w = window as unknown as { phantom?: { solana?: PhantomLike }; solana?: PhantomLike; solflare?: PhantomLike; backpack?: PhantomLike };
-  return w.phantom?.solana ?? w.solflare ?? w.backpack ?? w.solana ?? null;
-}
-
-async function connectWallet(p: PhantomLike, o?: { onlyIfTrusted?: boolean }): Promise<string> {
-  const r = await p.connect(o);
-  const key = (r && r.publicKey) || p.publicKey;
-  if (!key) throw new Error("no wallet key");
-  return key.toString();
-}
-
-const isMobile = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-/** Phone browsers have no wallet extension: these open this page inside the wallet app's browser. */
-function walletLinks() {
-  const url = encodeURIComponent(window.location.href);
-  const ref = encodeURIComponent(window.location.origin);
-  return [
-    { name: "Phantom", href: `https://phantom.app/ul/browse/${url}?ref=${ref}` },
-    { name: "Solflare", href: `https://solflare.com/ul/v1/browse/${url}?ref=${ref}` },
-  ];
-}
 
 const saveKey = (owner: string | null) => `pumptower:v2:${owner ?? "demo"}`;
 
@@ -190,6 +144,8 @@ export default function Game() {
   const [boardTab, setBoardTab] = useState<"season" | "all">("season");
   const [streak, setStreak] = useState<Streak>(emptyStreak);
   const [rewardsSol, setRewardsSol] = useState(0);
+  const [launchSol, setLaunchSol] = useState(0);
+  const [launchCoins, setLaunchCoins] = useState<LaunchCard[]>([]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const dbRef = useRef(false);
   const loadedFor = useRef<string | null>(null);
@@ -203,7 +159,7 @@ export default function Game() {
     [floors],
   );
   const rate = useMemo(() => towerRate(sorted, now), [sorted, now]);
-  const cash = cashOf(sorted, save.owned, owner ? WALLET_BONUS + streak.total + rewardCash(rewardsSol) : DEMO_BONUS, now);
+  const cash = cashOf(sorted, save.owned, owner ? WALLET_BONUS + streak.total + rewardCash(rewardsSol + launchSol) : DEMO_BONUS, now);
   const sel = sorted.find((f) => f.mint === selected) ?? null;
   const citizens = sorted.reduce((n, f) => n + citizensFor(tierFor(f.heldSince, now)), 0);
   const longest = sorted[0] ? daysHeld(sorted[0].heldSince, now) : 0;
@@ -222,19 +178,28 @@ export default function Game() {
       setSave(emptySave());
       setStreak(emptyStreak());
       setRewardsSol(0);
+      setLaunchSol(0);
+      setLaunchCoins([]);
       fetch(`/api/save?w=${addr}`)
         .then((r) => r.json())
-        .then((j: { save: Save | null; streak: Streak | null; rewardsSol?: number }) => {
+        .then((j: { save: Save | null; streak: Streak | null; rewardsSol?: number; launchSol?: number }) => {
           if (j.save) setSave(j.save);
           if (j.streak) setStreak(j.streak);
           setRewardsSol(j.rewardsSol ?? 0);
+          setLaunchSol(j.launchSol ?? 0);
         })
+        .catch(() => {});
+      fetch(`/api/tokens?for=${addr}`)
+        .then((r) => r.json())
+        .then((j: { coins?: LaunchCard[] }) => setLaunchCoins(j.coins ?? []))
         .catch(() => {});
     } else {
       loadedFor.current = addr ?? "demo";
       setSave(loadSave(addr));
       setStreak(emptyStreak());
       setRewardsSol(0);
+      setLaunchSol(0);
+      setLaunchCoins([]);
     }
     const url = new URL(window.location.href);
     if (addr) url.searchParams.set("w", addr);
@@ -515,6 +480,8 @@ export default function Game() {
             ["#ladder", "ladder"],
             ["#catalog", "catalog"],
             ["#coin", "coin"],
+            ["/launch", "launch"],
+            ["/tokens", "tokens"],
             ["#docs", "docs"],
           ].map(([href, label]) => (
             <a key={href} href={href}>
@@ -647,6 +614,25 @@ export default function Game() {
                   </div>
                 )}
               </div>
+
+              {launchCoins.length > 0 && (
+                <div className="panel launch-floors">
+                  <span className="pixel green tiny-pixel">launched for {owner === me ? "you" : "this wallet"}</span>
+                  {launchCoins.slice(0, 6).map((c) => {
+                    const next = FEE_TIERS[c.tier + 1];
+                    return (
+                      <a key={c.mint} className="launch-floor" href={`/t/${c.mint}`}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={`/i/${c.mint}`} alt="" width={28} height={28} loading="lazy" />
+                        <span className="pixel tiny-pixel">${c.ticker}</span>
+                        <span className="green">{FEE_TIER_NAMES[c.tier]}</span>
+                        <span className="dim">{next == null ? "maxed out" : `${(next - c.feesSol).toFixed(2)} SOL in fees to ${FEE_TIER_NAMES[c.tier + 1]}`}</span>
+                      </a>
+                    );
+                  })}
+                  {launchSol > 0 && <span className="dim">fees paid out so far add <span className="green">${fmtCash(rewardCash(launchSol))}</span> tower cash</span>}
+                </div>
+              )}
 
               {empty && (
                 <div className="panel house-cta">
@@ -976,9 +962,15 @@ export default function Game() {
       <footer className="foot">
         <Logo size={22} />
         <span className="dim tiny">
-          Pump Tower only reads your wallet. Signing in is a free message signature, never a transaction, and it cannot move your tokens.
+          The game only reads your wallet. Signing in is a free message signature, never a transaction, and it cannot move your tokens.
           {db ? " Purchases are saved to your wallet and follow you to any device." : " Items you place are saved in this browser."}
         </span>
+        <a className="gh-link" href="/launch">
+          launchpad
+        </a>
+        <a className="gh-link" href="/tokens">
+          tokens
+        </a>
         <a className="gh-link" href={GITHUB_URL} target="_blank" rel="noopener">
           <GitHubMark /> source on github
         </a>

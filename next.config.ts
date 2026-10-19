@@ -13,6 +13,7 @@ const csp = [
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: blob: https:",
   "connect-src 'self' https://api.dexscreener.com",
+  "frame-src https://dexscreener.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
