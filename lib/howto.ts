@@ -6,6 +6,7 @@ import {
   HOUSE_BOOST,
   HOUSE_SYMBOL,
   MAX_FURNITURE,
+  TREASURY_WALLET,
   TIERS,
   WALLET_BONUS,
   citizensFor,
@@ -18,7 +19,7 @@ import { ALL_QUESTS_BONUS, QUESTS, REFERRED_REWARD, REFERRER_REWARD } from "./qu
 export type DocSection = { id: string; title: string; summary: string; items: [string, string][] };
 
 export const DOCS_INTRO =
-  "Pump Tower turns a Solana wallet into a pixel skyscraper. Every coin you hold is a floor. The longer you hold it, the better the floor gets and the more rent it pays in game cash. The launchpad lets anyone launch a pump.fun coin for any pump user, who gets most of its creator fees and a floor for it in their tower.";
+  "Pump Tower turns a Solana wallet into a pixel skyscraper. Every coin you hold is a floor. The longer you hold it, the better the floor gets and the more rent it pays in game cash. The launchpad lets anyone launch a pump.fun coin for any pump user, who gets most of its creator fees and a tower of their own. The rest buys back $PTWR and burns it, live on the activity page.";
 
 export const DOCS: DocSection[] = [
   {
@@ -96,13 +97,13 @@ export const DOCS: DocSection[] = [
   {
     id: "coin",
     title: `$${HOUSE_SYMBOL}`,
-    summary: "The game's coin, launching on pump.fun.",
+    summary: "The game's coin, backed by buybacks, burns and perks in the game.",
     items: [
-      ["HQ floor", `Holding $${HOUSE_SYMBOL} adds a Pump HQ floor that earns ${HOUSE_BOOST}x rent.`],
-      ["Holder rewards", "pump.fun pays SOL to holders with $20 or more, several times an hour, straight to the wallet."],
-      ["In game", `Every SOL received also adds $${CASH_PER_SOL.toLocaleString("en-US")} of game cash. Your SOL stays yours.`],
-      ["Buybacks", `${SPLIT.treasuryBps / 100}% of the creator fees from every coin launched on the launchpad go to the treasury, which buys back $${HOUSE_SYMBOL} and burns it.`],
-      ["Burn tracker", "Total burned, its share of the 1B supply, SOL spent and each recent burn with its transaction, live below."],
+      ["HQ floor", `Holding $${HOUSE_SYMBOL} adds a neon Pump HQ floor that earns ${HOUSE_BOOST}x the rent of any other bag.`],
+      ["In game", "That triple rent is game cash, so $" + HOUSE_SYMBOL + " holders unlock furniture, pets and outfits fastest."],
+      ["Buybacks", `${SPLIT.treasuryBps / 100}% of the creator fees from every coin launched on the launchpad go to the buy & burn wallet, which buys $${HOUSE_SYMBOL} on the market.`],
+      ["Burns", `Every $${HOUSE_SYMBOL} bought back is burned in the same transaction, so the supply only goes down.`],
+      ["Burn tracker", "Total burned, its share of the 1B supply, SOL spent and each recent burn with its transaction, live below and on the activity page."],
       ["Contract", "Copy it just below on launch day, with a link to buy on pump.fun."],
     ],
   },
@@ -117,11 +118,24 @@ export const DOCS: DocSection[] = [
       ["Kept", "Bonding curve, graduation to PumpSwap, dev buy, name, ticker, picture, description, X and Telegram links."],
       ["Off", "Custom websites (every coin's site is its page here), and mayhem mode, cashback and holder rewards mode, which would take the creator fees away from the split."],
       ["Payouts", "Fees collect on pump.fun until someone pays them out. Anyone can press pay out on the coin's page; it costs only the network fee."],
-      ["Tokens page", "Every coin launched here with its fees and market cap, plus totals for all coins combined."],
+      ["Tokens page", "Every coin launched here with its logo, fees and market cap, plus totals for all coins combined."],
+      ["Fees routed", `A tracker on the tokens page following every creator fee: ${SPLIT.recipientBps / 100}% to pump profiles, ${SPLIT.treasuryBps / 100}% to the treasury, then bought back and burned as $${HOUSE_SYMBOL}.`],
       ["Pump profiles", "A tab on the tokens page listing every pump user coins were launched for: how many coins, total fees, what they have earned, combined market cap and their top coin."],
       ["Coin page", "Chart, links, who it pays, fees so far and its floor milestone, at pumptowers.fun/t/ plus the coin's address."],
       ["Share card", "Every coin page has its own share image with the logo, ticker, who it pays, fees and market cap, shown when the link is posted on X or Telegram."],
       ["Profiles", "pumptowers.fun/u/ plus a wallet shows a pump user's coins, what they've earned and a link to their tower."],
+    ],
+  },
+  {
+    id: "activity",
+    title: "Activity",
+    summary: "Live buybacks, burns and fees, at pumptowers.fun/activity.",
+    items: [
+      ["Totals", `Total creator fees collected, $${HOUSE_SYMBOL} burned and its share of the supply, SOL spent on buybacks and what pump profiles have been paid.`],
+      ["Fee flow", "The same fees-routed tracker as the tokens page, step by step from creator fees to burned tokens."],
+      ["Wallet feed", `The buy & burn wallet${TREASURY_WALLET ? ` (${TREASURY_WALLET.slice(0, 4)}…${TREASURY_WALLET.slice(-4)})` : ""}'s latest transactions, each labelled fees in, buy & burn or sent, with a link to Solscan.`],
+      ["Buybacks", `Each recent buyback: SOL spent, $${HOUSE_SYMBOL} burned and its transaction.`],
+      ["Live", "Everything refreshes every 30 seconds while the page is open."],
     ],
   },
   {
@@ -143,6 +157,7 @@ export const DOCS: DocSection[] = [
       ["Read only", "The game only reads balances and history. The launchpad and fee payouts are the only things that ask for a transaction, and your wallet shows exactly what each one does before you approve."],
       ["Sign in", "A free message signature to prove the wallet is yours. It can't move tokens."],
       ["Wallets", "Phantom, Solflare and Backpack. On a phone, connect opens Pump Tower inside the Phantom or Solflare app."],
+      ["Treasury", "The buy & burn wallet is public. Every transaction it makes is listed on the activity page and checkable on Solscan."],
       ["Source", "The full code is on GitHub, linked in the menu and footer."],
       ["Fair use", "Each connection gets a set number of requests a minute, so bots can't flood sign-in or the shop. Hit it and you wait a minute."],
     ],
