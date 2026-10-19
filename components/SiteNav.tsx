@@ -31,7 +31,7 @@ export default function SiteNav({ wallet, active }: { wallet: ReturnType<typeof 
     <>
       <header className="nav">
         <a className="brand" href="/">
-          <Logo size={30} />
+          <Logo size={40} />
           <HoverText text="pump tower" className="pixel brand-word" />
           <PumpMeter />
         </a>

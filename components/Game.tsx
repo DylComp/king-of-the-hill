@@ -489,7 +489,7 @@ export default function Game() {
 
       <header className="nav">
         <a className="brand" href="#tower">
-          <Logo size={30} />
+          <Logo size={40} />
           <HoverText text="pump tower" className="pixel brand-word" />
           <PumpMeter />
         </a>
