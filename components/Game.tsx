@@ -47,6 +47,7 @@ import TowerView from "./TowerView";
 import { CatalogSection, DocsSection, KIND_LABEL, KINDS, LadderSection } from "./Sections";
 import City from "./City";
 import Logo from "./Logo";
+import PumpMeter from "./PumpMeter";
 import GitHubMark from "./GitHubMark";
 import { connectWallet, isMobile, post, provider, questEvent, rememberRef, signIn as signInWallet, walletLinks } from "./wallet";
 import { ALL_QUESTS_BONUS, QUESTS, REFERRED_REWARD, REFERRER_REWARD, type QuestState, type Referrals } from "@/lib/quests";
@@ -495,6 +496,7 @@ export default function Game() {
         <a className="brand" href="#tower">
           <Logo size={30} />
           <HoverText text="pump tower" className="pixel brand-word" />
+          <PumpMeter />
         </a>
         <nav className="nav-links">
           {[

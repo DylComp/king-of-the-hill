@@ -5,6 +5,7 @@ import { shortAddr } from "@/lib/game";
 import GitHubMark from "./GitHubMark";
 import HoverText from "./HoverText";
 import Logo from "./Logo";
+import PumpMeter from "./PumpMeter";
 import { walletLinks } from "./wallet";
 import type { useMe } from "./useMe";
 
@@ -31,6 +32,7 @@ export default function SiteNav({ wallet, active }: { wallet: ReturnType<typeof 
         <a className="brand" href="/">
           <Logo size={30} />
           <HoverText text="pump tower" className="pixel brand-word" />
+          <PumpMeter />
         </a>
         <nav className="nav-links">
           {LINKS.map(([href, label]) => (
