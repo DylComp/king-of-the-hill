@@ -121,7 +121,6 @@ export const DOCS: DocSection[] = [
       ["Pump profiles", "A tab on the tokens page listing every pump user coins were launched for: how many coins, total fees, what they have earned, combined market cap and their top coin."],
       ["Coin page", "Chart, links, who it pays, fees so far and its floor milestone, at pumptowers.fun/t/ plus the coin's address."],
       ["Share card", "Every coin page has its own share image with the logo, ticker, who it pays, fees and market cap, shown when the link is posted on X or Telegram."],
-      ["Live ticker", "The strip at the very top of every page scrolls new launches, $" + HOUSE_SYMBOL + " burns and the top three towers."],
       ["Profiles", "pumptowers.fun/u/ plus a wallet shows a pump user's coins, what they've earned and a link to their tower."],
     ],
   },
