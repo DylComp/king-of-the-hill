@@ -6,16 +6,18 @@ import { limited } from "@/lib/limit";
 import { isAddress } from "@/lib/launch/model";
 import { findProfile } from "@/lib/launch/profile";
 
+export const maxDuration = 30;
+
 export async function GET(req: Request) {
   const wallets = [...new Set((new URL(req.url).searchParams.get("w") ?? "").split(",").filter(isAddress))].slice(0, 40);
   if (!wallets.length) return json({ names: {} });
   const slow = await limited(req, "names");
   if (slow) return slow;
   try {
-    // A few at a time, so a cold skyline doesn't fire 40 lookups at pump.fun at once.
+    // A few at a time, so a page full of new towers never bursts pump.fun into rate limiting us.
     const found: (Awaited<ReturnType<typeof findProfile>> | null)[] = [];
-    for (let i = 0; i < wallets.length; i += 8)
-      found.push(...(await Promise.all(wallets.slice(i, i + 8).map((w) => findProfile(w).catch(() => null)))));
+    for (let i = 0; i < wallets.length; i += 6)
+      found.push(...(await Promise.all(wallets.slice(i, i + 6).map((w) => findProfile(w).catch(() => null)))));
     const names: Record<string, { username: string; image: string | null }> = {};
     found.forEach((p, i) => {
       if (p?.username) names[wallets[i]] = { username: p.username, image: p.image };

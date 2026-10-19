@@ -11,7 +11,7 @@ type Pending = { message: string; lastValidBlockHeight?: number; setup: { table:
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
-  const slow = await limited(req, "launch");
+  const slow = await limited(req, "send");
   if (slow) return slow;
   try {
     const b = await body<{ mint: string; tx: string; setup?: string[] }>(req);

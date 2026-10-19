@@ -10,9 +10,11 @@ const initials = (p: Pick<Profile, "username" | "wallet">) => (p.username ?? p.w
 export const profileName = (p: Pick<Profile, "username" | "wallet">) => (p.username ? `@${p.username}` : shortAddr(p.wallet));
 
 export function ProfilePic({ profile, size = 48, className = "" }: { profile: Pick<Profile, "username" | "wallet" | "image">; size?: number; className?: string }) {
-  const [broken, setBroken] = useState(false);
+  // Our cached copy first (pump's image hosts rate limit), then pump's own link, then initials.
+  const [tries, setTries] = useState(0);
   const style = { width: size, height: size };
-  if (!profile.image || broken)
+  const src = tries === 0 ? `/pfp/${profile.wallet}` : profile.image;
+  if (!profile.image || tries > 1)
     return (
       <span className={`pump-avatar pic-fallback ${className}`} style={{ ...style, fontSize: Math.max(8, Math.round(size / 4.5)) }} aria-hidden>
         {initials(profile)}
@@ -22,14 +24,15 @@ export function ProfilePic({ profile, size = 48, className = "" }: { profile: Pi
     // eslint-disable-next-line @next/next/no-img-element
     <img
       className={`pump-avatar ${className}`}
-      src={profile.image}
+      key={tries}
+      src={src ?? undefined}
       alt=""
       width={size}
       height={size}
       style={style}
       loading="lazy"
       referrerPolicy="no-referrer"
-      onError={() => setBroken(true)}
+      onError={() => setTries((n) => n + 1)}
     />
   );
 }

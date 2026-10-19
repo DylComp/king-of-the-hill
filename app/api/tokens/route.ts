@@ -1,4 +1,4 @@
-import { fail, json } from "@/lib/api";
+import { fail, json, live } from "@/lib/api";
 import { limited } from "@/lib/limit";
 import { coinView } from "@/lib/launch/fees";
 import { markets, type Market } from "@/lib/launch/market";
@@ -61,12 +61,12 @@ export async function GET(req: Request) {
     if (forWallet) {
       if (!isAddress(forWallet)) return json({ error: "not a solana address" }, 400);
       const views = await withMarkets(await Promise.all((await coinsFor(forWallet)).map((c) => coinView(c))));
-      return json({ coins: views, total: views.length });
+      return live({ coins: views, total: views.length });
     }
     // Every coin is read once (fees and markets are cached), so totals cover them all.
     const all = await withMarkets(await Promise.all((await latestCoins(0, 500)).map((c) => coinView(c))));
-    if (url.searchParams.get("view") === "profiles") return json({ profiles: profiles(all), coins: all.length, totals: totals(all) });
-    return json({ coins: all.slice(page * 30, page * 30 + 30), total: all.length, totals: totals(all) });
+    if (url.searchParams.get("view") === "profiles") return live({ profiles: profiles(all), coins: all.length, totals: totals(all) });
+    return live({ coins: all.slice(page * 30, page * 30 + 30), total: all.length, totals: totals(all) });
   } catch (e) {
     return fail(e, "tokens");
   }

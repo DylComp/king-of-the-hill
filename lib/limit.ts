@@ -20,10 +20,13 @@ export const LIMITS = {
   og: 60,
   profile: 240,
   names: 600,
+  /** Launch steps. Generous, since a phone network can put many people behind one IP and a retry must never be refused. */
   asset: 30,
   launch: 40,
+  send: 60,
   /** The launch page polls this every couple of seconds while a launch lands. */
   confirm: 300,
+  /** Live stats pages poll every few seconds; the CDN answers most of these before they get here. */
   tokens: 300,
   collect: 30,
   quests: 180,
