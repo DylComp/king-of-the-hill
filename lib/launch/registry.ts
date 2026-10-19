@@ -107,4 +107,9 @@ async function coinsAt(key: string, start: number, count: number): Promise<Coin[
 export const latestCoins = (start = 0, count = 30) => coinsAt(k.all, start, count);
 export const coinsFor = (wallet: string) => coinsAt(k.by(wallet), 0, 100);
 export const coinsLaunchedBy = (wallet: string) => coinsAt(k.launched(wallet), 0, 100);
+/** How many coins were launched for each wallet, in the same order. */
+export async function coinCountsFor(wallets: string[]): Promise<number[]> {
+  if (!hasDb() || !wallets.length) return wallets.map(() => 0);
+  return (await pipeline(wallets.map((w) => ["ZCARD", k.by(w)]))).map((n) => Number(n) || 0);
+}
 export const coinCount = () => (hasDb() ? redis<number>("ZCARD", k.all) : Promise.resolve(0));

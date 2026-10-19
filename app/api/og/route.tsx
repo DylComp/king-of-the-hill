@@ -4,23 +4,9 @@ import { isAddress } from "@/lib/chain";
 import { limited } from "@/lib/limit";
 import { type Floor, LOBBY_MINT, TIERS, citizensFor, daysHeld, shortAddr, tierFor, towerRate, fmtCash } from "@/lib/game";
 import { towerFor } from "@/lib/store";
+import { font } from "@/lib/ogfont";
 
 export const maxDuration = 60;
-
-const fonts = new Map<string, Promise<ArrayBuffer>>();
-/** Google serves TTF when no browser user agent is sent, which is what the image renderer needs. */
-function font(family: string) {
-  if (!fonts.has(family)) {
-    fonts.set(
-      family,
-      fetch(`https://fonts.googleapis.com/css2?family=${family}`)
-        .then((r) => r.text())
-        .then((css) => fetch(css.match(/src: url\((.+?)\)/)![1]))
-        .then((r) => r.arrayBuffer()),
-    );
-  }
-  return fonts.get(family)!;
-}
 
 const WALL = ["#24262d", "#30343e", "#3d3530", "#4a3328", "#173322", "#3a3014"];
 const TRIM = ["#3a3d46", "#4b5060", "#6b5a4a", "#8a5a3e", "#4ade80", "#facc15"];

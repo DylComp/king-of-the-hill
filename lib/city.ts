@@ -10,6 +10,8 @@ export type CityTower = {
   house: boolean;
   tiers: number[];
   houses: number[];
+  /** Coins launched for this owner on the launchpad. */
+  coins?: number;
 };
 
 const BW = 30; // building width
@@ -92,6 +94,22 @@ export function drawCity(ctx: CanvasRenderingContext2D, towers: CityTower[], ran
       if (house) glow(ctx, x + BW / 2, fy + 1, 18, GREEN_HI, 0.05);
     }
     if (tw.floors > MAX_FLOORS) tiny(ctx, "+", x + BW - 5, top + 3, "#94a3b8");
+
+    // launchpad sign: hangs off the side with how many coins were launched for this owner
+    if (tw.coins) {
+      const txt = String(Math.min(tw.coins, 99));
+      const sw = tinyWidth(txt) + 5;
+      const sy = top + 6;
+      const sx2 = x + BW - 2;
+      rect(ctx, sx2 - 1, sy + 3, 2, 1, "#4b5563");
+      rect(ctx, sx2, sy, sw, 9, "#06120a");
+      const buzz = Math.sin(t / 700 + i * 1.7) > -0.92 && Math.sin(t / 97 + i) > -0.97;
+      ctx.strokeStyle = buzz ? GREEN_HI : shade(GREEN_HI, -0.6);
+      ctx.lineWidth = 1;
+      ctx.strokeRect(sx2 + 0.5, sy + 0.5, sw - 1, 8);
+      tiny(ctx, txt, sx2 + 3, sy + 2, buzz ? GREEN : shade(GREEN, -0.5));
+      if (buzz) glow(ctx, sx2 + sw / 2, sy + 4, 12, GREEN_HI, 0.12);
+    }
 
     // rooftop: sign with the top floor's coin, antenna on the podium
     const label = tw.top === "RESIDENT" ? "HOME" : `$${tw.top.toUpperCase()}`.slice(0, 7);

@@ -92,6 +92,7 @@ function City({ me, onVisit }: Props) {
             <span className="dim">
               {h.floors} {h.floors === 1 ? "floor" : "floors"} · top floor {h.top === "RESIDENT" ? "home" : `$${h.top.toUpperCase()}`}
             </span>
+            {!!h.coins && <span className="chip">{h.coins} launched</span>}
             <span className="pixel green">${fmtCash(h.rate)}/hr</span>
           </>
         ) : (

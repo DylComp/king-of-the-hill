@@ -5,6 +5,7 @@ import { buildTower } from "./chain";
 import { getJson, hasDb, pipeline, redis, setJson } from "./redis";
 import { rewardsFor } from "./rewards";
 import { launchEarnings, launchFloors, withLaunchFloors } from "./launch/fees";
+import { coinCountsFor } from "./launch/registry";
 import { extraCash, questStep, settleReferral } from "./missions";
 import {
   type Floor,
@@ -120,7 +121,7 @@ export async function skyline(limit = 25): Promise<SkylineRow[]> {
 }
 
 /** One building in the city: each floor's tier, oldest hold first. */
-export type CityTower = SkylineRow & { tiers: number[]; houses: number[] };
+export type CityTower = SkylineRow & { tiers: number[]; houses: number[]; coins: number };
 
 /** Every ranked tower with its floors, for the city view. */
 export async function city(limit = 80): Promise<CityTower[]> {
@@ -128,7 +129,7 @@ export async function city(limit = 80): Promise<CityTower[]> {
   if (!ids.length) return [];
   const raw = await redis<(string | null)[]>("HMGET", k.residents, ...ids);
   const now = Date.now();
-  return raw
+  const towers = raw
     .filter((r): r is string => !!r)
     .map((r) => {
       const res = JSON.parse(r) as Resident;
@@ -136,11 +137,15 @@ export async function city(limit = 80): Promise<CityTower[]> {
         ...skylineRow(res, now),
         tiers: res.f.map(([since]) => tierFor(since, now)),
         houses: res.f.map(([, h]) => h),
+        coins: 0,
       };
     })
     .filter((t) => t.floors > 0)
     .sort((a, b) => b.rate - a.rate || b.longest - a.longest)
     .slice(0, limit);
+  const counts = await coinCountsFor(towers.map((t) => t.wallet)).catch(() => towers.map(() => 0));
+  towers.forEach((t, i) => (t.coins = counts[i]));
+  return towers;
 }
 
 export type SeasonRow = SkylineRow & { points: number };
