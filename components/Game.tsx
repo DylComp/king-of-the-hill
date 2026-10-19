@@ -58,6 +58,7 @@ import HoverText from "./HoverText";
 import Reveal from "./Reveal";
 import Boot from "./Boot";
 import ItemIcon from "./ItemIcon";
+import { getRetry } from "./retry";
 
 const DAY = 86_400_000;
 
@@ -238,7 +239,7 @@ export default function Game() {
     setLoading(true);
     setFloors([]);
     try {
-      const res = await fetch(`/api/tower?owner=${addr}`);
+      const res = await getRetry(`/api/tower?owner=${addr}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "something broke");
       const fl = json.floors as Floor[];

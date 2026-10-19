@@ -138,6 +138,7 @@ Import `DylComp/pump-tower` into Vercel (framework Next.js, root directory left 
 
 - A tower joins the city when it is first opened or when a coin is launched for it, and its entry refreshes when it is next loaded.
 - Very busy token accounts (more than 30 recent transactions) fall back to their oldest visible signature, which can only make a hold look shorter.
+- Per-IP caps (`lib/limit.ts`) sit well above real use, since phone carriers put many players behind one IP; they only stop floods. Pump.fun profile and search lookups are cached in Redis for 10 minutes, retried once on a pump.fun error, and fall back to the last good answer (kept a week) if pump.fun is down. The browser retries a busy read once before showing an error.
 
 ## Operations
 

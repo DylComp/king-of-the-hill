@@ -161,7 +161,7 @@ export const DOCS: DocSection[] = [
       ["Wallets", "Phantom, Solflare and Backpack. On a phone, connect opens Pump Tower inside the Phantom or Solflare app."],
       ["Treasury", "The buy & burn wallet is public. Every transaction it makes is listed on the activity page and checkable on Solscan."],
       ["Source", "The full code is on GitHub, linked in the menu and footer."],
-      ["Fair use", "Each connection gets a set number of requests a minute, so bots can't flood sign-in or the shop. Hit it and you wait a minute."],
+      ["Fair use", "Request caps sit far above normal play and only stop bot floods. Pump profiles and pictures are cached and keep working even if pump.fun is briefly down, and a busy moment is retried for you."],
     ],
   },
 ];
