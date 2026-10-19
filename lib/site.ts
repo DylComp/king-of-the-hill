@@ -7,3 +7,6 @@ export const SITE_URL = `https://${SITE_HOST}`;
 
 /** Source code, linked from the nav and footer. */
 export const GITHUB_URL = "https://github.com/DylComp/pump-tower";
+
+/** The project's X account, linked beside GitHub in the nav and footer. */
+export const X_URL = "https://x.com/PumpTowerz";

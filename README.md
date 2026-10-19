@@ -7,7 +7,8 @@
   <a href="https://pumptowers.fun/launch">launchpad</a> ·
   <a href="https://pumptowers.fun/tokens">tokens</a> ·
   <a href="https://pumptowers.fun/activity">activity</a> ·
-  <a href="https://pumptowers.fun/#docs">docs</a>
+  <a href="https://pumptowers.fun/#docs">docs</a> ·
+  <a href="https://x.com/PumpTowerz">x</a>
 </p>
 
 # pump tower

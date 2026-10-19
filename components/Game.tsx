@@ -1,6 +1,6 @@
 "use client";
 
-import { GITHUB_URL } from "@/lib/site";
+import { GITHUB_URL, X_URL } from "@/lib/site";
 import type { CoinView as LaunchCard } from "@/lib/launch/registry";
 import { FEE_TIERS, FEE_TIER_NAMES } from "@/lib/launch/model";
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -48,6 +48,7 @@ import City from "./City";
 import Logo from "./Logo";
 import PumpMeter from "./PumpMeter";
 import GitHubMark from "./GitHubMark";
+import XMark from "./XMark";
 import { connectWallet, isMobile, post, provider, questEvent, rememberRef, signIn as signInWallet, walletLinks } from "./wallet";
 import { ALL_QUESTS_BONUS, QUESTS, REFERRED_REWARD, REFERRER_REWARD, type QuestState, type Referrals } from "@/lib/quests";
 import HoverText from "./HoverText";
@@ -489,7 +490,7 @@ export default function Game() {
 
       <header className="nav">
         <a className="brand" href="#tower">
-          <Logo size={30} />
+          <Logo size={40} />
           <HoverText text="pump tower" className="pixel brand-word" />
           <PumpMeter />
         </a>
@@ -512,6 +513,9 @@ export default function Game() {
         </nav>
         <a className="gh" href={GITHUB_URL} target="_blank" rel="noopener" title="source code on GitHub" aria-label="GitHub">
           <GitHubMark />
+        </a>
+        <a className="gh" href={X_URL} target="_blank" rel="noopener" title="Pump Tower on X" aria-label="Pump Tower on X">
+          <XMark />
         </a>
         {me ? (
           <button className="btn ghost" onClick={disconnect} title="sign out">
@@ -958,6 +962,9 @@ export default function Game() {
         </a>
         <a className="gh-link" href={GITHUB_URL} target="_blank" rel="noopener">
           <GitHubMark /> source on github
+        </a>
+        <a className="gh-link" href={X_URL} target="_blank" rel="noopener">
+          <XMark /> follow on x
         </a>
       </footer>
 
