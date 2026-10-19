@@ -8,6 +8,7 @@ import {
   Connection,
   PublicKey,
   TransactionMessage,
+  VersionedMessage,
   VersionedTransaction,
   type AccountInfo,
 } from "@solana/web3.js";
@@ -16,6 +17,7 @@ import type { BondingCurve, SharingConfig } from "@pump-fun/pump-sdk";
 import { rpcUrl } from "../chain";
 import { buildTable, loadLookupTable, tableAddresses } from "./alt";
 import { type Draft, initialBuyLamports, shares } from "./model";
+import { matchesPrepared, tablesFor } from "./verify";
 
 // CommonJS avoids the SDK's Anchor ESM named-export problem on Node.
 const require = createRequire(import.meta.url);
@@ -63,7 +65,7 @@ export async function prepareLaunch(o: { draft: Draft; launcher: string; mint: s
   const accounts = await conn.getMultipleAccountsInfoAndContext([GLOBAL_PDA, PUMP_FEE_CONFIG_PDA, mint], "confirmed");
   const [g, f, existing] = accounts.value;
   if (!g?.owner.equals(PUMP_PROGRAM_ID) || !f?.owner.equals(PUMP_FEE_PROGRAM_ID)) throw Error("pump.fun is unavailable right now, try again.");
-  if (existing) throw Error("That mint already exists. Start over for a fresh one.");
+  if (existing) throw Error("That coin address is taken. Try again for a fresh one.");
   const global = PUMP_SDK.decodeGlobal(g);
   if (!global.initialized || !global.createV2Enabled) throw Error("pump.fun isn't accepting new coins right now.");
 
@@ -218,15 +220,25 @@ export async function collectTx(mint: string, payer: string) {
   return { tx: Buffer.from(tx.serialize()).toString("base64"), lastValidBlockHeight: latest.lastValidBlockHeight };
 }
 
+/** The lookup tables a message uses, read from chain, so its accounts can be compared. */
+async function tablesOf(m: VersionedTransaction["message"]) {
+  const conn = connection();
+  const keys = tablesFor(m);
+  const found = await Promise.all(keys.map((k) => conn.getAddressLookupTable(k, { commitment: "confirmed" })));
+  return found.flatMap((r) => (r.value ? [r.value] : []));
+}
+
 /**
- * Sends the signed launch through our RPC, but only if it is exactly the message we built
- * (so nothing was swapped in the browser) and both the launcher and the mint signed it.
+ * Sends the signed launch through our RPC, but only if it still holds exactly the
+ * instructions we built (wallets may add their own priority fee and safety checks, nothing
+ * else) and both the launcher and the mint signed it.
  */
 export async function broadcastLaunch(signedB64: string, expectedMessage: string) {
   const raw = Buffer.from(signedB64, "base64");
   if (raw.length > 1232) throw Error("Transaction too large.");
   const tx = VersionedTransaction.deserialize(raw);
-  if (Buffer.from(tx.message.serialize()).toString("base64") !== expectedMessage) throw Error("That isn't the launch we prepared. Start over.");
+  const expected = VersionedMessage.deserialize(Buffer.from(expectedMessage, "base64"));
+  if (!matchesPrepared(tx.message, expected, await tablesOf(expected))) throw Error("Your wallet changed the launch, so it wasn't sent. Nothing was spent.");
   if (tx.signatures.length !== 2 || tx.signatures.some((s) => s.every((b) => b === 0))) throw Error("The launch is missing a signature.");
   return connection().sendRawTransaction(raw, { skipPreflight: false, maxRetries: 3 });
 }
@@ -241,7 +253,7 @@ export async function broadcastSetup(signed: string[], expectedMessages: string[
   for (let i = 0; i < signed.length; i++) {
     const raw = Buffer.from(signed[i], "base64");
     const tx = VersionedTransaction.deserialize(raw);
-    if (b64(tx.message.serialize()) !== expectedMessages[i]) throw Error("That isn't the launch we prepared. Start over.");
+    if (!matchesPrepared(tx.message, VersionedMessage.deserialize(Buffer.from(expectedMessages[i], "base64")))) throw Error("Your wallet changed the launch, so it wasn't sent. Nothing was spent.");
     if (tx.signatures.length !== 1 || tx.signatures[0].every((b) => b === 0)) throw Error("The launch is missing a signature.");
     const sig = await conn.sendRawTransaction(raw, { skipPreflight: false, maxRetries: 3 });
     const res = await conn.confirmTransaction(sig, "confirmed");

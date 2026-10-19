@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     if (await getCoin(mint)) return json({ error: "That coin already launched." }, 409);
     // Only the wallet that uploaded first can replace a draft image.
     const owner = await redis<string | null>("GET", `${assetKeys.image(mint)}:by`);
-    if (owner && owner !== wallet) return json({ error: "Start over for a fresh coin." }, 409);
+    if (owner && owner !== wallet) return json({ error: "That coin address is taken. Try again for a fresh one." }, 409);
     await redis("SET", `${assetKeys.image(mint)}:by`, wallet, "EX", DRAFT_TTL);
     await redis("SET", assetKeys.image(mint), JSON.stringify({ type: m[1], b64: m[2] }), "EX", DRAFT_TTL);
     return json({ image: `${SITE_URL}/i/${mint}` });

@@ -2798,3 +2798,26 @@ button.chip.on {
     grid-column: 1 / -1;
   }
 }
+
+/* launchpad: a failed attempt clears and offers a retry or a fresh coin */
+.lp-failed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  border-radius: 8px;
+  background: rgba(248, 113, 113, 0.06);
+}
+.lp-failed p {
+  margin: 0;
+}
+.lp-failed-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.lp-discard {
+  align-self: flex-start;
+  font-size: 17px;
+}

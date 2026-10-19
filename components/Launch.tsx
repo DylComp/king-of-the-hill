@@ -155,6 +155,22 @@ export default function Launch() {
     void loadFile(e.dataTransfer.files?.[0]);
   };
 
+  /** Throws away the current draft (and any failed attempt) so a new coin starts from scratch. */
+  function startOver() {
+    setDraft(emptyDraft);
+    setImage(null);
+    setImageError(null);
+    setRecipient(null);
+    setQuery("");
+    setFindError(null);
+    setError(null);
+    setStep(null);
+    if (fileInput.current) fileInput.current.value = "";
+    window.history.replaceState(null, "", "/launch");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  const dirty = !!(recipient || image || draft.name || draft.ticker || draft.description || draft.twitter || draft.telegram || draft.initialBuy);
+
   const set = (k: keyof Draft) => (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setDraft((d) => ({ ...d, [k]: e.target.value }));
 
   async function launch(e: FormEvent) {
@@ -430,7 +446,25 @@ export default function Launch() {
                     ))}
                   </ol>
                 )}
-                {error && <p className="red">{error}</p>}
+                {error && (
+                  <div className="lp-failed" role="alert">
+                    <p className="red">{error}</p>
+                    <span className="dim">Nothing from that attempt is kept. Each try uses a fresh coin address.</span>
+                    <div className="lp-failed-actions">
+                      <button type="submit" className="btn small" disabled={step != null || !recipient || !!problem || !status?.open}>
+                        try again
+                      </button>
+                      <button type="button" className="btn small ghost" onClick={startOver}>
+                        start a new coin
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {!error && dirty && step == null && (
+                  <button type="button" className="link lp-discard" onClick={startOver}>
+                    discard this draft and start a new coin
+                  </button>
+                )}
                 <span className="dim lp-fine">
                   The split is locked and its admin removed in the launch itself. About 0.025 SOL covers pump.fun and network costs; your wallet shows the exact amount.
                 </span>

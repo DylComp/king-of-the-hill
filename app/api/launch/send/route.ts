@@ -17,12 +17,12 @@ export async function POST(req: Request) {
     const b = await body<{ mint: string; tx: string; setup?: string[] }>(req);
     if (!isAddress(b.mint) || typeof b.tx !== "string") return json({ error: "bad request" }, 400);
     const pending = await getJson<Pending>(pendingKey(b.mint));
-    if (!pending) return json({ error: "This launch expired. Start over." }, 410);
+    if (!pending) return json({ error: "This launch expired. Try again." }, 410);
     let signature: string;
     try {
       // The site's first launch also opens its lookup table, in the same approval.
       if (pending.setup && !(await tableReady(pending.setup.table, pending.setup.expected))) {
-        if (!Array.isArray(b.setup)) return json({ error: "This launch expired. Start over." }, 410);
+        if (!Array.isArray(b.setup)) return json({ error: "This launch expired. Try again." }, 410);
         await broadcastSetup(b.setup, pending.setup.messages);
         let ready = false;
         for (let i = 0; i < 20 && !ready; i++) {
