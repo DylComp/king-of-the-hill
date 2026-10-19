@@ -2930,3 +2930,21 @@ html[data-booted] .boot {
   order: -1;
   margin-bottom: 6px;
 }
+
+/* the nav CA button widens to confirm a copy */
+.nav-ca.copied {
+  width: auto;
+  padding: 0 10px;
+  gap: 6px;
+  display: inline-flex;
+  align-items: center;
+  color: #03100a;
+  background: var(--green-hi);
+  border-color: #bbf7d0;
+  box-shadow: 0 0 16px rgba(74, 222, 128, 0.5);
+}
+.ca-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
