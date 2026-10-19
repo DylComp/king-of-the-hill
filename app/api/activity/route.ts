@@ -1,4 +1,4 @@
-import { fail, json } from "@/lib/api";
+import { fail, live } from "@/lib/api";
 import { limited } from "@/lib/limit";
 import { treasuryTxs } from "@/lib/treasury";
 
@@ -7,7 +7,7 @@ export async function GET(req: Request) {
   const slow = await limited(req, "tokens");
   if (slow) return slow;
   try {
-    return json(await treasuryTxs());
+    return live(await treasuryTxs());
   } catch (e) {
     return fail(e, "activity");
   }

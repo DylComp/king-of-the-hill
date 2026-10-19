@@ -7,6 +7,7 @@ import { FEE_TIERS, FEE_TIER_NAMES, SPLIT, MAX_IMAGE_BYTES, cleanDraft, emptyDra
 import type { Profile } from "@/lib/launch/registry";
 import { shortAddr } from "@/lib/game";
 import { SITE_HOST } from "@/lib/site";
+import { ProfilePic } from "./Pics";
 import SiteNav from "./SiteNav";
 import { useMe } from "./useMe";
 import { fromB64, post, provider, rejected, toB64 } from "./wallet";
@@ -57,14 +58,7 @@ async function toImage(file: File): Promise<string> {
 function ProfileCard({ p, big = false }: { p: Profile; big?: boolean }) {
   return (
     <div className={`pump-profile${big ? " big" : ""}`}>
-      {p.image ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={p.image} alt="" width={big ? 56 : 40} height={big ? 56 : 40} referrerPolicy="no-referrer" />
-      ) : (
-        <span className="pump-avatar" aria-hidden>
-          {(p.username ?? p.wallet).slice(0, 2)}
-        </span>
-      )}
+      <ProfilePic profile={p} size={big ? 56 : 40} />
       <span className="pump-who">
         <span className="pixel">{p.username ? `@${p.username}` : shortAddr(p.wallet)}</span>
         <span className="dim mono">{shortAddr(p.wallet)}</span>
@@ -428,10 +422,7 @@ export default function Launch() {
 
                 <div className="mini-tower" aria-label={`${who}'s tower`}>
                   <div className="mt-sign pixel">
-                    {recipient?.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={recipient.image} alt="" width={14} height={14} referrerPolicy="no-referrer" />
-                    ) : null}
+                    {recipient?.image ? <ProfilePic profile={recipient} size={14} /> : null}
                     {who}&apos;s tower
                   </div>
                   {FEE_TIER_NAMES.map((_, i) => FEE_TIER_NAMES.length - 1 - i)
