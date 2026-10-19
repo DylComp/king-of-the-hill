@@ -639,66 +639,6 @@ export default function Game() {
                 )}
               </div>
 
-              {owner && owner === me && quests && (
-                <div className="panel quests">
-                  <div className="quests-head">
-                    <span className="pixel green tiny-pixel">daily quests</span>
-                    <span className="dim">resets in {fmtWait(msToNextCollect(now))}</span>
-                  </div>
-                  <ul>
-                    {QUESTS.map((q, i) => {
-                      const n = quests.progress[q.id] ?? 0;
-                      const done = n >= q.target;
-                      return (
-                        <li key={q.id} className={done ? "done" : ""} style={{ "--i": i } as CSSProperties}>
-                          <span className="box" aria-hidden>
-                            {done ? "x" : ""}
-                          </span>
-                          <span>
-                            {q.label}
-                            {q.target > 1 && !done && <span className="dim"> {n}/{q.target}</span>}
-                          </span>
-                          <span className="green">+${q.reward}</span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  <span className={quests.allDone ? "green" : "dim"}>{quests.allDone ? `all done: +$${ALL_QUESTS_BONUS} bonus paid` : `finish all five for +$${ALL_QUESTS_BONUS} more`}</span>
-                </div>
-              )}
-
-              {owner && owner === me && refs && (
-                <div className="panel invite">
-                  <span className="pixel green tiny-pixel">invite friends</span>
-                  <span className="dim">
-                    You get ${REFERRER_REWARD} and they get ${REFERRED_REWARD} once they collect their first daily bonus holding a bag.
-                    {refs.count > 0 && <span className="green"> {refs.count} joined so far, +${fmtCash(refs.cash)}.</span>}
-                  </span>
-                  <button className="btn small ghost" onClick={() => navigator.clipboard?.writeText(`${site}/?ref=${me}`).then(() => setToast("invite link copied"))}>
-                    copy invite link
-                  </button>
-                </div>
-              )}
-
-              {launchCoins.length > 0 && (
-                <div className="panel launch-floors">
-                  <span className="pixel green tiny-pixel">launched for {owner === me ? "you" : "this wallet"}</span>
-                  {launchCoins.slice(0, 6).map((c) => {
-                    const next = FEE_TIERS[c.tier + 1];
-                    return (
-                      <a key={c.mint} className="launch-floor" href={`/t/${c.mint}`}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={`/i/${c.mint}`} alt="" width={28} height={28} loading="lazy" />
-                        <span className="pixel tiny-pixel">${c.ticker}</span>
-                        <span className="green">{FEE_TIER_NAMES[c.tier]}</span>
-                        <span className="dim">{next == null ? "maxed out" : `${(next - c.feesSol).toFixed(2)} SOL in fees to ${FEE_TIER_NAMES[c.tier + 1]}`}</span>
-                      </a>
-                    );
-                  })}
-                  {launchSol > 0 && <span className="dim">fees paid out so far add <span className="green">${fmtCash(rewardCash(launchSol))}</span> tower cash</span>}
-                </div>
-              )}
-
               {empty && (
                 <div className="panel house-cta">
                   <span className="pixel green tiny-pixel">empty lot</span>
@@ -778,21 +718,6 @@ export default function Game() {
                 <div className="panel dim">Tap a floor to manage it.</div>
               )}
 
-              {owner && (
-                <div className="panel">
-                  <div className="label badges-head">
-                    achievements <span className="green">{earned.size}/{ACHIEVEMENTS.length}</span>
-                  </div>
-                  <div className="badges">
-                    {ACHIEVEMENTS.map((a) => (
-                      <span key={a.id} className={earned.has(a.id) ? "badge on" : "badge"} title={a.hint}>
-                        {a.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {!canEdit && (
                 <div className="panel visit-note">
                   <span className="dim">You're visiting. Only the owner can decorate this tower.</span>
@@ -825,6 +750,84 @@ export default function Game() {
                 <ul className="items swap" key={tab}>{ITEMS.filter((i) => i.kind === tab).map((i) => shopItem(i, false))}</ul>
               </div>
             </aside>
+          </div>
+
+          <div className="board-extras">
+            {owner && owner === me && quests && (
+              <div className="panel quests">
+                <div className="quests-head">
+                  <span className="pixel green tiny-pixel">daily quests</span>
+                  <span className="dim">resets in {fmtWait(msToNextCollect(now))}</span>
+                </div>
+                <ul>
+                  {QUESTS.map((q, i) => {
+                    const n = quests.progress[q.id] ?? 0;
+                    const done = n >= q.target;
+                    return (
+                      <li key={q.id} className={done ? "done" : ""} style={{ "--i": i } as CSSProperties}>
+                        <span className="box" aria-hidden>
+                          {done ? "x" : ""}
+                        </span>
+                        <span>
+                          {q.label}
+                          {q.target > 1 && !done && <span className="dim"> {n}/{q.target}</span>}
+                        </span>
+                        <span className="green">+${q.reward}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <span className={quests.allDone ? "green" : "dim"}>{quests.allDone ? `all done: +$${ALL_QUESTS_BONUS} bonus paid` : `finish all five for +$${ALL_QUESTS_BONUS} more`}</span>
+              </div>
+            )}
+
+            {owner && owner === me && refs && (
+              <div className="panel invite">
+                <span className="pixel green tiny-pixel">invite friends</span>
+                <span className="dim">
+                  You get ${REFERRER_REWARD} and they get ${REFERRED_REWARD} once they collect their first daily bonus holding a bag.
+                  {refs.count > 0 && <span className="green"> {refs.count} joined so far, +${fmtCash(refs.cash)}.</span>}
+                </span>
+                <button className="btn small ghost" onClick={() => navigator.clipboard?.writeText(`${site}/?ref=${me}`).then(() => setToast("invite link copied"))}>
+                  copy invite link
+                </button>
+              </div>
+            )}
+
+            {launchCoins.length > 0 && (
+              <div className="panel launch-floors">
+                <span className="pixel green tiny-pixel">launched for {owner === me ? "you" : "this wallet"}</span>
+                {launchCoins.slice(0, 6).map((c) => {
+                  const next = FEE_TIERS[c.tier + 1];
+                  return (
+                    <a key={c.mint} className="launch-floor" href={`/t/${c.mint}`}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={`/i/${c.mint}`} alt="" width={28} height={28} loading="lazy" />
+                      <span className="pixel tiny-pixel">${c.ticker}</span>
+                      <span className="green">{FEE_TIER_NAMES[c.tier]}</span>
+                      <span className="dim">{next == null ? "maxed out" : `${(next - c.feesSol).toFixed(2)} SOL in fees to ${FEE_TIER_NAMES[c.tier + 1]}`}</span>
+                    </a>
+                  );
+                })}
+                {launchSol > 0 && <span className="dim">fees paid out so far add <span className="green">${fmtCash(rewardCash(launchSol))}</span> tower cash</span>}
+              </div>
+            )}
+
+            {owner && (
+              <div className="panel">
+                <div className="label badges-head">
+                  achievements <span className="green">{earned.size}/{ACHIEVEMENTS.length}</span>
+                </div>
+                <div className="badges">
+                  {ACHIEVEMENTS.map((a) => (
+                    <span key={a.id} className={earned.has(a.id) ? "badge on" : "badge"} title={a.hint}>
+                      {a.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
           </div>
         </Reveal>
 
