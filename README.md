@@ -1,13 +1,99 @@
+<p align="center">
+  <a href="https://pumptowers.fun"><img src=".github/art/banner.png" alt="Pump Tower: your Solana bags become a pixel skyscraper" width="100%"></a>
+</p>
+
+<p align="center">
+  <a href="https://pumptowers.fun"><b>pumptowers.fun</b></a> ·
+  <a href="https://pumptowers.fun/launch">launchpad</a> ·
+  <a href="https://pumptowers.fun/tokens">tokens</a> ·
+  <a href="https://pumptowers.fun/activity">activity</a> ·
+  <a href="https://pumptowers.fun/#docs">docs</a>
+</p>
+
 # pump tower
 
-Your Solana bags become a pixel skyscraper. Every token a wallet holds is a floor, and the longer it has been held the fancier the floor gets: bare walls on day zero, studio at 1 day, apartment at 3, loft at 7, suite at 14, penthouse at 30. Citizens on each floor earn in-game cash that buys furniture, pets and outfits; the best items only unlock on long-held floors. The house coin $PTWR (mint to be confirmed at launch) floor earns triple. Signed-in residents also get a free floor whose clock starts the day they move in, a daily check-in bonus (+$25 per streak day, capped at $175), weekly seasons ranked by checked-in rent, and achievements.
+Pump Tower turns any Solana wallet into a pixel skyscraper, and turns pump.fun creator fees into a city.
+
+- **Your bags are a building.** Every token a wallet holds is a floor. The longer you hold, the fancier the floor and the more game cash it earns for furniture, pets and outfits.
+- **Launch a coin for any pump user.** Pick a pump.fun profile and launch a coin for them in one wallet approval. They get 80% of its creator fees forever, plus their own tower in the city with the coin as a floor that levels up as fees roll in.
+- **Every fee buys and burns $PTWR.** The other 20% goes to a public buy & burn wallet that market-buys $PTWR and burns it in the same transaction. Track every SOL and every burn live on the [activity page](https://pumptowers.fun/activity).
+
+<p align="center">
+  <img src=".github/art/home.jpg" alt="A wallet's tower: themed floors, citizens, live token cards" width="100%">
+</p>
+
+| The city | The launchpad |
+| --- | --- |
+| <img src=".github/art/city.jpg" alt="Every tower in one skyline"> | <img src=".github/art/launch.jpg" alt="Launch a coin for any pump user"> |
+| **Tokens and pump profiles** | **Activity: buybacks and burns, live** |
+| <img src=".github/art/tokens.jpg" alt="Every coin launched, with fees, market caps and pump profiles"> | <img src=".github/art/activity.jpg" alt="Fees collected, tokens burned, Solscan links"> |
+
+<p align="center">
+  <img src=".github/art/mobile-home.jpg" alt="Pump Tower on a phone" width="260">
+  &nbsp;&nbsp;
+  <img src=".github/art/mobile-launch.jpg" alt="The launchpad on a phone" width="260">
+</p>
+
+## Features
+
+**The tower**
+- Floors for every listed coin worth $0.50 or more, ranked by hold time: bare walls on day zero, studio at 1 day, apartment at 3, loft at 7, suite at 14, penthouse at 30.
+- Themed rooms with live coin logos, colours and prices, citizens who talk about the coin, rain on red days and fireworks on green ones.
+- Game cash from rent (derived from on-chain hold time, so it can't be faked), a daily check-in streak, daily quests and invite rewards.
+- A catalog of furniture, pets and outfits; the best items unlock only on long-held floors.
+- A free home floor for every signed-in resident, weekly seasons, all-time leaderboards and achievements.
+- Visit any wallet with `?w=<address>`, share to X, copy a link or save the tower as a PNG.
+
+**The city and skyline**
+- Every ranked tower side by side, lit by tier. Green floors hold $PTWR, gold floors are penthouses, and launch signs hang off towers that have coins launched for them.
+
+**The launchpad** ([/launch](https://pumptowers.fun/launch))
+- Find any pump.fun user by username, profile link or wallet.
+- Design the coin: drag-and-drop logo, name, ticker, description, X and Telegram links, and an optional dev buy.
+- One approval creates the coin, locks the 80/20 creator-fee split (its admin is removed in the same transaction) and makes the dev buy, so nobody buys before you.
+- On confirm, the pump user's tower goes up in the city straight away, with the coin as a floor that climbs a room tier at 0.1, 1, 5, 25 and 100 SOL of lifetime fees.
+
+**Tokens and pump profiles** ([/tokens](https://pumptowers.fun/tokens))
+- Every coin launched here with its logo, fee tier, creator fees and market cap.
+- A pump profiles tab with each user's picture, coins, fees, earnings, combined market cap and top coin.
+- A fees-routed tracker following every fee from creator fees to burned $PTWR.
+
+**Activity** ([/activity](https://pumptowers.fun/activity))
+- Live totals: fees collected, $PTWR burned and its share of supply, SOL spent on buybacks, SOL paid to pump profiles.
+- The buy & burn wallet's transactions, labelled and linked to Solscan, plus every recent buyback.
+
+## $PTWR
+
+$PTWR is the game's coin. There are no holder rewards; its value comes from buybacks, burns and what it does in the game.
+
+- **Buybacks:** 20% of the creator fees of every coin launched on the launchpad go to the buy & burn wallet.
+- **Burns:** every $PTWR bought back is burned in the same transaction, so supply only goes down.
+- **In game:** holding $PTWR adds a neon Pump HQ floor that earns 3x the rent of any other bag.
+
+```mermaid
+flowchart LR
+  F[Creator fees from<br/>every launched coin] -->|80%| P[The pump profile's wallet]
+  F -->|20%| T[Buy & burn wallet]
+  T --> B[Market-buy $PTWR]
+  B --> X[Burn in the same transaction]
+  P --> W[Their tower climbs<br/>a room tier per milestone]
+```
+
+| Wallet | Address |
+| --- | --- |
+| Buy & burn (treasury) | [`pTWrBR7VzpAzztwYaLnot5sxP4a9tBJjyi1CLF4Xz1Z`](https://solscan.io/account/pTWrBR7VzpAzztwYaLnot5sxP4a9tBJjyi1CLF4Xz1Z) |
+| Dev | [`pTwRp9D2oRe1iSjCpKgoyu1Pe7LYD5zYNZHU3Hid4e1`](https://solscan.io/account/pTwRp9D2oRe1iSjCpKgoyu1Pe7LYD5zYNZHU3Hid4e1) |
+
+## Stack
+
+Next.js 16 and React 19 on Vercel, Upstash Redis, Solana web3.js with the pump.fun SDKs, Helius and DexScreener for chain and price data. All art is original pixel art drawn procedurally on canvas.
 
 ## Run
 
 ```
 npm install
 npm run dev     # http://localhost:3000
-npm test        # game rules
+npm test        # game, launchpad and buyback rules
 npm run build
 ```
 
@@ -17,9 +103,10 @@ Import `DylComp/pump-tower` into Vercel (framework Next.js, root directory left 
 
 | name | needed | what |
 | --- | --- | --- |
-| `HELIUS_API_KEY` | strongly recommended | Helius RPC for wallet reads. Without it the app uses PublicNode's free keyless RPC, which works but is slower. |
+| `HELIUS_API_KEY` | strongly recommended | Helius RPC for wallet reads and labelled activity. Without it the app uses PublicNode's free keyless RPC, which works but is slower. |
 | `SOLANA_RPC_URL` | optional | any other RPC URL, used when no Helius key is set |
-| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | for saves and the skyline | added automatically by the Upstash for Redis integration (Vercel Storage). `UPSTASH_REDIS_REST_URL`/`_TOKEN` also work. Without them the game falls back to per-browser saves. |
+| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | for saves, the city and the launchpad | added automatically by the Upstash for Redis integration (Vercel Storage). `UPSTASH_REDIS_REST_URL`/`_TOKEN` also work. Without them the game falls back to per-browser saves. |
+| `CRON_SECRET`, `PTWR_*` | for buybacks and fee collection | see [Operations](#operations) |
 
 `GET /api/health` reports whether the database and Helius key are wired up.
 
@@ -29,16 +116,26 @@ Import `DylComp/pump-tower` into Vercel (framework Next.js, root directory left 
 - Cash is derived, not stored: every floor pays rent for each hour since launch (2026-10-18) at the tier it was in that hour, minus what the wallet has bought. The database only holds purchases and placements.
 - Sign in is a free `signMessage` (no transaction). `/api/auth/nonce` issues a one-time nonce, `/api/auth/verify` checks the ed25519 signature against the wallet and sets a 30 day HMAC session cookie (the HMAC key is generated once and kept in Redis).
 - `/api/buy` and `/api/remove` are server authoritative: they reload the tower (5 minute Redis cache), recompute cash and tier locks, and write under a per-wallet lock so two tabs can't double spend. `/api/save?w=` lets anyone see how a tower is decorated; only its signed-in owner can change it.
-- `/api/leaderboard` ranks every tower that has been loaded by rent per hour, re-scored at read time since tiers keep climbing.
-- `lib/game.ts` holds all rules (tiers, rent, item catalog, buying). `lib/render.ts` and `lib/sprites.ts` draw the tower and item icons; all art is original and procedural.
-- `?w=<address>` links straight to any tower; the page has share to X, copy link and save PNG.
+- `/api/leaderboard` ranks every tower that has been loaded or launched for by rent per hour, re-scored at read time since tiers keep climbing.
+- The launchpad builds the launch transaction server side (`/api/launch/prepare`), the browser checks every program it calls before signing, and `/api/launch/confirm` reads the coin back off chain and lists it only if the 80/20 split is locked. Confirming also builds and ranks the pump user's tower.
+- `/api/tokens`, `/api/fees`, `/api/burns` and `/api/activity` feed the tokens, fees-routed and activity views. They only read the registry, the buyback and fee-collection ledgers and the chain; none of them write to a ledger or sign anything.
+- `lib/game.ts` holds all rules (tiers, rent, item catalog, buying). `lib/render.ts` and `lib/sprites.ts` draw the tower and item icons. `lib/howto.ts` holds the in-site docs, with numbers read from the rules.
+
+## Launch checklist
+
+1. Sign in with the dev wallet at [/launch/setup](https://pumptowers.fun/launch/setup) and approve the one-time address lookup table setup. The launchpad opens as soon as it's on chain.
+2. Launch $PTWR, then set `HOUSE_MINT` in `lib/game.ts` and `PTWR_OFFICIAL_MINT` in Vercel.
+3. Provision and switch on buybacks and fee collection as described under [Operations](#operations).
+4. Launch one coin for a real pump user and check it on /tokens, pump profiles, /activity and in the city.
 
 ## Known limits
 
-- The skyline only knows towers someone has opened on the site, and a tower's entry refreshes when it is next loaded.
+- A tower joins the city when it is first opened or when a coin is launched for it, and its entry refreshes when it is next loaded.
 - Very busy token accounts (more than 30 recent transactions) fall back to their oldest visible signature, which can only make a hold look shorter.
 
-## Treasury and buybacks
+## Operations
+
+### Treasury and buybacks
 
 Profile launches permanently split creator fees 80% to the selected pump profile and 20% to the treasury. The scheduled worker at `/api/cron/buybacks` uses only verified, finalized distribution receipts from registered profile launches. It excludes `PTWR_OFFICIAL_MINT`, other coins, deposits, and main-coin creator fees. The treasury share is already 20%; it is not reduced to 20% again. Network costs consume a small part of the buyback budget. Collection gas is paid by the treasury.
 
