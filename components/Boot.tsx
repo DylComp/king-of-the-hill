@@ -9,20 +9,24 @@ const CELLS = 12 * 8;
 const MAX_MS = 6000;
 
 /**
- * First-visit intro: counts up while the page, fonts and assets actually load,
- * then the screen breaks away in pixel blocks.
+ * First-visit intro: counts up while the page, fonts and assets actually load, then the
+ * screen breaks away in pixel blocks. It plays once per browser session; after that, moving
+ * around the site never shows it again.
  */
 export default function Boot() {
   const [pct, setPct] = useState(0);
   const [phase, setPhase] = useState<"run" | "out" | "done">("run");
 
   useEffect(() => {
-    let seen = false;
+    let seen = document.documentElement.dataset.booted === "1";
     try {
-      seen = sessionStorage.getItem("pt:booted") === "1";
-      sessionStorage.setItem("pt:booted", "1");
+      seen ||= sessionStorage.getItem("pt:booted") === "1";
     } catch {}
-    const minMs = seen ? 450 : 1500;
+    if (seen) {
+      setPhase("done");
+      return;
+    }
+    const minMs = 1500;
     const start = performance.now();
     let loaded = document.readyState === "complete";
     let fonts = false;
@@ -46,7 +50,15 @@ export default function Boot() {
       if (ready && shown >= 99.5) {
         setPct(100);
         timers.push(setTimeout(() => setPhase("out"), 120));
-        timers.push(setTimeout(() => setPhase("done"), 820));
+        timers.push(
+          setTimeout(() => {
+            setPhase("done");
+            // Remembered only once it has played, so the rest of the session skips it.
+            try {
+              sessionStorage.setItem("pt:booted", "1");
+            } catch {}
+          }, 820),
+        );
         return;
       }
       raf = requestAnimationFrame(tick);

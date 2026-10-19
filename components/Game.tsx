@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { GITHUB_URL, X_URL } from "@/lib/site";
 import type { CoinView as LaunchCard } from "@/lib/launch/registry";
 import { FEE_TIERS, FEE_TIER_NAMES } from "@/lib/launch/model";
@@ -507,11 +508,18 @@ export default function Game() {
             ["/tokens", "tokens"],
             ["/activity", "activity"],
             ["#docs", "docs"],
-          ].map(([href, label]) => (
-            <a key={href} href={href}>
-              <HoverText text={label} />
-            </a>
-          ))}
+          ].map(([href, label]) =>
+            // Other pages switch client-side, so the site never reloads; in-page sections stay anchors.
+            href.startsWith("/") ? (
+              <Link key={href} href={href}>
+                <HoverText text={label} />
+              </Link>
+            ) : (
+              <a key={href} href={href}>
+                <HoverText text={label} />
+              </a>
+            ),
+          )}
         </nav>
         <a className="gh" href={GITHUB_URL} target="_blank" rel="noopener" title="source code on GitHub" aria-label="GitHub">
           <GitHubMark />
@@ -806,13 +814,13 @@ export default function Game() {
                 {launchCoins.slice(0, 6).map((c) => {
                   const next = FEE_TIERS[c.tier + 1];
                   return (
-                    <a key={c.mint} className="launch-floor" href={`/t/${c.mint}`}>
+                    <Link key={c.mint} className="launch-floor" href={`/t/${c.mint}`}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={`/i/${c.mint}`} alt="" width={28} height={28} loading="lazy" />
                       <span className="pixel tiny-pixel">${c.ticker}</span>
                       <span className="green">{FEE_TIER_NAMES[c.tier]}</span>
                       <span className="dim">{next == null ? "maxed out" : `${(next - c.feesSol).toFixed(2)} SOL in fees to ${FEE_TIER_NAMES[c.tier + 1]}`}</span>
-                    </a>
+                    </Link>
                   );
                 })}
                 {launchSol > 0 && <span className="dim">fees paid out so far add <span className="green">${fmtCash(rewardCash(launchSol))}</span> tower cash</span>}
@@ -959,12 +967,12 @@ export default function Game() {
           The game only reads your wallet. Signing in is a free message signature, never a transaction, and it cannot move your tokens.
           {db ? " Purchases are saved to your wallet and follow you to any device." : " Items you place are saved in this browser."}
         </span>
-        <a className="gh-link" href="/launch">
+        <Link className="gh-link" href="/launch">
           launchpad
-        </a>
-        <a className="gh-link" href="/tokens">
+        </Link>
+        <Link className="gh-link" href="/tokens">
           tokens
-        </a>
+        </Link>
         <a className="gh-link" href={GITHUB_URL} target="_blank" rel="noopener">
           <GitHubMark /> source on github
         </a>

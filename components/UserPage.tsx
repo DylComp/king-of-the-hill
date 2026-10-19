@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ProfilePic } from "./Pics";
 import type { CoinView, Profile } from "@/lib/launch/registry";
@@ -37,6 +38,13 @@ export default function UserPage({ wallet: addr }: { wallet: string }) {
       <SiteNav wallet={wallet} />
       <main className="page user-page">
         <section className="sec">
+            <Link href="/tokens?tab=profiles" className="back-link">
+              <svg width="12" height="12" viewBox="0 0 6 6" shapeRendering="crispEdges" aria-hidden>
+                <path fill="currentColor" d="M2 0h1v1H2zM1 1h1v1H1zM0 2h6v1H0zM1 3h1v1H1zM2 4h1v1H2z" />
+              </svg>
+              all pump profiles
+            </Link>
+
           <div className="user-hero">
             <ProfilePic profile={profile ?? { wallet: addr, username: null, image: null }} size={112} className="huge" />
             <div>

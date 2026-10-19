@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { CoinView } from "@/lib/launch/registry";
 import { FEE_TIER_NAMES } from "@/lib/launch/model";
 import { CoinLogo, profileName } from "./Pics";
@@ -19,7 +20,7 @@ export function ago(ms: number) {
 export default function CoinCard({ c, i = 0 }: { c: CoinView; i?: number }) {
   const who = profileName(c.recipient);
   return (
-    <a className="panel coin-card" href={`/t/${c.mint}`} style={{ ["--i" as string]: i }}>
+    <Link className="panel coin-card" href={`/t/${c.mint}`} style={{ ["--i" as string]: i }}>
       <CoinLogo mint={c.mint} ticker={c.ticker} />
       <span className="coin-body">
         <span className="pixel">{c.name}</span>
@@ -32,6 +33,6 @@ export default function CoinCard({ c, i = 0 }: { c: CoinView; i?: number }) {
           {c.volUsd != null && <span className="dim">{fmtUsd(c.volUsd)} vol</span>}
         </span>
       </span>
-    </a>
+    </Link>
   );
 }
