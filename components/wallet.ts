@@ -80,3 +80,21 @@ export async function signIn(p: WalletLike, addr: string) {
 }
 
 export const rejected = (e: unknown) => e instanceof Error && /reject|denied|cancel|declin/i.test(e.message);
+
+const B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+/** Wallets return a sent transaction's signature as base58 text or as raw bytes. */
+export function sigText(sig: string | Uint8Array): string {
+  if (typeof sig === "string") return sig;
+  let n = 0n;
+  for (const b of sig) n = n * 256n + BigInt(b);
+  let out = "";
+  while (n > 0n) {
+    out = B58[Number(n % 58n)] + out;
+    n /= 58n;
+  }
+  for (const b of sig) {
+    if (b !== 0) break;
+    out = "1" + out;
+  }
+  return out;
+}
