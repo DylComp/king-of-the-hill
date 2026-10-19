@@ -7,6 +7,7 @@ import type { FeesRouted } from "@/lib/launch/routed";
 import type { TreasuryTx } from "@/lib/treasury";
 import { HOUSE_SYMBOL, TREASURY_WALLET, shortAddr } from "@/lib/game";
 import { ago, fmtSol } from "./CoinCard";
+import CopyCA from "./CopyCA";
 import FeeTracker from "./FeeTracker";
 import SiteNav from "./SiteNav";
 import { useMe } from "./useMe";
@@ -53,6 +54,8 @@ export default function Activity() {
               Solscan.
             </p>
           </div>
+
+          <CopyCA className="act-ca" />
 
           <div className="token-stats act-stats">
             <div className="panel tile">

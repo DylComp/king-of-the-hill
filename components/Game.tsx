@@ -50,6 +50,7 @@ import Logo from "./Logo";
 import PumpMeter from "./PumpMeter";
 import GitHubMark from "./GitHubMark";
 import XMark from "./XMark";
+import CopyCA, { NavCA } from "./CopyCA";
 import PumpName, { usePumpNames } from "./PumpName";
 import { connectWallet, isMobile, post, provider, questEvent, rememberRef, signIn as signInWallet, walletLinks } from "./wallet";
 import { ALL_QUESTS_BONUS, QUESTS, REFERRED_REWARD, REFERRER_REWARD, type QuestState, type Referrals } from "@/lib/quests";
@@ -433,7 +434,6 @@ export default function Game() {
     !sel || nextMs == null ? 1 : Math.min(1, Math.max(0, 1 - nextMs / ((TIERS[selTier + 1].minDays - TIERS[selTier].minDays) * DAY)));
   const holdsHouse = sorted.some((f) => f.isHouse);
   const launched = coin != null;
-  const pumpUrl = HOUSE_MINT ? `https://pump.fun/coin/${HOUSE_MINT}` : "https://pump.fun";
   const empty = !!owner && !loading && !error && tokenFloors(sorted).length === 0;
   const earned = achievementsOf(sorted, save, streak, !!owner && owner === me, now);
   const streakNow = liveStreak(streak, now);
@@ -521,6 +521,7 @@ export default function Game() {
             ),
           )}
         </nav>
+        <NavCA />
         <a className="gh" href={GITHUB_URL} target="_blank" rel="noopener" title="source code on GitHub" aria-label="GitHub">
           <GitHubMark />
         </a>
@@ -669,17 +670,15 @@ export default function Game() {
               )}
 
               {!holdsHouse && owner && !loading && !empty && (
-                launched ? (
-                  <a className="panel house-cta" href={pumpUrl} target="_blank" rel="noreferrer">
-                    <span className="pixel green tiny-pixel">no ${HOUSE_SYMBOL} floor</span>
-                    <span className="dim">A ${HOUSE_SYMBOL} floor earns triple rent. Pick some up on pump.fun and it moves in.</span>
-                  </a>
-                ) : (
-                  <div className="panel house-cta">
-                    <span className="pixel green tiny-pixel">${HOUSE_SYMBOL} launches soon</span>
-                    <span className="dim">When it does, holding it adds a neon floor that earns triple rent.</span>
-                  </div>
-                )
+                <div className="panel house-cta">
+                  <span className="pixel green tiny-pixel">{launched ? `no $${HOUSE_SYMBOL} floor` : `$${HOUSE_SYMBOL} launches soon`}</span>
+                  <span className="dim">
+                    {launched
+                      ? `A $${HOUSE_SYMBOL} floor earns triple rent. Pick some up on pump.fun and it moves in.`
+                      : "When it does, holding it adds a neon floor that earns triple rent."}
+                  </span>
+                  <CopyCA className="cta-ca" />
+                </div>
               )}
 
               {sel ? (
@@ -962,6 +961,7 @@ export default function Game() {
       </main>
 
       <footer className="foot">
+        <CopyCA className="foot-ca" buy={false} />
         <Logo size={22} />
         <span className="dim tiny">
           The game only reads your wallet. Signing in is a free message signature, never a transaction, and it cannot move your tokens.

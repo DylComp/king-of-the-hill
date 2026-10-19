@@ -5,7 +5,8 @@
 import { type CSSProperties, memo, useEffect, useState } from "react";
 import type { Burns } from "@/lib/burns";
 import { DOCS, DOCS_INTRO } from "@/lib/howto";
-import { HOUSE_MINT, HOUSE_SYMBOL, ITEMS, TIERS, fmtCash, shortAddr, type ItemKind } from "@/lib/game";
+import { HOUSE_SYMBOL, ITEMS, TIERS, fmtCash, type ItemKind } from "@/lib/game";
+import CopyCA from "./CopyCA";
 import HoverText from "./HoverText";
 import ItemIcon from "./ItemIcon";
 import Reveal from "./Reveal";
@@ -96,7 +97,7 @@ export const DocsSection = memo(function DocsSection() {
                 </div>
               ))}
             </dl>
-            {d.id === "coin" && <HouseCoin />}
+            {d.id === "coin" && <CopyCA className="doc-ca" />}
             {d.id === "coin" && <BurnTracker />}
           </section>
         ))}
@@ -105,39 +106,6 @@ export const DocsSection = memo(function DocsSection() {
   );
 });
 
-/** The $PTWR contract address with copy, and where to buy it, inside the docs. */
-function HouseCoin() {
-  const [copied, setCopied] = useState(false);
-  return (
-    <div className="ca-row doc-ca">
-      {HOUSE_MINT ? (
-        <button
-          className="ca"
-          onClick={() => {
-            navigator.clipboard?.writeText(HOUSE_MINT!).then(() => setCopied(true));
-            setTimeout(() => setCopied(false), 1500);
-          }}
-        >
-          <span className="label">ca</span>
-          <span className="ca-short">{shortAddr(HOUSE_MINT)}</span>
-          <span className="pixel green tiny-pixel">{copied ? "copied" : "copy"}</span>
-        </button>
-      ) : (
-        <div className="ca">
-          <span className="label">ca</span>
-          <span className="dim">drops on launch day, right here</span>
-        </div>
-      )}
-      {HOUSE_MINT ? (
-        <a className="btn small" href={`https://pump.fun/coin/${HOUSE_MINT}`} target="_blank" rel="noreferrer">
-          buy ${HOUSE_SYMBOL}
-        </a>
-      ) : (
-        <span className="btn small ghost soon">launching soon</span>
-      )}
-    </div>
-  );
-}
 
 const fmtTokens = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : n.toFixed(0));
 const ago = (t: number) => {
