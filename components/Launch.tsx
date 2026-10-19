@@ -82,6 +82,7 @@ export default function Launch() {
   const [finding, setFinding] = useState(false);
   const [recipient, setRecipient] = useState<Profile | null>(null);
   const [findError, setFindError] = useState<string | null>(null);
+  const [matches, setMatches] = useState<Profile[]>([]);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [image, setImage] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -122,11 +123,16 @@ export default function Launch() {
     if (!q.trim()) return;
     setFinding(true);
     setFindError(null);
+    setMatches([]);
     try {
       const res = await fetch(`/api/pump/profile?q=${encodeURIComponent(q.trim())}`);
-      const j = await res.json();
+      const j = (await res.json()) as { profile?: Profile | null; matches?: Profile[]; error?: string };
       if (!res.ok) throw new Error(j.error ?? "not found");
-      setRecipient(j.profile);
+      if (j.profile) setRecipient(j.profile);
+      else {
+        setRecipient(null);
+        setMatches(j.matches ?? []);
+      }
     } catch (e) {
       setRecipient(null);
       setFindError((e as Error).message);
@@ -163,6 +169,7 @@ export default function Launch() {
     setRecipient(null);
     setQuery("");
     setFindError(null);
+    setMatches([]);
     setError(null);
     setStep(null);
     if (fileInput.current) fileInput.current.value = "";
@@ -210,9 +217,11 @@ export default function Launch() {
       setStep(3);
       await post("/api/launch/send", { mint: mintAddr, tx: toB64(signed.serialize()), setup: all.slice(0, -1).map((s) => toB64(s.serialize())) });
       setStep(4);
-      for (let i = 0; i < 40; i++) {
+      // The server re-sends the launch while it waits and says when it can no longer land.
+      for (let i = 0; i < 60; i++) {
         await new Promise((r) => setTimeout(r, 2500));
-        const res = await fetch("/api/launch/confirm", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mint: mintAddr }) });
+        const res = await fetch("/api/launch/confirm", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mint: mintAddr }) }).catch(() => null);
+        if (!res || res.status === 429 || res.status >= 500) continue;
         const j = await res.json().catch(() => ({}));
         if (res.ok && j.coin) {
           window.location.href = `/t/${mintAddr}?new=1`;
@@ -293,6 +302,25 @@ export default function Launch() {
                   </button>
                 )}
                 {findError && <p className="red">{findError}</p>}
+                {matches.length > 0 && !recipient && (
+                  <div className="lp-matches">
+                    <span className="dim">No exact username. Did you mean:</span>
+                    {matches.map((m) => (
+                      <button
+                        type="button"
+                        key={m.wallet}
+                        className="lp-match"
+                        onClick={() => {
+                          setRecipient(m);
+                          setQuery(m.username ?? m.wallet);
+                          setMatches([]);
+                        }}
+                      >
+                        <ProfileCard p={m} />
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {recipient && (
                   <div className="found swap" key={recipient.wallet}>
                     <ProfileCard p={recipient} big />

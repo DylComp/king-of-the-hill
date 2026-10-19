@@ -27,6 +27,22 @@ const { PUMP_SDK, OnlinePumpSdk, GLOBAL_PDA, PUMP_FEE_CONFIG_PDA, PUMP_PROGRAM_I
 
 export const connection = () => new Connection(rpcUrl(), "confirmed");
 
+/**
+ * A priority fee (micro-lamports per compute unit) that actually lands on a busy network: the
+ * 75th percentile of recent fees paid around pump.fun, kept between 100k and 2M. At the 600k
+ * unit limit that is 0.00006 to 0.0012 SOL.
+ */
+export async function priorityFee(conn: Connection): Promise<number> {
+  try {
+    const recent = await conn.getRecentPrioritizationFees({ lockedWritableAccounts: [PUMP_PROGRAM_ID, GLOBAL_PDA] });
+    const fees = recent.map((r) => r.prioritizationFee).filter((f) => f > 0).sort((a, b) => a - b);
+    const p75 = fees.length ? fees[Math.floor(fees.length * 0.75)] : 0;
+    return Math.min(2_000_000, Math.max(100_000, p75));
+  } catch {
+    return 200_000;
+  }
+}
+
 function key(value: string, what: string) {
   const k = new PublicKey(value);
   if (k.toBase58() !== value) throw Error(`Bad ${what} address.`);
@@ -71,7 +87,7 @@ export async function prepareLaunch(o: { draft: Draft; launcher: string; mint: s
 
   const ixs = [
     ComputeBudgetProgram.setComputeUnitLimit({ units: 600_000 }),
-    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1_000 }),
+    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: await priorityFee(conn) }),
     await PUMP_SDK.createV2Instruction({
       user,
       creator: user,
@@ -209,7 +225,7 @@ export async function collectTx(mint: string, payer: string) {
   const message = new TransactionMessage({
     payerKey: p,
     recentBlockhash: latest.blockhash,
-    instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }), ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1_000 }), ...instructions],
+    instructions: [ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }), ComputeBudgetProgram.setComputeUnitPrice({ microLamports: await priorityFee(conn) }), ...instructions],
   }).compileToV0Message();
   const tx = new VersionedTransaction(message);
   const sim = await conn.simulateTransaction(tx, { sigVerify: false, commitment: "confirmed" });
@@ -259,4 +275,19 @@ export async function broadcastSetup(signed: string[], expectedMessages: string[
     const res = await conn.confirmTransaction(sig, "confirmed");
     if (res.value.err) throw Error("The network rejected the launch. Try again.");
   }
+}
+
+/**
+ * Where a sent launch stands. Until its blockhash expires it is re-sent on every check, so a
+ * dropped packet doesn't strand it; once expired with no record on chain, it never landed.
+ */
+export async function launchProgress(raw: string, signature: string, lastValidBlockHeight: number): Promise<"landed" | "failed" | "expired" | "pending"> {
+  const conn = connection();
+  const [st] = (await conn.getSignatureStatuses([signature], { searchTransactionHistory: true })).value;
+  if (st?.err) return "failed";
+  if (st && (st.confirmationStatus === "confirmed" || st.confirmationStatus === "finalized")) return "landed";
+  // Wallets may swap in a fresher blockhash while signing, so allow some slack past ours.
+  if ((await conn.getBlockHeight("confirmed")) > lastValidBlockHeight + 150) return st ? "pending" : "expired";
+  await conn.sendRawTransaction(Buffer.from(raw, "base64"), { skipPreflight: true, maxRetries: 0 }).catch(() => {});
+  return "pending";
 }

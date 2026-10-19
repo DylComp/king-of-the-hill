@@ -19,6 +19,8 @@ export const LIMITS = {
   profile: 30,
   asset: 8,
   launch: 12,
+  /** The launch page polls this every couple of seconds while a launch lands. */
+  confirm: 90,
   tokens: 60,
   collect: 10,
   quests: 60,

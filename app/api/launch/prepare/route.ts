@@ -44,7 +44,7 @@ export async function POST(req: Request) {
       if (/^[A-Z].*[.!]$/.test(msg)) return json({ error: msg }, 400);
       throw e;
     }
-    await setJson(pendingKey(b.mint), { draft, recipient, launcher, treasury: status.treasury, message: prepared.message, setup: prepared.setup && { table: prepared.setup.table, expected: prepared.setup.expected, messages: prepared.setup.messages }, signature: null }, 3600);
+    await setJson(pendingKey(b.mint), { draft, recipient, launcher, treasury: status.treasury, message: prepared.message, lastValidBlockHeight: prepared.lastValidBlockHeight, setup: prepared.setup && { table: prepared.setup.table, expected: prepared.setup.expected, messages: prepared.setup.messages }, signature: null }, 3600);
     return json({ ...prepared, setup: prepared.setup?.txs ?? null, recipient, metadata: meta });
   } catch (e) {
     return fail(e, "launch prepare");

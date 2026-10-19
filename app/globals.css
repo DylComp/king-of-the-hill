@@ -2846,3 +2846,24 @@ button.chip.on {
     margin-left: -4px;
   }
 }
+
+/* launchpad: pick a pump user when the search isn't an exact username */
+.lp-matches {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lp-match {
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.lp-match:hover,
+.lp-match:focus-visible {
+  border-color: var(--green);
+  background: rgba(134, 239, 172, 0.06);
+}

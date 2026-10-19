@@ -68,3 +68,14 @@ export async function findProfile(q: string): Promise<Profile | null> {
   if (hasDb()) await setJson(cacheKey, profile ?? { none: true }, 600).catch(() => {});
   return profile;
 }
+
+/** Up to eight pump.fun users whose names match a partial search, best matches first. */
+export async function searchProfiles(term: string): Promise<Profile[]> {
+  const t = term.trim().replace(/^@/, "");
+  if (!/^[A-Za-z0-9_.]{2,32}$/.test(t)) return [];
+  const list = await pump<PumpUser[]>(`/users/search-v2?offset=0&limit=8&includeLabelledWallets=false&searchTerm=${encodeURIComponent(t)}`);
+  return (list ?? []).flatMap((u) => {
+    const wallet = u.canonical_svm_wallet || u.address;
+    return !u.is_banned && wallet && isAddress(wallet) ? [toProfile(u, wallet)] : [];
+  });
+}
