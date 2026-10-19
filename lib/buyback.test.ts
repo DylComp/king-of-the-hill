@@ -23,11 +23,21 @@ test("main coin, unknown mints, wrong vault, quote or split never earn budget", 
   assert.equal(eligibleRevenue(event, { ...opts, officialMint: "" }), 0n);
   assert.equal(eligibleRevenue(event, { ...opts, recipient: treasury }), 0n);
 });
-test("unrelated balances cannot enlarge receipt budget; reserve and per-buy cap apply", () => {
+test("revenue buys spend the maximum eligible amount while retaining gas and overhead", () => {
   assert.equal(buybackInput(policy, "0", 100000000000n), 0n);
   assert.equal(buybackInput(policy, "10000000", 100000000000n), 1000000n);
-  assert.equal(buybackInput(policy, "1000000000", 100000000000n), 10000000n);
+  assert.equal(buybackInput(policy, "1000000000", 100000000000n), 991000000n);
   assert.equal(buybackInput(policy, "1000000000", 20000000n), 0n);
+  assert.equal(buybackInput(policy, "1000000000", 100000000n), 71000000n);
+  assert.equal(buybackInput(policy, "50000000000", 100000000000n), 49991000000n);
+  assert.equal(buybackInput({ ...policy, revenueReserve: undefined }, "1000000000", 100000000000n), 10000000n);
+  for (const balance of [0n, 20000000n, 30000000n, 100000000n, 100000000000n]) {
+    const input = buybackInput(policy, "1000000000", balance);
+    if (input > 0n) {
+      assert.ok(balance - input - BigInt(policy.maxOverhead) >= BigInt(policy.revenueReserve!));
+      assert.ok(input + BigInt(policy.maxOverhead) <= 1000000000n);
+    }
+  }
   assert.throws(() => buybackInput({ ...policy, slippageBps: 501 }, "100000000", 100000000n));
 });
 test("a buyback contains the exact buy and burn; altered signed bytes are rejected", async () => {

@@ -103,7 +103,10 @@ export async function runBuybacks() {
       if (s.collection) return { outcome };
     }
     await scanRevenue(store, conn, TREASURY_WALLET);
-    const available = min(BigInt(s.credit) - BigInt(s.debit), BigInt(policy.dailyCap) - BigInt(s.dailyDebit));
+    // Revenue mode sweeps the verified fee balance; wallet reserve and overhead
+    // are enforced by buybackInput. No fixed per-buy or daily spending cap.
+    const earned = BigInt(s.credit) - BigInt(s.debit);
+    const available = policy.revenueReserve !== undefined ? earned : min(earned, BigInt(policy.dailyCap) - BigInt(s.dailyDebit));
     if (available >= 10_000_000n) {
       const plan = await chain.prepare(available.toString());
       if (plan) {

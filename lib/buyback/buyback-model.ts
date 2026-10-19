@@ -147,13 +147,13 @@ export function verifyBuybackSigned(plan: BuybackPlan, signed: string) {
   return bs58.encode(tx.signatures[0]);
 }
 
-// Revenue mode never treats unrelated deposits as spendable revenue.
+// Revenue mode spends all available verified revenue above the operating reserve,
+// reserving transaction overhead. Fixed-input limits apply only outside revenue mode.
 export function buybackInput(p: BuybackPolicy, available: string, balance: bigint): bigint {
   validateBuybackPolicy(p);
   const overhead=rawLamports(p.maxOverhead), credit=rawLamports(available);
   if(p.revenueReserve===undefined) return credit>=rawLamports(p.maxInput)+overhead ? rawLamports(p.maxInput) : 0n;
   const liquid=balance-rawLamports(p.revenueReserve);
   const budget=(credit<liquid?credit:liquid)-overhead;
-  const capped = budget < rawLamports(p.maxInput) ? budget : rawLamports(p.maxInput);
-  return capped >= 1000000n ? capped : 0n;
+  return budget >= 1000000n ? budget : 0n;
 }

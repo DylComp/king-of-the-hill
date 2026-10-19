@@ -151,7 +151,7 @@ The worker runs every five minutes on Vercel, with an authenticated `CRON_SECRET
 | `PTWR_TREASURY_SECRET_KEY` | JSON Solana keypair array, sensitive, server-only |
 | `CRON_SECRET` | Random bearer secret, sensitive |
 
-Limits: 0.01 SOL per purchase, 1 SOL per UTC day (including buy transaction overhead), 1% slippage, 0.02 SOL retained for operations, and a maximum 0.009 SOL overhead reservation. Actual confirmed debits settle the ledger. Standard and Holder Rewards SOL Pump curves and canonical Pump AMM pools are supported; unsupported token extensions/modes halt execution. Holder Rewards creators must match the official per-mint rewards PDA. Cashback and mayhem target coins are rejected. Buy and burn are in one atomic transaction.
+Revenue-mode sizing: each buy uses the maximum verified unspent profile-fee revenue allowed by the wallet balance, retaining 0.02 SOL for operations and reserving up to 0.009 SOL for transaction/account overhead. There is no fixed per-buy or daily spending cap in revenue mode; the legacy maxInput/dailyCap policy fields apply only to fixed-input mode. Slippage remains limited to 1%. Unrelated deposits and official-token creator fees never enlarge the verified revenue budget. Actual confirmed debits settle the ledger. Standard and Holder Rewards SOL Pump curves and canonical Pump AMM pools are supported; unsupported token extensions/modes halt execution. Holder Rewards creators must match the official per-mint rewards PDA. Cashback and mayhem target coins are rejected. Buy and burn are in one atomic transaction.
 
 Before activation:
 
