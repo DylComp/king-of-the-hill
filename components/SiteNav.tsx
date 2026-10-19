@@ -1,8 +1,9 @@
 "use client";
 import { useEffect } from "react";
-import { GITHUB_URL } from "@/lib/site";
+import { GITHUB_URL, X_URL } from "@/lib/site";
 import { shortAddr } from "@/lib/game";
 import GitHubMark from "./GitHubMark";
+import XMark from "./XMark";
 import HoverText from "./HoverText";
 import Logo from "./Logo";
 import PumpMeter from "./PumpMeter";
@@ -44,6 +45,9 @@ export default function SiteNav({ wallet, active }: { wallet: ReturnType<typeof 
         </nav>
         <a className="gh" href={GITHUB_URL} target="_blank" rel="noopener" title="source code on GitHub" aria-label="GitHub">
           <GitHubMark />
+        </a>
+        <a className="gh" href={X_URL} target="_blank" rel="noopener" title="Pump Tower on X" aria-label="Pump Tower on X">
+          <XMark />
         </a>
         {me ? (
           <button className="btn ghost" onClick={signOut} title="sign out">

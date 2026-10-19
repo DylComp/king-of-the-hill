@@ -2831,3 +2831,18 @@ button.chip.on {
   align-self: flex-start;
   font-size: 17px;
 }
+
+/* GitHub and X sit together in the nav, closer than the nav's usual spacing */
+.nav .gh + .gh {
+  margin-left: -18px;
+}
+@media (max-width: 900px) {
+  .nav .gh + .gh {
+    margin-left: -8px;
+  }
+}
+@media (max-width: 640px) {
+  .nav .gh + .gh {
+    margin-left: -4px;
+  }
+}
