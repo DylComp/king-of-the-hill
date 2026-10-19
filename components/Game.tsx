@@ -8,7 +8,6 @@ import {
   HOUSE_MINT,
   ITEMS,
   floorLevel,
-  holderRewardsLive,
   rewardCash,
   MAX_FURNITURE,
   TIERS,
@@ -143,7 +142,6 @@ export default function Game() {
   const [board, setBoard] = useState<Skyline | null>(null);
   const [boardTab, setBoardTab] = useState<"season" | "all">("season");
   const [streak, setStreak] = useState<Streak>(emptyStreak);
-  const [rewardsSol, setRewardsSol] = useState(0);
   const [launchSol, setLaunchSol] = useState(0);
   const [extraCash, setExtraCash] = useState(0);
   const [quests, setQuests] = useState<QuestState | null>(null);
@@ -162,7 +160,7 @@ export default function Game() {
     [floors],
   );
   const rate = useMemo(() => towerRate(sorted, now), [sorted, now]);
-  const cash = cashOf(sorted, save.owned, owner ? WALLET_BONUS + streak.total + rewardCash(rewardsSol + launchSol) + extraCash : DEMO_BONUS, now);
+  const cash = cashOf(sorted, save.owned, owner ? WALLET_BONUS + streak.total + rewardCash(launchSol) + extraCash : DEMO_BONUS, now);
   const sel = sorted.find((f) => f.mint === selected) ?? null;
   const citizens = sorted.reduce((n, f) => n + citizensFor(tierFor(f.heldSince, now)), 0);
   const longest = sorted[0] ? daysHeld(sorted[0].heldSince, now) : 0;
@@ -199,17 +197,15 @@ export default function Game() {
     if (addr && dbRef.current) {
       setSave(emptySave());
       setStreak(emptyStreak());
-      setRewardsSol(0);
       setLaunchSol(0);
       setExtraCash(0);
       setLaunchCoins([]);
       fetch(`/api/save?w=${addr}`)
         .then((r) => r.json())
-        .then((j: { save: Save | null; streak: Streak | null; rewardsSol?: number; launchSol?: number; extraCash?: number }) => {
+        .then((j: { save: Save | null; streak: Streak | null; launchSol?: number; extraCash?: number }) => {
           setExtraCash(j.extraCash ?? 0);
           if (j.save) setSave(j.save);
           if (j.streak) setStreak(j.streak);
-          setRewardsSol(j.rewardsSol ?? 0);
           setLaunchSol(j.launchSol ?? 0);
         })
         .catch(() => {});
@@ -221,7 +217,6 @@ export default function Game() {
       loadedFor.current = addr ?? "demo";
       setSave(loadSave(addr));
       setStreak(emptyStreak());
-      setRewardsSol(0);
       setLaunchSol(0);
       setExtraCash(0);
       setLaunchCoins([]);
@@ -507,6 +502,7 @@ export default function Game() {
             ["#catalog", "catalog"],
             ["/launch", "launch"],
             ["/tokens", "tokens"],
+            ["/activity", "activity"],
             ["#docs", "docs"],
           ].map(([href, label]) => (
             <a key={href} href={href}>
@@ -602,7 +598,6 @@ export default function Game() {
                 selected={selected}
                 onSelect={setSelected}
                 onCanvas={(c) => (canvasRef.current = c)}
-                rewardsSol={holderRewardsLive() && owner ? rewardsSol : null}
                 houseLive={launched}
               />
             </div>

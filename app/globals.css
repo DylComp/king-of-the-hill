@@ -993,15 +993,6 @@ button.chip:hover {
   align-items: flex-start;
   text-align: left;
 }
-.reward-live {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  max-width: 780px;
-  margin: 0 auto 18px;
-}
 .gold {
   color: #e8b931;
 }
@@ -2692,5 +2683,96 @@ button.chip.on {
   }
   .ft-value {
     font-size: 12px;
+  }
+}
+
+/* ---------- /activity ---------- */
+.act-stats .fire {
+  color: #fdba74;
+  text-shadow: 0 0 14px rgba(251, 146, 60, 0.5);
+}
+.act-stats .gold {
+  color: #fde68a;
+}
+.act-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.act-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.act-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 14px;
+  flex-wrap: wrap;
+}
+.act-head .ft-tx {
+  margin: 0;
+}
+.act-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.act-list li {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+  font-size: 18px;
+}
+.act-list li:first-child {
+  border-top: 0;
+}
+.act-list li.failed {
+  opacity: 0.55;
+}
+.act-list .chip {
+  justify-self: start;
+  text-transform: uppercase;
+}
+.act-amt {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.act-list .ft-tx {
+  margin: 0;
+}
+.chip.act-buy-burn {
+  color: #fdba74;
+  border-color: rgba(251, 146, 60, 0.45);
+}
+.chip.act-fees-in {
+  color: var(--green);
+  border-color: var(--line-strong);
+}
+.chip.act-sent {
+  color: #fde68a;
+  border-color: rgba(253, 230, 138, 0.4);
+}
+@media (max-width: 1000px) {
+  .act-cols {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 640px) {
+  .act-list li {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 4px 10px;
+  }
+  .act-when {
+    grid-column: 1;
   }
 }

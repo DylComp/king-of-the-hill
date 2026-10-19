@@ -11,22 +11,21 @@ type Props = {
   selected: string | null;
   onSelect: (mint: string) => void;
   onCanvas?: (c: HTMLCanvasElement | null) => void;
-  rewardsSol?: number | null;
   houseLive?: boolean;
 };
 
 /** Below this many CSS pixels the token cards drop off and each room fills the width. */
 const COMPACT_BELOW = 560;
 
-export default function TowerView({ floors, placed, selected, onSelect, onCanvas, rewardsSol, houseLive }: Props) {
+export default function TowerView({ floors, placed, selected, onSelect, onCanvas, houseLive }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const wrap = useRef<HTMLDivElement>(null);
   const onScreen = useOnScreen(wrap, "100px");
   const scene = useRef(newScene());
-  const latest = useRef({ floors, placed, selected, rewardsSol, houseLive, compact: false });
+  const latest = useRef({ floors, placed, selected, houseLive, compact: false });
   const [scale, setScale] = useState(2);
   const [compact, setCompact] = useState(false);
-  latest.current = { floors, placed, selected, rewardsSol, houseLive, compact };
+  latest.current = { floors, placed, selected, houseLive, compact };
   const W = widthFor(compact);
 
   useEffect(() => {
@@ -58,7 +57,7 @@ export default function TowerView({ floors, placed, selected, onSelect, onCanvas
         last = t;
         return;
       }
-      const { floors, placed, selected, rewardsSol, houseLive, compact } = latest.current;
+      const { floors, placed, selected, houseLive, compact } = latest.current;
       const h = towerHeight(floors.length);
       const w = widthFor(compact);
       if (c.height !== h) c.height = h;
@@ -71,7 +70,7 @@ export default function TowerView({ floors, placed, selected, onSelect, onCanvas
       const wrapBox = el.getBoundingClientRect();
       const top = Math.max(0, (Math.max(wrapBox.top, 0) - box.top) * k);
       const bottom = (Math.min(wrapBox.bottom, window.innerHeight) - box.top) * k;
-      drawTower(ctx, { floors, placed, selected, now: Date.now(), t, dt, scene: scene.current, compact, rewardsSol, houseLive, view: { top, bottom } });
+      drawTower(ctx, { floors, placed, selected, now: Date.now(), t, dt, scene: scene.current, compact, houseLive, view: { top, bottom } });
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);

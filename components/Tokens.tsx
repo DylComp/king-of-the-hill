@@ -71,7 +71,7 @@ export default function Tokens() {
               <span className="pixel big">{total}</span>
             </div>
             <div className="panel tile">
-              <span className="label">pump users paid</span>
+              <span className="label">pump profiles</span>
               <span className="pixel big">{users}</span>
             </div>
             <div className="panel tile">

@@ -3,7 +3,6 @@
 import { after } from "next/server";
 import { buildTower } from "./chain";
 import { getJson, hasDb, pipeline, redis, setJson } from "./redis";
-import { rewardsFor } from "./rewards";
 import { launchEarnings, launchFloors, withLaunchFloors } from "./launch/fees";
 import { coinCountsFor } from "./launch/registry";
 import { extraCash, questStep, settleReferral } from "./missions";
@@ -31,8 +30,8 @@ import {
   towerRate,
 } from "./game";
 
-/** Holder rewards plus the recipient share of coins launched for this wallet, in SOL. */
-export const earnedSol = async (owner: string) => (await Promise.all([rewardsFor(owner), launchEarnings(owner)])).reduce((a, b) => a + b, 0);
+/** The recipient share of coins launched for this wallet, in SOL. */
+export const earnedSol = (owner: string) => launchEarnings(owner);
 
 const TOWER_TTL = 300;
 const TOWER_KEEP = 3600;
@@ -169,8 +168,8 @@ export async function loadStreak(owner: string): Promise<Streak> {
   return (await getJson<Streak>(k.streak(owner))) ?? emptyStreak();
 }
 
-/** Starting cash, every daily bonus collected, and $PTWR holder rewards paid out. */
-const bonusOf = (s: Streak, rewardsSol = 0, extra = 0) => WALLET_BONUS + s.total + rewardCash(rewardsSol) + extra;
+/** Starting cash, every daily bonus collected, and launch fees paid out to this wallet. */
+const bonusOf = (s: Streak, launchSol = 0, extra = 0) => WALLET_BONUS + s.total + rewardCash(launchSol) + extra;
 
 export type CollectOutcome = { ok: true; streak: Streak; reward: number; points: number } | { ok: false; reason: string };
 

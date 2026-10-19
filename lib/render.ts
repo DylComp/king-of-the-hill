@@ -171,7 +171,7 @@ const fmtWait = (ms: number) => {
 
 // ---------- token card ----------
 
-type CardInfo = { f: Floor; tier: TierId; now: number; accent: string; logo: HTMLImageElement | null; room: string; rewardsSol: number | null };
+type CardInfo = { f: Floor; tier: TierId; now: number; accent: string; logo: HTMLImageElement | null; room: string };
 
 function drawCard(o: CardInfo): HTMLCanvasElement {
   const c = document.createElement("canvas");
@@ -217,7 +217,6 @@ function drawCard(o: CardInfo): HTMLCanvasElement {
     ["HELD", fmtHeld(daysHeld(f.heldSince, o.now)), "#e2e8f0"],
     ["RENT", `$${floorRate(tier, f.isHouse)}/HR`, GREEN],
   ];
-  if (f.isHouse) rows.push(["PAID", o.rewardsSol == null ? "SOON" : `${o.rewardsSol.toFixed(3)} SOL`, GOLD]);
   rows.forEach(([k, v, col], i) => {
     const y = 34 + i * 8;
     tiny(ctx, k, 6, y, "#64748b");
@@ -249,7 +248,7 @@ function drawCard(o: CardInfo): HTMLCanvasElement {
 
 function cardFor(scene: Scene, o: CardInfo) {
   const minute = Math.floor(o.now / 60_000);
-  const key = [o.f.mint, o.f.symbol, o.f.usd?.toFixed(2), o.f.change24?.toFixed(1), minute, o.tier, o.accent, o.logo ? 1 : 0, o.room, o.rewardsSol].join("|");
+  const key = [o.f.mint, o.f.symbol, o.f.usd?.toFixed(2), o.f.change24?.toFixed(1), minute, o.tier, o.accent, o.logo ? 1 : 0, o.room].join("|");
   const hit = scene.cards.get(o.f.mint);
   if (hit && hit.key === key) return hit.canvas;
   const canvas = drawCard(o);
@@ -519,8 +518,6 @@ export type DrawOpts = {
   dt: number;
   scene: Scene;
   compact?: boolean;
-  /** SOL paid to this wallet by $PTWR holder rewards, shown on the house floor. */
-  rewardsSol?: number | null;
   houseLive?: boolean;
   /** Logical y range on screen; floors outside it skip their animation. */
   view?: { top: number; bottom: number } | null;
@@ -669,7 +666,7 @@ function drawFloor(ctx: CanvasRenderingContext2D, o: DrawOpts, f: Floor, i: numb
 
   // token card
   if (!o.compact) {
-    const card = cardFor(scene, { f, tier, now, accent, logo, room: theme.name, rewardsSol: f.isHouse ? (o.rewardsSol ?? null) : null });
+    const card = cardFor(scene, { f, tier, now, accent, logo, room: theme.name });
     ctx.drawImage(card, CX, y);
   }
 
