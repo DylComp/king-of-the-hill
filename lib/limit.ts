@@ -1,4 +1,6 @@
 // Per-IP request caps, so a bot can't flood sign-in, buying or chain reads on launch day.
+// Set well above what a real player does, since phone carriers and offices put many players
+// behind one IP; outside APIs are protected by caching instead.
 // Fixed one-minute windows counted in Redis. If Redis is down the request goes through:
 // a broken limiter should never lock real players out.
 import { json } from "./api";
@@ -6,28 +8,28 @@ import { hasDb, pipeline } from "./redis";
 
 /** Requests allowed per IP per minute, by route. */
 export const LIMITS = {
-  report: 10,
-  nonce: 20,
-  verify: 20,
-  buy: 60,
-  remove: 60,
-  checkin: 10,
-  tower: 60,
-  fresh: 10,
-  save: 90,
-  og: 30,
-  profile: 60,
-  names: 120,
+  report: 20,
+  nonce: 30,
+  verify: 30,
+  buy: 120,
+  remove: 120,
+  checkin: 20,
+  tower: 180,
+  fresh: 30,
+  save: 180,
+  og: 60,
+  profile: 240,
+  names: 600,
   /** Launch steps. Generous, since a phone network can put many people behind one IP and a retry must never be refused. */
   asset: 30,
   launch: 40,
   send: 60,
   /** The launch page polls this every couple of seconds while a launch lands. */
-  confirm: 180,
+  confirm: 300,
   /** Live stats pages poll every few seconds; the CDN answers most of these before they get here. */
   tokens: 300,
-  collect: 10,
-  quests: 90,
+  collect: 30,
+  quests: 180,
 } as const;
 
 export type LimitName = keyof typeof LIMITS;

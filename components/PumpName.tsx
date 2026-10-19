@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { shortAddr } from "@/lib/game";
 import { ProfilePic } from "./Pics";
+import { getRetry } from "./retry";
 
 type Name = { username: string; image: string | null };
 const known = new Map<string, Name | null>();
@@ -14,7 +15,8 @@ async function load(wallets: string[]) {
     const chunk = todo.slice(i, i + 40);
     chunk.forEach((w) => known.set(w, null));
     try {
-      const res = await fetch(`/api/pump/names?w=${chunk.join(",")}`);
+      const res = await getRetry(`/api/pump/names?w=${chunk.join(",")}`);
+      if (!res.ok) throw Error(String(res.status));
       const { names } = (await res.json()) as { names?: Record<string, Name> };
       for (const [w, n] of Object.entries(names ?? {})) known.set(w, n);
     } catch {

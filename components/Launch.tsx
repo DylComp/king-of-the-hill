@@ -11,6 +11,7 @@ import { ProfilePic } from "./Pics";
 import SiteNav from "./SiteNav";
 import { useMe } from "./useMe";
 import { fromB64, post, provider, rejected, toB64 } from "./wallet";
+import { getRetry } from "./retry";
 
 type Status = { open: boolean; reason: string | null; treasury: string | null };
 type Prepared = { tx: string; mint: string; recipient: Profile; setup: string[] | null };
@@ -119,7 +120,7 @@ export default function Launch() {
     setFindError(null);
     setMatches([]);
     try {
-      const res = await fetch(`/api/pump/profile?q=${encodeURIComponent(q.trim())}`);
+      const res = await getRetry(`/api/pump/profile?q=${encodeURIComponent(q.trim())}`);
       const j = (await res.json()) as { profile?: Profile | null; matches?: Profile[]; error?: string };
       if (!res.ok) throw new Error(j.error ?? "not found");
       if (j.profile) setRecipient(j.profile);
