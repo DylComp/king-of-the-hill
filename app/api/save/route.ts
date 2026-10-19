@@ -5,6 +5,7 @@ import { hasDb } from "@/lib/redis";
 import { rewardsFor } from "@/lib/rewards";
 import { loadSave, loadStreak } from "@/lib/store";
 import { launchEarnings } from "@/lib/launch/fees";
+import { extraCash } from "@/lib/missions";
 
 /** Anyone can see how a tower is decorated; only its owner can change it. */
 export async function GET(req: Request) {
@@ -12,10 +13,10 @@ export async function GET(req: Request) {
   if (!isAddress(w)) return json({ error: "not a solana address" }, 400);
   const slow = await limited(req, "save");
   if (slow) return slow;
-  if (!hasDb()) return json({ save: null, streak: null, rewardsSol: 0, launchSol: 0 });
+  if (!hasDb()) return json({ save: null, streak: null, rewardsSol: 0, launchSol: 0, extraCash: 0 });
   try {
-    const [save, streak, rewardsSol, launchSol] = await Promise.all([loadSave(w), loadStreak(w), rewardsFor(w), launchEarnings(w)]);
-    return json({ save, streak, rewardsSol, launchSol });
+    const [save, streak, rewardsSol, launchSol, extra] = await Promise.all([loadSave(w), loadStreak(w), rewardsFor(w), launchEarnings(w), extraCash(w)]);
+    return json({ save, streak, rewardsSol, launchSol, extraCash: extra });
   } catch (e) {
     return fail(e, "save");
   }

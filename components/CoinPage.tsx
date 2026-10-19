@@ -7,7 +7,7 @@ import { SITE_URL } from "@/lib/site";
 import { ago, fmtSol } from "./CoinCard";
 import SiteNav from "./SiteNav";
 import { useMe } from "./useMe";
-import { fromB64, post, provider, rejected } from "./wallet";
+import { fromB64, post, provider, questEvent, rejected } from "./wallet";
 
 export default function CoinPage({ mint }: { mint: string }) {
   const wallet = useMe();
@@ -27,6 +27,10 @@ export default function CoinPage({ mint }: { mint: string }) {
       })
       .catch(() => {});
   }, [mint]);
+
+  useEffect(() => {
+    if (wallet.me) void questEvent("coin");
+  }, [wallet.me]);
 
   useEffect(() => {
     load();

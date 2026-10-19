@@ -2230,3 +2230,58 @@ button.chip.on {
     height: 380px;
   }
 }
+
+/* daily quests and invites in the tower side panel */
+.quests,
+.invite {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.quests-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.quests ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.quests li {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  animation: stamp 0.4s steps(4) backwards;
+  animation-delay: calc(var(--i) * 60ms);
+}
+.quests li .box {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--line-strong);
+  display: grid;
+  place-items: center;
+  font-family: var(--pixel);
+  font-size: 8px;
+  color: #06120a;
+}
+.quests li.done {
+  color: var(--ink-dim);
+}
+.quests li.done > span:nth-child(2) {
+  text-decoration: line-through;
+  text-decoration-color: var(--green-deep);
+}
+.quests li.done .box {
+  background: var(--green);
+  border-color: var(--green);
+  animation: charge 0.6s steps(3) 1;
+}
+.invite .btn {
+  align-self: flex-start;
+}

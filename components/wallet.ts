@@ -51,13 +51,32 @@ export const toB64 = (bytes: Uint8Array) => {
 };
 export const fromB64 = (b64: string) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 
+/** Keeps a ?ref= invite from the link this visitor arrived on, for their first sign-in. */
+export function rememberRef() {
+  try {
+    const ref = new URL(window.location.href).searchParams.get("ref");
+    if (ref && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(ref) && !localStorage.getItem("pt_ref")) localStorage.setItem("pt_ref", ref);
+  } catch {}
+}
+const storedRef = () => {
+  try {
+    return localStorage.getItem("pt_ref") ?? undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+/** Counts a quest step for the signed-in wallet. Fire and forget. */
+export const questEvent = (event: "visit" | "coin" | "share", target?: string) =>
+  post<{ paid: number; extraCash: number }>("/api/quests", { event, target }).catch(() => null);
+
 /** Proves wallet ownership with a free message signature. Throws a readable message. */
 export async function signIn(p: WalletLike, addr: string) {
   if (!p.signMessage) throw new Error("this wallet can't sign messages");
   const { message, nonce } = await post<{ message: string; nonce: string }>("/api/auth/nonce", { wallet: addr });
   const out = await p.signMessage(new TextEncoder().encode(message), "utf8");
   const sig = out instanceof Uint8Array ? out : out.signature;
-  await post("/api/auth/verify", { wallet: addr, nonce, signature: toB64(sig) });
+  await post("/api/auth/verify", { wallet: addr, nonce, signature: toB64(sig), ref: storedRef() });
 }
 
 export const rejected = (e: unknown) => e instanceof Error && /reject|denied|cancel|declin/i.test(e.message);

@@ -21,6 +21,7 @@ export const LIMITS = {
   launch: 12,
   tokens: 60,
   collect: 10,
+  quests: 60,
 } as const;
 
 export type LimitName = keyof typeof LIMITS;

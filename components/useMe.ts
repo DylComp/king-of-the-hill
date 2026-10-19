@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { connectWallet, isMobile, post, provider, rejected, signIn } from "./wallet";
+import { connectWallet, isMobile, post, provider, rejected, rememberRef, signIn } from "./wallet";
 
 /** The signed-in wallet for pages outside the game, with connect and sign-out. */
 export function useMe() {
@@ -10,6 +10,7 @@ export function useMe() {
   const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
+    rememberRef();
     fetch("/api/me")
       .then((r) => r.json())
       .then((j: { wallet: string | null }) => setMe(j.wallet))

@@ -5,6 +5,7 @@ import { buildTower } from "./chain";
 import { getJson, hasDb, pipeline, redis, setJson } from "./redis";
 import { rewardsFor } from "./rewards";
 import { launchEarnings, launchFloors, withLaunchFloors } from "./launch/fees";
+import { extraCash, questStep, settleReferral } from "./missions";
 import {
   type Floor,
   type Streak,
@@ -46,8 +47,8 @@ const k = {
 };
 
 /** First sign-in stamps the resident floor's clock; later sign-ins keep the original date. */
-export async function markJoined(owner: string) {
-  await redis("SET", k.joined(owner), Date.now(), "NX");
+export async function markJoined(owner: string): Promise<boolean> {
+  return !!(await redis("SET", k.joined(owner), Date.now(), "NX"));
 }
 
 export async function joinedAt(owner: string): Promise<number | null> {
@@ -164,7 +165,7 @@ export async function loadStreak(owner: string): Promise<Streak> {
 }
 
 /** Starting cash, every daily bonus collected, and $PTWR holder rewards paid out. */
-const bonusOf = (s: Streak, rewardsSol = 0) => WALLET_BONUS + s.total + rewardCash(rewardsSol);
+const bonusOf = (s: Streak, rewardsSol = 0, extra = 0) => WALLET_BONUS + s.total + rewardCash(rewardsSol) + extra;
 
 export type CollectOutcome = { ok: true; streak: Streak; reward: number; points: number } | { ok: false; reason: string };
 
@@ -175,6 +176,7 @@ export function checkIn(owner: string): Promise<CollectOutcome> {
     if (!r.ok) return { ok: false, reason: "already collected today" };
     const points = checkInPoints(floors);
     await Promise.all([setJson(k.streak(owner), r.streak), redis("ZINCRBY", k.season(seasonOf()), points, owner)]);
+    await Promise.all([questStep(owner, "collect"), settleReferral(owner, floors)]).catch((e) => console.error("quests", e));
     return { ok: true, streak: r.streak, reward: r.reward, points };
   });
 }
@@ -208,13 +210,15 @@ export function buy(owner: string, itemId: string, mint: string): Promise<Outcom
     const item = itemById(itemId);
     if (!item) return { ok: false, reason: "no such item" };
     const [floors, save, streak, sol] = await Promise.all([towerFor(owner), loadSave(owner), loadStreak(owner), earnedSol(owner)]);
+    const extra = await extraCash(owner);
     const floor = floors.find((f) => f.mint === mint);
     if (!floor) return { ok: false, reason: "that floor isn't in your tower" };
-    const cash = cashOf(floors, save.owned, bonusOf(streak, sol));
+    const cash = cashOf(floors, save.owned, bonusOf(streak, sol, extra));
     const r = buyAndPlace(save, item, mint, tierFor(floor.heldSince), cash);
     if (!r.ok) return r;
     await setJson(k.save(owner), r.save);
-    return { ok: true, save: r.save, cash: cashOf(floors, r.save.owned, bonusOf(streak, sol)) };
+    const { paid } = await questStep(owner, "decorate").catch(() => ({ paid: 0 }));
+    return { ok: true, save: r.save, cash: cashOf(floors, r.save.owned, bonusOf(streak, sol, extra + paid)) };
   });
 }
 
@@ -223,6 +227,6 @@ export function remove(owner: string, mint: string, itemId: string): Promise<Out
     const [floors, save, streak, sol] = await Promise.all([towerFor(owner), loadSave(owner), loadStreak(owner), earnedSol(owner)]);
     const next = removeFurniture(save, mint, itemId);
     await setJson(k.save(owner), next);
-    return { ok: true, save: next, cash: cashOf(floors, next.owned, bonusOf(streak, sol)) };
+    return { ok: true, save: next, cash: cashOf(floors, next.owned, bonusOf(streak, sol, await extraCash(owner))) };
   });
 }

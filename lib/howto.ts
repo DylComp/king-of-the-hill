@@ -13,6 +13,7 @@ import {
   streakReward,
 } from "./game";
 import { FEE_TIERS, FEE_TIER_NAMES, SPLIT } from "./launch/model";
+import { ALL_QUESTS_BONUS, QUESTS, REFERRED_REWARD, REFERRER_REWARD } from "./quests";
 
 export type DocSection = { id: string; title: string; summary: string; items: [string, string][] };
 
@@ -45,6 +46,8 @@ export const DOCS: DocSection[] = [
       ["Source", "Worked out from on-chain hold time, so it can't be faked."],
       ["Start", `New towers start with $${WALLET_BONUS}.`],
       ["Daily bonus", `Sign in and collect once a day. $${streakReward(1)} on day one, rising to $${streakReward(7)} from day seven. Missing a day resets the streak.`],
+      ["Daily quests", `${QUESTS.map((q) => `${q.label} ($${q.reward})`).join(", ")}. Finish all five for $${ALL_QUESTS_BONUS} more. Resets at midnight UTC.`],
+      ["Invites", `Copy your invite link from the tower panel. When a new wallet signs in through it and it collects its first daily bonus holding a bag, you get $${REFERRER_REWARD} and they get $${REFERRED_REWARD}.`],
     ],
   },
   {

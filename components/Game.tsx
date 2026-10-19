@@ -49,7 +49,8 @@ import { CatalogSection, DocsSection, KIND_LABEL, KINDS, LadderSection } from ".
 import City from "./City";
 import Logo from "./Logo";
 import GitHubMark from "./GitHubMark";
-import { connectWallet, isMobile, post, provider, walletLinks } from "./wallet";
+import { connectWallet, isMobile, post, provider, questEvent, rememberRef, signIn as signInWallet, walletLinks } from "./wallet";
+import { ALL_QUESTS_BONUS, QUESTS, REFERRED_REWARD, REFERRER_REWARD, type QuestState, type Referrals } from "@/lib/quests";
 import HoverText from "./HoverText";
 import Reveal from "./Reveal";
 import Boot from "./Boot";
@@ -145,6 +146,9 @@ export default function Game() {
   const [streak, setStreak] = useState<Streak>(emptyStreak);
   const [rewardsSol, setRewardsSol] = useState(0);
   const [launchSol, setLaunchSol] = useState(0);
+  const [extraCash, setExtraCash] = useState(0);
+  const [quests, setQuests] = useState<QuestState | null>(null);
+  const [refs, setRefs] = useState<Referrals | null>(null);
   const [launchCoins, setLaunchCoins] = useState<LaunchCard[]>([]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const dbRef = useRef(false);
@@ -159,10 +163,29 @@ export default function Game() {
     [floors],
   );
   const rate = useMemo(() => towerRate(sorted, now), [sorted, now]);
-  const cash = cashOf(sorted, save.owned, owner ? WALLET_BONUS + streak.total + rewardCash(rewardsSol + launchSol) : DEMO_BONUS, now);
+  const cash = cashOf(sorted, save.owned, owner ? WALLET_BONUS + streak.total + rewardCash(rewardsSol + launchSol) + extraCash : DEMO_BONUS, now);
   const sel = sorted.find((f) => f.mint === selected) ?? null;
   const citizens = sorted.reduce((n, f) => n + citizensFor(tierFor(f.heldSince, now)), 0);
   const longest = sorted[0] ? daysHeld(sorted[0].heldSince, now) : 0;
+
+  const loadQuests = useCallback(() => {
+    fetch("/api/quests")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { quests: QuestState; extraCash: number; referrals: Referrals } | null) => {
+        if (!j) return;
+        setQuests(j.quests);
+        setRefs(j.referrals);
+        setExtraCash(j.extraCash);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!me || !db) return setQuests(null);
+    if (owner === me) loadQuests();
+    // Looking around other people's towers counts toward today's visit quest.
+    else if (owner) void questEvent("visit", owner);
+  }, [me, owner, db, loadQuests]);
 
   const loadBoard = useCallback(() => {
     fetch("/api/leaderboard")
@@ -179,10 +202,12 @@ export default function Game() {
       setStreak(emptyStreak());
       setRewardsSol(0);
       setLaunchSol(0);
+      setExtraCash(0);
       setLaunchCoins([]);
       fetch(`/api/save?w=${addr}`)
         .then((r) => r.json())
-        .then((j: { save: Save | null; streak: Streak | null; rewardsSol?: number; launchSol?: number }) => {
+        .then((j: { save: Save | null; streak: Streak | null; rewardsSol?: number; launchSol?: number; extraCash?: number }) => {
+          setExtraCash(j.extraCash ?? 0);
           if (j.save) setSave(j.save);
           if (j.streak) setStreak(j.streak);
           setRewardsSol(j.rewardsSol ?? 0);
@@ -199,6 +224,7 @@ export default function Game() {
       setStreak(emptyStreak());
       setRewardsSol(0);
       setLaunchSol(0);
+      setExtraCash(0);
       setLaunchCoins([]);
     }
     const url = new URL(window.location.href);
@@ -231,6 +257,7 @@ export default function Game() {
 
   // Start on a shared tower if the link has one, else the demo; reconnect silently if Phantom already trusts us.
   useEffect(() => {
+    rememberRef();
     (async () => {
       const session = await fetch("/api/me")
         .then((r) => r.json() as Promise<{ db: boolean; wallet: string | null }>)
@@ -314,10 +341,7 @@ export default function Game() {
     const p = provider();
     if (!p?.signMessage) return setToast("this wallet can't sign messages");
     try {
-      const { message, nonce } = await post<{ message: string; nonce: string }>("/api/auth/nonce", { wallet: addr });
-      const out = await p.signMessage(new TextEncoder().encode(message), "utf8");
-      const sig = out instanceof Uint8Array ? out : out.signature;
-      await post("/api/auth/verify", { wallet: addr, nonce, signature: btoa(String.fromCharCode(...sig)) });
+      await signInWallet(p, addr);
       setMe(addr);
       setToast("signed in");
     } catch (e) {
@@ -351,6 +375,7 @@ export default function Game() {
       }
     }
     setToast(owned ? `${item.name} moved in` : `bought ${item.name}`);
+    if (!local) loadQuests();
   }
 
   async function checkIn() {
@@ -360,6 +385,7 @@ export default function Game() {
       setStreak(r.streak);
       setToast(`+$${r.reward} rent bonus, day ${r.streak.n}`);
       loadBoard();
+      loadQuests();
     } catch (e) {
       setToast(e instanceof Error ? e.message : "could not collect");
     } finally {
@@ -534,6 +560,7 @@ export default function Game() {
                 target="_blank"
                 rel="noreferrer"
                 href={`https://x.com/intent/post?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`}
+                onClick={() => me && void questEvent("share").then(loadQuests)}
               >
                 share on x
               </a>
@@ -614,6 +641,47 @@ export default function Game() {
                   </div>
                 )}
               </div>
+
+              {owner && owner === me && quests && (
+                <div className="panel quests">
+                  <div className="quests-head">
+                    <span className="pixel green tiny-pixel">daily quests</span>
+                    <span className="dim">resets in {fmtWait(msToNextCollect(now))}</span>
+                  </div>
+                  <ul>
+                    {QUESTS.map((q, i) => {
+                      const n = quests.progress[q.id] ?? 0;
+                      const done = n >= q.target;
+                      return (
+                        <li key={q.id} className={done ? "done" : ""} style={{ "--i": i } as CSSProperties}>
+                          <span className="box" aria-hidden>
+                            {done ? "x" : ""}
+                          </span>
+                          <span>
+                            {q.label}
+                            {q.target > 1 && !done && <span className="dim"> {n}/{q.target}</span>}
+                          </span>
+                          <span className="green">+${q.reward}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <span className={quests.allDone ? "green" : "dim"}>{quests.allDone ? `all done: +$${ALL_QUESTS_BONUS} bonus paid` : `finish all five for +$${ALL_QUESTS_BONUS} more`}</span>
+                </div>
+              )}
+
+              {owner && owner === me && refs && (
+                <div className="panel invite">
+                  <span className="pixel green tiny-pixel">invite friends</span>
+                  <span className="dim">
+                    You get ${REFERRER_REWARD} and they get ${REFERRED_REWARD} once they collect their first daily bonus holding a bag.
+                    {refs.count > 0 && <span className="green"> {refs.count} joined so far, +${fmtCash(refs.cash)}.</span>}
+                  </span>
+                  <button className="btn small ghost" onClick={() => navigator.clipboard?.writeText(`${site}/?ref=${me}`).then(() => setToast("invite link copied"))}>
+                    copy invite link
+                  </button>
+                </div>
+              )}
 
               {launchCoins.length > 0 && (
                 <div className="panel launch-floors">
