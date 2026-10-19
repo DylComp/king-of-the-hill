@@ -209,6 +209,22 @@ export default function Launch() {
             </p>
           </div>
 
+          <ol className="launch-how">
+            {[
+              ["pick a pump user", "Search a username, paste their pump.fun link or a wallet. Their picture and wallet show before you launch."],
+              ["name the coin", "Name, ticker, picture, X and Telegram, plus an optional dev buy."],
+              ["approve once", `Coin, the locked ${SPLIT.recipientBps / 100}/${SPLIT.treasuryBps / 100} fee split and your dev buy go out in one transaction, so nobody buys before you.`],
+              ["fees flow forever", `${SPLIT.recipientBps / 100}% of creator fees to them, ${SPLIT.treasuryBps / 100}% to $PTWR buybacks. Their tower floor climbs with every milestone.`],
+            ].map(([title, body], i) => (
+              <li key={title} className="panel" style={{ ["--i" as string]: i }}>
+                <span className="pixel green tiny-pixel">
+                  {String(i + 1).padStart(2, "0")} {title}
+                </span>
+                <span className="dim">{body}</span>
+              </li>
+            ))}
+          </ol>
+
           {closed && <div className="panel launch-closed pixel">{status.reason}</div>}
 
           <form className="launch-grid" onSubmit={launch}>
