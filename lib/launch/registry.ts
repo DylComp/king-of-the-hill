@@ -19,7 +19,7 @@ export type Coin = {
   createdAt: number;
 };
 
-export type CoinView = Coin & { feesSol: number; recipientSol: number; tier: number; pendingSol?: number; mcapUsd?: number | null };
+export type CoinView = Coin & { feesSol: number; recipientSol: number; tier: number; pendingSol?: number; mcapUsd?: number | null; volUsd?: number | null };
 
 /** One pump user across every coin launched for them, for the profiles list. */
 export type ProfileSummary = {
@@ -28,6 +28,8 @@ export type ProfileSummary = {
   feesSol: number;
   earnedSol: number;
   mcapUsd: number;
+  /** 24h trading volume across their coins, in USD. */
+  volUsd: number;
   top: { mint: string; ticker: string; mcapUsd: number | null };
   /** Their newest coins, for the logo strip on their card. */
   recent: { mint: string; ticker: string }[];

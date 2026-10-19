@@ -29,6 +29,7 @@ export default function CoinCard({ c, i = 0 }: { c: CoinView; i?: number }) {
           <span className={`chip tier-${c.tier}`}>{FEE_TIER_NAMES[c.tier]}</span>
           <span className="dim">{fmtSol(c.feesSol)} SOL fees</span>
           {c.mcapUsd != null && <span className="dim">{fmtUsd(c.mcapUsd)} mc</span>}
+          {c.volUsd != null && <span className="dim">{fmtUsd(c.volUsd)} vol</span>}
         </span>
       </span>
     </a>
