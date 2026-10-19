@@ -49,7 +49,7 @@ async function sampleKeys(global: Global, treasury: PublicKey) {
   return [...new Set([...shared, ...extra])];
 }
 
-/** The table's address once dlao's dev wallet has created it, or null. */
+/** The table's address once someone has created and frozen it, or null. */
 export async function lookupTableAddress(): Promise<string | null> {
   if (!hasDb()) return null;
   return redis<string | null>("GET", KEY).catch(() => null);
@@ -63,8 +63,9 @@ export async function loadLookupTable(): Promise<AddressLookupTableAccount | nul
 }
 
 /**
- * Unsigned transactions that create and fill the table, paid for and owned by `authority`
- * (the dev wallet). Returns the table address the transactions will create.
+ * Unsigned transactions that create, fill and then freeze the table, paid for by `authority`.
+ * Freezing drops the authority for good, so whoever opens the launchpad keeps no control
+ * over the table: nobody can change, deactivate or close it afterwards.
  */
 export async function lookupTableSetup(authority: string, treasury: string) {
   const auth = new PublicKey(authority);
@@ -79,19 +80,24 @@ export async function lookupTableSetup(authority: string, treasury: string) {
   const CHUNK = 20;
   for (let i = 0; i < addresses.length; i += CHUNK) {
     const extend = AddressLookupTableProgram.extendLookupTable({ lookupTable: table, authority: auth, payer: auth, addresses: addresses.slice(i, i + CHUNK) });
-    const msg = new TransactionMessage({ payerKey: auth, recentBlockhash: latest.blockhash, instructions: i === 0 ? [create, extend] : [extend] }).compileToV0Message();
+    const last = i + CHUNK >= addresses.length;
+    const freeze = AddressLookupTableProgram.freezeLookupTable({ lookupTable: table, authority: auth });
+    const ixs = [...(i === 0 ? [create] : []), extend, ...(last ? [freeze] : [])];
+    const msg = new TransactionMessage({ payerKey: auth, recentBlockhash: latest.blockhash, instructions: ixs }).compileToV0Message();
     txs.push(Buffer.from(new VersionedTransaction(msg).serialize()).toString("base64"));
   }
-  await setJson(`${KEY}:pending`, { table: table.toBase58(), authority, at: Date.now() }, 3600);
+  await setJson(`${KEY}:pending:${authority}`, { table: table.toBase58(), authority, expected: addresses.map((a) => a.toBase58()), at: Date.now() }, 3600);
   return { table: table.toBase58(), addresses: addresses.length, txs };
 }
 
-/** Saves the table once it exists on chain and is owned by the dev wallet. */
+/** Saves the table once it is on chain, holds every shared launch account, and is frozen. */
 export async function confirmLookupTable(authority: string) {
-  const pending = await getJson<{ table: string; authority: string }>(`${KEY}:pending`);
-  if (!pending || pending.authority !== authority) throw Error("No lookup table setup in progress.");
+  const pending = await getJson<{ table: string; authority: string; expected: string[] }>(`${KEY}:pending:${authority}`);
+  if (!pending) throw Error("No lookup table setup in progress.");
   const res = await connection().getAddressLookupTable(new PublicKey(pending.table));
-  if (!res.value || res.value.state.authority?.toBase58() !== authority || !res.value.state.addresses.length) throw Error("The table isn't on chain yet, try again in a few seconds.");
+  const have = new Set(res.value?.state.addresses.map((a) => a.toBase58()) ?? []);
+  if (!res.value || !pending.expected.every((a) => have.has(a))) throw Error("The table isn't on chain yet, try again in a few seconds.");
+  if (res.value.state.authority) throw Error("The table isn't frozen yet, try again in a few seconds.");
   await redis("SET", KEY, pending.table);
   return { table: pending.table, addresses: res.value.state.addresses.length };
 }

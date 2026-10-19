@@ -1,31 +1,36 @@
-// One-time launchpad setup, only for dlao's dev wallet: builds the lookup-table
-// transactions for that wallet to sign, then records the table once it is on chain.
+// One-time launchpad setup. Any signed-in wallet can open the launchpad: it signs the
+// lookup-table transactions the server built (create, fill, freeze), then the table is
+// recorded once it is on chain. The table is frozen, so its creator keeps no control.
 import { body, fail, json } from "@/lib/api";
 import { sessionWallet } from "@/lib/auth";
-import { DEV_WALLET, TREASURY_WALLET } from "@/lib/game";
-import { confirmLookupTable, lookupTableAddress, lookupTableSetup } from "@/lib/launch/alt";
+import { TREASURY_WALLET } from "@/lib/game";
+import { limited } from "@/lib/limit";
+import { confirmLookupTable, loadLookupTable, lookupTableSetup } from "@/lib/launch/alt";
 
-async function dev() {
-  const w = await sessionWallet();
-  return DEV_WALLET && w === DEV_WALLET ? w : null;
-}
+const SIGN_IN = "Connect and sign in with any wallet to open the launchpad.";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const slow = await limited(req, "launch");
+  if (slow) return slow;
   try {
-    const w = await dev();
-    if (!w) return json({ error: "Only the Pump Tower dev wallet can set up the launchpad." }, 403);
+    const w = await sessionWallet();
+    if (!w) return json({ error: SIGN_IN }, 401);
     if (!TREASURY_WALLET) return json({ error: "Set the treasury wallet first." }, 400);
-    const existing = await lookupTableAddress();
-    return json({ existing, ...(await lookupTableSetup(w, TREASURY_WALLET)) });
+    // Already open: never build a second table.
+    const live = await loadLookupTable().catch(() => null);
+    if (live) return json({ existing: live.key.toBase58(), txs: [] });
+    return json({ existing: null, ...(await lookupTableSetup(w, TREASURY_WALLET)) });
   } catch (e) {
     return fail(e, "launch setup");
   }
 }
 
 export async function POST(req: Request) {
+  const slow = await limited(req, "launch");
+  if (slow) return slow;
   try {
-    const w = await dev();
-    if (!w) return json({ error: "Only the Pump Tower dev wallet can set up the launchpad." }, 403);
+    const w = await sessionWallet();
+    if (!w) return json({ error: SIGN_IN }, 401);
     await body(req);
     try {
       return json(await confirmLookupTable(w));

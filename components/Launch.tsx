@@ -409,9 +409,15 @@ export default function Launch() {
                   <b className="pixel">{buySol == null ? "check dev buy" : `~${(0.025 + buySol).toFixed(3)} SOL`}</b>
                 </div>
 
-                <button className="btn launch-go" type="submit" disabled={step != null || !recipient || !!problem || !status?.open}>
-                  {step != null ? STEPS[step] : status && !status.open ? "launching opens soon" : !recipient ? "pick who gets the fees" : problem ? problem : me ? "launch on pump.fun" : "connect and launch"}
-                </button>
+                {status && !status.open && status.treasury ? (
+                  <a className="btn launch-go" href="/launch/setup">
+                    open the launchpad (one time)
+                  </a>
+                ) : (
+                  <button className="btn launch-go" type="submit" disabled={step != null || !recipient || !!problem || !status?.open}>
+                    {step != null ? STEPS[step] : status && !status.open ? "launching opens soon" : !recipient ? "pick who gets the fees" : problem ? problem : me ? "launch on pump.fun" : "connect and launch"}
+                  </button>
+                )}
                 {step != null && (
                   <ol className="launch-steps">
                     {STEPS.map((st, i) => (

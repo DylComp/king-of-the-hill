@@ -1,6 +1,6 @@
 "use client";
-// One-time launchpad setup for the dev wallet: signs the lookup table transactions the
-// server built. Nobody else can load them, and nothing here touches a private key.
+// One-time launchpad setup: any wallet signs the lookup table transactions the server
+// built (create, fill, freeze). Nothing here touches a private key.
 import { useState } from "react";
 import SiteNav from "./SiteNav";
 import { useMe } from "./useMe";
@@ -22,7 +22,11 @@ export default function LaunchSetup() {
       const res = await fetch("/api/launch/setup");
       const j = await res.json();
       if (!res.ok) throw new Error(j.error);
-      if (j.existing) say(`A table is already saved (${j.existing}). Continuing makes a new one.`);
+      if (j.existing) {
+        say("The launchpad is already open.");
+        window.location.href = "/launch";
+        return;
+      }
       say(`Creating lookup table ${j.table} with ${j.addresses} addresses in ${j.txs.length} transaction(s).`);
       const p = provider();
       if (!p?.signAndSendTransaction) throw new Error("This wallet can't send transactions.");
@@ -35,7 +39,8 @@ export default function LaunchSetup() {
       for (let i = 0; i < 15; i++) {
         try {
           const r = await post<{ table: string; addresses: number }>("/api/launch/setup");
-          say(`Saved. The launchpad uses table ${r.table} (${r.addresses} addresses). Launching is open.`);
+          say(`Done. The launchpad uses table ${r.table} (${r.addresses} addresses). Launching is open.`);
+          setTimeout(() => (window.location.href = "/launch"), 1500);
           return;
         } catch {
           await new Promise((r) => setTimeout(r, 3000));
@@ -56,13 +61,14 @@ export default function LaunchSetup() {
         <section className="sec">
           <div className="sec-head">
             <span className="kicker">launchpad setup</span>
-            <h1 className="pixel display sm">one time, dev wallet only</h1>
+            <h1 className="pixel display sm">open the launchpad</h1>
             <p className="lede">
-              Creates the address lookup table that lets a full launch fit in one transaction. Costs a little SOL for rent, paid by the dev wallet, which also owns the table.
+              One time, from any wallet. It creates the address lookup table that lets a full launch fit in one transaction, then freezes it so nobody, you included,
+              can ever change or close it. Costs about 0.01 SOL of rent, paid by the wallet that opens it.
             </p>
           </div>
           <button className="btn" onClick={run} disabled={busy}>
-            {busy ? "working" : "set up the launchpad"}
+            {busy ? "working" : "open the launchpad"}
           </button>
           <ol className="launch-steps">
             {log.map((l, i) => (

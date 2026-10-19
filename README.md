@@ -124,7 +124,7 @@ Import `DylComp/pump-tower` into Vercel (framework Next.js, root directory left 
 
 ## Launch checklist
 
-1. Sign in with the dev wallet at [/launch/setup](https://pumptowers.fun/launch/setup) and approve the one-time address lookup table setup. The launchpad opens as soon as it's on chain.
+1. Open [/launch/setup](https://pumptowers.fun/launch/setup) with any wallet and approve the one-time address lookup table setup (about 0.01 SOL of rent). The table is frozen in the same step, so nobody controls it afterwards. The launchpad opens as soon as it is on chain.
 2. Launch $PTWR, then set `HOUSE_MINT` in `lib/game.ts` and `PTWR_OFFICIAL_MINT` in Vercel.
 3. Provision and switch on buybacks and fee collection as described under [Operations](#operations).
 4. Launch one coin for a real pump user and check it on /tokens, pump profiles, /activity and in the city.
@@ -157,7 +157,7 @@ Before activation:
 
 1. Confirm the official mint and its supported on-chain settings. Set `PTWR_OFFICIAL_MINT` in production and update `HOUSE_MINT` in `lib/game.ts` for the UI at launch. Do not change a mint once the ledger has pinned it.
 2. Fund the treasury with operational SOL separately from fee revenue. Set `PTWR_TREASURY_ADDRESS` locally to its public address and `PTWR_TREASURY_KEY_FILE` to its private keypair file. With the production RPC and official mint configured, run `node scripts/provision-buyback.mjs` to simulate provisioning, then `node scripts/provision-buyback.mjs --execute` to create its token ATA and AMM volume account.
-3. Fund/import the dev wallet, sign in on the site, and use the launchpad setup to create its address lookup table. Launching stays closed until this is confirmed on chain.
+3. Open the launchpad once from any signed-in wallet at /launch/setup, which creates and freezes its address lookup table. Launching stays closed until this is confirmed on chain.
 4. Enable `PTWR_BUYBACK_ENABLED=true` and redeploy only after provisioning and mint compatibility checks. Check a first small finalized buy/burn receipt.
 
 Redis stores the fenced worker lease, pinned mint, receipt credits, confirmed debits, last buyback receipt and pending signed attempts under `pt:buyback:v1`. Signed attempts are persisted before submission; retries send identical bytes. An expired attempt with no finalized receipt stays unresolved and holds new execution. Investigate with an archival RPC; never delete the pending attempt or reset the ledger to retry blindly. A missing/pruned fee receipt holds the scan cursor. Receipt IDs and credits commit atomically. To pause, set `PTWR_BUYBACK_ENABLED=false` and redeploy; already broadcast transactions can still finalize.
