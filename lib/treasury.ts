@@ -1,6 +1,6 @@
 // Server-only: the buy & burn wallet's recent transactions for the /activity page. Read only;
 // nothing here signs or sends. With a Helius key each transaction is labelled from its
-// transfers; without one it falls back to plain signatures from the RPC. Cached a minute.
+// transfers; without one it falls back to plain signatures from the RPC. Cached for five seconds; finalized signatures keep the feed ahead of indexer lag.
 import { HOUSE_MINT, TREASURY_WALLET } from "./game";
 import { rpcUrl } from "./chain";
 import { getJson, hasDb, setJson } from "./redis";
@@ -17,7 +17,7 @@ export type TreasuryTx = {
 };
 
 const KEY = "pt:treasury:txs";
-const TTL = 60;
+const TTL = 5;
 const LIMIT = 25;
 
 type HeliusTx = {
@@ -62,7 +62,7 @@ async function fromRpc(wallet: string): Promise<TreasuryTx[]> {
   const res = await fetch(rpcUrl(), {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getSignaturesForAddress", params: [wallet, { limit: LIMIT }] }),
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getSignaturesForAddress", params: [wallet, { limit: LIMIT, commitment: "finalized" }] }),
     cache: "no-store",
     signal: AbortSignal.timeout(8000),
   });
@@ -78,8 +78,29 @@ export async function treasuryTxs(): Promise<{ wallet: string | null; txs: Treas
   if (cached && Date.now() - cached.at < TTL * 1000) return { wallet, txs: cached.txs };
   try {
     const key = process.env.HELIUS_API_KEY;
-    const txs = key ? await fromHelius(wallet, key).catch(() => fromRpc(wallet)) : await fromRpc(wallet);
-    if (hasDb()) await setJson(KEY, { at: Date.now(), txs }).catch(() => {});
+    const started = Date.now();
+    const [recent, indexed] = await Promise.all([
+      fromRpc(wallet), key ? fromHelius(wallet, key).catch(() => []) : Promise.resolve([]),
+    ]);
+    const known = new Map([...(cached?.txs ?? []), ...indexed].map(t => [t.signature, t]));
+    const txs = await Promise.all(recent.map(async entry => {
+      const prior = known.get(entry.signature);
+      if (prior?.sol != null) return prior;
+      // New claims may not yet exist in the enhanced-transaction indexer.
+      const response = await fetch(rpcUrl(), {
+        method: "POST", headers: { "content-type": "application/json" }, cache: "no-store",
+        signal: AbortSignal.timeout(8000),
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getTransaction", params: [entry.signature, { encoding: "json", commitment: "finalized", maxSupportedTransactionVersion: 1 }] }),
+      });
+      const j = await response.json() as { result?: { transaction: { message: { accountKeys: string[] } }; meta?: { preBalances: number[]; postBalances: number[]; err: unknown } } };
+      const receipt = j.result;
+      const i = receipt?.transaction.message.accountKeys.indexOf(wallet) ?? -1;
+      if (i < 0 || !receipt?.meta) return prior ?? entry;
+      const net = (receipt.meta.postBalances[i] - receipt.meta.preBalances[i]) / 1e9;
+      return { ...entry, sol: net, kind: net > 0 ? "fees in" as const : net < 0 ? "sent" as const : "transaction" as const, ok: !receipt.meta.err };
+    }));
+    // Timestamp at request start so a slow indexer response never earns a fresh TTL.
+    if (hasDb()) await setJson(KEY, { at: started, txs }).catch(() => {});
     return { wallet, txs };
   } catch (e) {
     console.error("treasury txs", e);

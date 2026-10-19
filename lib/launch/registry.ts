@@ -125,6 +125,7 @@ export async function paidOut(mint: string, vault: string, force = false, requir
 export async function refreshClaimedFees(mint: string, signature: string) {
   await redis("EVAL", "local v=redis.call('GET',KEYS[1]); if v then local s=cjson.decode(v); s.at=0; redis.call('SET',KEYS[1],cjson.encode(s)); end return 1", 1, k.fees(mint));
   await paidOut(mint, sdk.creatorVaultPda(sdk.feeSharingConfigPda(new PublicKey(mint))).toBase58(), true, signature);
+  await redis("DEL", "pt:treasury:txs");
 }
 
 /** Lifetime fees include what's still waiting in the vault, so a floor levels up before anyone pays out. */

@@ -1,6 +1,6 @@
 "use client";
 // /activity: live $PTWR buyback and burn totals, where every creator fee went, and the buy &
-// burn wallet's latest transactions, each linked on Solscan. Refreshes every 30 seconds.
+// burn wallet's latest transactions, each linked on Solscan. Refreshes every five seconds.
 import { useEffect, useState } from "react";
 import type { Burns } from "@/lib/burns";
 import type { FeesRouted } from "@/lib/launch/routed";
@@ -17,7 +17,7 @@ const signedSol = (n: number) => `${n > 0 ? "+" : "-"}${Math.abs(n) < 0.0001 ? M
 const tx = (sig: string) => `https://solscan.io/tx/${sig}`;
 const account = (a: string) => `https://solscan.io/account/${a}`;
 
-function useLive<T>(url: string, every = 30_000) {
+function useLive<T>(url: string, every = 5_000) {
   const [v, setV] = useState<T | null>(null);
   useEffect(() => {
     const load = () =>
