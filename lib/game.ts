@@ -10,18 +10,18 @@ export const HOUSE_SYMBOL = "PTWR";
 export const isHouseMint = (mint: string) => HOUSE_MINT != null && mint === HOUSE_MINT;
 
 /**
- * pump.fun Holder Rewards pay $PTWR holders SOL from a distribution wallet several
- * times an hour. Every SOL a wallet receives from these addresses also lands in
- * the game as cash. Filled in once the first payout is seen on chain.
+ * Optional external reward distributions can pay $PTWR holders SOL.
+ * The official coin is planned with standard creator fees; rewards remain off.
+ * Every SOL a wallet receives from these addresses also lands in the game as cash. Filled in once the first payout is seen on chain.
  */
 export const HOLDER_REWARD_SOURCES: string[] = [];
 /**
  * The Pump Tower treasury: 20% of every launchpad coin's creator fees go here for $PTWR
- * buybacks. Null until dlao sends the vanity treasury address; launching stays closed until then.
+ * buybacks. Launching also requires the dev wallet to create its address lookup table.
  */
-export const TREASURY_WALLET: string | null = null;
+export const TREASURY_WALLET: string | null = "pTWrBR7VzpAzztwYaLnot5sxP4a9tBJjyi1CLF4Xz1Z";
 /** dlao's vanity dev wallet. Only it can set up the launchpad's address lookup table. */
-export const DEV_WALLET: string | null = null;
+export const DEV_WALLET: string | null = "pTwRp9D2oRe1iSjCpKgoyu1Pe7LYD5zYNZHU3Hid4e1";
 export const CASH_PER_SOL = 10_000;
 /** Holder rewards land in the game too: every SOL paid out is worth this much cash. */
 export const rewardCash = (sol: number) => Math.floor(Math.max(0, sol) * CASH_PER_SOL);
