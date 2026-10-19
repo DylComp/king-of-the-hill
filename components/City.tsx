@@ -14,8 +14,9 @@ function City({ me, onVisit }: Props) {
   const [hover, setHover] = useState<number | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
-  const latest = useRef({ hover, me });
-  latest.current = { hover, me };
+  const nameOf = usePumpNames(towers?.map((t) => t.wallet) ?? []);
+  const latest = useRef<{ hover: number | null; me: string | null; name: (w: string) => string | null }>({ hover, me, name: () => null });
+  latest.current = { hover, me, name: (w) => nameOf(w)?.username ?? null };
 
   useEffect(() => {
     fetch("/api/city")
@@ -56,8 +57,6 @@ function City({ me, onVisit }: Props) {
       io.disconnect();
     };
   }, [laid, rank]);
-
-  const nameOf = usePumpNames(hover != null && laid[hover] ? [laid[hover].wallet] : []);
 
   if (towers == null) return <div className="panel dim">Loading the city...</div>;
   if (!towers.length) return <div className="panel dim">The city is empty. Connect a wallet to build the first tower.</div>;

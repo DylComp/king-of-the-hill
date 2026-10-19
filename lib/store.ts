@@ -103,6 +103,8 @@ async function rank(owner: string, floors: Floor[]) {
   await pipeline([
     ["ZADD", k.board, towerRate(floors), owner],
     ["HSET", k.residents, owner, JSON.stringify(residentOf(owner, floors))],
+    // Every tower is in the running for the current season from the start, at 0 points.
+    ["ZADD", k.season(seasonOf()), "NX", 0, owner],
   ]);
 }
 
@@ -151,6 +153,15 @@ export type SeasonRow = SkylineRow & { points: number };
 
 /** This week's ranking: points banked by daily check-ins. */
 export async function seasonBoard(season: number, limit = 25): Promise<{ rows: SeasonRow[]; total: number }> {
+  // Towers ranked before every tower joined the season automatically: add them at 0 points,
+  // keeping everyone's points as they are.
+  if (season === seasonOf()) {
+    const [inSeason, ranked] = await pipeline([
+      ["ZCARD", k.season(season)],
+      ["ZCARD", k.board],
+    ]);
+    if (Number(inSeason) < Number(ranked)) await redis("ZUNIONSTORE", k.season(season), 2, k.season(season), k.board, "WEIGHTS", 1, 0, "AGGREGATE", "SUM");
+  }
   const flat = await redis<string[]>("ZREVRANGE", k.season(season), 0, limit - 1, "WITHSCORES");
   const ids = flat.filter((_, i) => i % 2 === 0);
   const total = await redis<number>("ZCARD", k.season(season));

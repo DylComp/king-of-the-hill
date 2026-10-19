@@ -41,7 +41,23 @@ export function buildingAt(x: number, n: number): number | null {
   return x - PAD - i * (BW + GAP) <= BW ? i : null;
 }
 
-export function drawCity(ctx: CanvasRenderingContext2D, towers: CityTower[], rank: Map<string, number>, t: number, o: { me: string | null; hover: number | null }) {
+/**
+ * The rooftop sign: the owner's pump name (lit green, no "@", which is unreadable at 3x5
+ * pixels), else the top floor's ticker; cut to fit the gap between buildings.
+ */
+export function signFor(tw: CityTower, name: string | null | undefined) {
+  const label = name ? name : tw.top === "RESIDENT" ? "HOME" : `$${tw.top}`;
+  const max = Math.floor((BW + GAP - 2 + 1) / 4);
+  return label.toUpperCase().slice(0, max);
+}
+
+export function drawCity(
+  ctx: CanvasRenderingContext2D,
+  towers: CityTower[],
+  rank: Map<string, number>,
+  t: number,
+  o: { me: string | null; hover: number | null; name?: (wallet: string) => string | null },
+) {
   const W = cityWidth(towers);
   const H = cityHeight(towers);
   const ground = H - STREET;
@@ -111,14 +127,15 @@ export function drawCity(ctx: CanvasRenderingContext2D, towers: CityTower[], ran
       if (buzz) glow(ctx, sx2 + sw / 2, sy + 4, 12, GREEN_HI, 0.12);
     }
 
-    // rooftop: sign with the top floor's coin, antenna on the podium
-    const label = tw.top === "RESIDENT" ? "HOME" : `$${tw.top.toUpperCase()}`.slice(0, 7);
+    // rooftop: a sign with the owner's pump name (or the top floor's coin), antenna on the podium
+    const name = o.name?.(tw.wallet) ?? null;
+    const label = signFor(tw, name);
     const lw = tinyWidth(label) + 4;
     const sx = Math.round(x + BW / 2 - lw / 2);
     rect(ctx, sx, top - 11, lw, 8, "#0b0b10");
     rect(ctx, sx + 2, top - 3, 1, 2, "#27272a");
     rect(ctx, sx + lw - 3, top - 3, 1, 2, "#27272a");
-    tiny(ctx, label, sx + 2, top - 10, tw.house ? GREEN : tw.tiers[0] === 5 ? GOLD : "#e2e8f0");
+    tiny(ctx, label, sx + 2, top - 10, name ? GREEN_HI : tw.house ? GREEN : tw.tiers[0] === 5 ? GOLD : "#e2e8f0");
     const rk = rank.get(tw.wallet) ?? 99;
     if (rk <= 3) {
       const ax = x + BW / 2;

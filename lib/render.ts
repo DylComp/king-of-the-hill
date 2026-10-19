@@ -291,7 +291,7 @@ function sky(ctx: CanvasRenderingContext2D, w: number, h: number, t: number) {
   }
 }
 
-function roof(ctx: CanvasRenderingContext2D, w: number, t: number, compact: boolean, houseLive: boolean) {
+function roof(ctx: CanvasRenderingContext2D, w: number, t: number, compact: boolean, houseLive: boolean, sign: string) {
   const top = ROOF_H - 12;
   const bw = w - BX * 2;
   // parapet and roof slab
@@ -333,7 +333,7 @@ function roof(ctx: CanvasRenderingContext2D, w: number, t: number, compact: bool
   ctx.shadowColor = GREEN_HI;
   ctx.shadowBlur = 6;
   ctx.fillStyle = glitch ? "#14532d" : GREEN;
-  ctx.fillText("PUMP TOWER", cx + (glitch ? 1 : 0), top - 6);
+  ctx.fillText(sign, cx + (glitch ? 1 : 0), top - 6);
   ctx.shadowBlur = 0;
   ctx.textAlign = "left";
   rect(ctx, cx - 52, top - 3, 104, 1, "#27272a");
@@ -519,6 +519,8 @@ export type DrawOpts = {
   scene: Scene;
   compact?: boolean;
   houseLive?: boolean;
+  /** The owner's pump.fun username, lit up in the rooftop neon instead of "PUMP TOWER". */
+  owner?: string | null;
   /** Logical y range on screen; floors outside it skip their animation. */
   view?: { top: number; bottom: number } | null;
 };
@@ -687,7 +689,7 @@ export function drawTower(ctx: CanvasRenderingContext2D, o: DrawOpts) {
   const H = towerHeight(floors.length);
   ctx.imageSmoothingEnabled = false;
   sky(ctx, w, H, t);
-  roof(ctx, w, t, !!o.compact, !!o.houseLive);
+  roof(ctx, w, t, !!o.compact, !!o.houseLive, o.owner ? `@${o.owner}`.toUpperCase().slice(0, 14) : "PUMP TOWER");
 
   // facade behind the floors
   const bodyH = Math.max(floors.length, 1) * FLOOR_H;
