@@ -106,7 +106,7 @@ export const DOCS: DocSection[] = [
       ["Buybacks", `${SPLIT.treasuryBps / 100}% of the creator fees from every coin launched on the launchpad go to the buy & burn wallet, which buys $${HOUSE_SYMBOL} on the market.`],
       ["Burns", `Every $${HOUSE_SYMBOL} bought back is burned in the same transaction, so the supply only goes down.`],
       ["Burn tracker", "Total burned, its share of the 1B supply, SOL spent and each recent burn with its transaction, live below and on the activity page."],
-      ["Contract", "Copy it just below on launch day, with a link to buy on pump.fun."],
+      ["Contract", "Copy it just below, or from the CA button in the menu on any page. A buy link on pump.fun appears there as soon as it trades."],
     ],
   },
   {

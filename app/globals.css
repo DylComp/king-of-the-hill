@@ -2888,3 +2888,45 @@ html[data-booted] .boot {
   color: var(--green);
   transform: translateX(-3px);
 }
+
+/* $PTWR contract address with copy (components/CopyCA.tsx) */
+.ca .mono {
+  font-size: 17px;
+  letter-spacing: 0.02em;
+}
+.ca .label {
+  white-space: nowrap;
+}
+.nav-ca {
+  font-size: 8px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.doc-ca,
+.act-ca {
+  justify-content: flex-start;
+  margin: 4px 0 18px;
+}
+.cta-ca {
+  justify-content: flex-start;
+  margin-top: 4px;
+}
+.cta-ca .ca {
+  padding: 8px 10px;
+  gap: 10px;
+}
+.cta-ca .ca-full {
+  display: none;
+}
+.cta-ca .ca-short {
+  display: inline;
+}
+.foot {
+  flex-wrap: wrap;
+}
+.foot-ca {
+  flex-basis: 100%;
+  justify-content: flex-start;
+  order: -1;
+  margin-bottom: 6px;
+}

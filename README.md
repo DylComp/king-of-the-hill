@@ -82,8 +82,9 @@ flowchart LR
   P --> W[Their tower climbs<br/>a room tier per milestone]
 ```
 
-| Wallet | Address |
+| | Address |
 | --- | --- |
+| $PTWR (official mint) | [`5ChT61vPfByx2NApxSNT4iPMTRCV39m5z88bXYcppump`](https://pump.fun/coin/5ChT61vPfByx2NApxSNT4iPMTRCV39m5z88bXYcppump) |
 | Buy & burn (treasury) | [`pTWrBR7VzpAzztwYaLnot5sxP4a9tBJjyi1CLF4Xz1Z`](https://solscan.io/account/pTWrBR7VzpAzztwYaLnot5sxP4a9tBJjyi1CLF4Xz1Z) |
 | Dev | [`pTwRp9D2oRe1iSjCpKgoyu1Pe7LYD5zYNZHU3Hid4e1`](https://solscan.io/account/pTwRp9D2oRe1iSjCpKgoyu1Pe7LYD5zYNZHU3Hid4e1) |
 

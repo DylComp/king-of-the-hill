@@ -2,10 +2,10 @@
 // Shared by the server route, the canvas renderer and the tests.
 
 /**
- * $PTWR's mint, filled in on launch day. Until then the site runs in pre-launch
- * mode: no buy links and no house floors.
+ * $PTWR's official mint. Buy links only appear once it trades on DexScreener, so the site
+ * reads "launching soon" until the coin is live on pump.fun.
  */
-export const HOUSE_MINT: string | null = null;
+export const HOUSE_MINT: string | null = "5ChT61vPfByx2NApxSNT4iPMTRCV39m5z88bXYcppump";
 export const HOUSE_SYMBOL = "PTWR";
 export const isHouseMint = (mint: string) => HOUSE_MINT != null && mint === HOUSE_MINT;
 
