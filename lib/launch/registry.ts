@@ -84,7 +84,17 @@ export async function paidOut(mint: string, vault: string, force = false, requir
       requiredSignature,
       page: (before) => conn.getSignaturesForAddress(new PublicKey(vault), { limit: 50, before }, "finalized"),
       amount: async (signature) => {
-        const tx = await conn.getTransaction(signature, { commitment: "finalized", maxSupportedTransactionVersion: 0 });
+        // Read receipt JSON directly: web3.js's message decoder only supports v0,
+        // while a vault's history can also contain newer transaction versions.
+        const response = await fetch(rpcUrl(), {
+          method: "POST", headers: { "content-type": "application/json" }, cache: "no-store",
+          signal: AbortSignal.timeout(8000),
+          body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getTransaction", params: [signature, { commitment: "finalized", encoding: "json", maxSupportedTransactionVersion: 1 }] }),
+        });
+        if (!response.ok) throw Error("Fee receipt RPC unavailable");
+        const result = await response.json() as { error?: unknown; result?: { meta?: { err: unknown; logMessages: string[] | null } } };
+        if (result.error) throw Error("Fee receipt RPC rejected request");
+        const tx = result.result;
         if (!tx?.meta || !tx.meta.logMessages || tx.meta.logMessages.some(l => /log truncated/i.test(l))) throw Error("Finalized fee receipt unavailable");
         if (tx.meta.err) return 0n;
         let amount = 0n;
