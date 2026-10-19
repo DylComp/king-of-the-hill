@@ -6,7 +6,7 @@ import { broadcastLaunch, broadcastSetup } from "@/lib/launch/pump";
 import { pendingKey } from "@/lib/launch/server";
 import { getJson, setJson } from "@/lib/redis";
 
-type Pending = { message: string; setup: { table: string; expected: string[]; messages: string[] } | null; signature: string | null } & Record<string, unknown>;
+type Pending = { message: string; lastValidBlockHeight?: number; setup: { table: string; expected: string[]; messages: string[] } | null; signature: string | null } & Record<string, unknown>;
 
 export const maxDuration = 60;
 
@@ -40,7 +40,8 @@ export async function POST(req: Request) {
       if (/insufficient|0x1\b/i.test(msg)) return json({ error: "Not enough SOL in this wallet for the launch and dev buy." }, 400);
       return json({ error: /^[A-Z].*[.!]$/.test(msg) ? msg : "The network rejected the launch. Nothing was spent, try again." }, 400);
     }
-    await setJson(pendingKey(b.mint), { ...pending, signature }, 3600);
+    // The signed bytes are kept so the confirm step can re-send them until they land.
+    await setJson(pendingKey(b.mint), { ...pending, signature, raw: b.tx }, 3600);
     return json({ signature });
   } catch (e) {
     return fail(e, "launch send");
