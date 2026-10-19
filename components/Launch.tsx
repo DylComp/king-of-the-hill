@@ -202,7 +202,6 @@ export default function Launch() {
     }
   }
 
-  const closed = status && !status.open;
   const tickerShown = draft.ticker.trim().replace(/^\$/, "").toUpperCase() || "TICKER";
   const who = recipient ? (recipient.username ? `@${recipient.username}` : shortAddr(recipient.wallet)) : "the pump user";
   const pct = (bps: number) => `${bps / 100}%`;
@@ -238,8 +237,6 @@ export default function Launch() {
               ))}
             </ol>
           </header>
-
-          {closed && <div className="panel launch-closed pixel">{status.reason}</div>}
 
           <form className="launch-grid" onSubmit={launch}>
             <div className="launch-form">
@@ -413,7 +410,7 @@ export default function Launch() {
                 </div>
 
                 <button className="btn launch-go" type="submit" disabled={step != null || !recipient || !!problem || !status?.open}>
-                  {step != null ? STEPS[step] : !recipient ? "pick who gets the fees" : problem ? problem : me ? "launch on pump.fun" : "connect and launch"}
+                  {step != null ? STEPS[step] : status && !status.open ? "launching opens soon" : !recipient ? "pick who gets the fees" : problem ? problem : me ? "launch on pump.fun" : "connect and launch"}
                 </button>
                 {step != null && (
                   <ol className="launch-steps">
