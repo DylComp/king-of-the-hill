@@ -6,6 +6,7 @@ import { bare, cornerStore, pumpHQ, resident } from "./themes-core";
 import { THEMES_A } from "./themes-a";
 import { THEMES_B } from "./themes-b";
 import { placeFurniture } from "../shop";
+import { coinDecor } from "./coindecor";
 
 const ALL: Theme[] = [bare, cornerStore, pumpHQ, resident, ...THEMES_A, ...THEMES_B];
 export const THEMES = new Map(ALL.map((t) => [t.id, t]));
@@ -51,6 +52,8 @@ export type RoomInput = {
   usd: number | null;
   isHouse: boolean;
   change24?: number | null;
+  /** A floor for a coin actually held (not the free home floor): gets the coin layer. */
+  bag?: boolean;
   /** Shop furniture bought for this floor, baked into the background. */
   furniture?: string[];
 };
@@ -58,7 +61,7 @@ export type RoomInput = {
 /** Static background plus its effects, rebuilt only when something visible changes. */
 export function buildRoom(o: RoomInput): Built {
   const usdBand = o.usd == null ? 0 : o.usd < 100 ? 1 : o.usd < 1000 ? 2 : o.usd < WHALE_USD ? 3 : 4;
-  const key = [o.theme.id, o.seed, o.tier, o.accent, o.mood, o.symbol, o.logo ? 1 : 0, usdBand, o.isHouse, o.change24?.toFixed(1), o.furniture?.join(",")].join("|");
+  const key = [o.theme.id, o.seed, o.tier, o.accent, o.mood, o.symbol, o.logo ? 1 : 0, usdBand, o.isHouse, o.change24?.toFixed(1), o.bag ? 1 : 0, o.furniture?.join(",")].join("|");
   const hit = built.get(key);
   if (hit) return hit;
   const canvas = document.createElement("canvas");
@@ -68,6 +71,7 @@ export function buildRoom(o: RoomInput): Built {
   ctx.imageSmoothingEnabled = false;
   const room = makeRoom(ctx, { tier: o.tier, accent: o.accent, mood: o.mood, symbol: o.symbol, logo: o.logo, usd: o.usd, isHouse: o.isHouse, change24: o.change24, seed: o.seed });
   o.theme.draw(room);
+  if (o.bag) coinDecor(room);
   if (o.furniture?.length) placeFurniture(room, o.furniture);
   const b: Built = { canvas, fx: room.fx, front: room.front, windows: room.windows, theme: o.theme };
   built.set(key, b);

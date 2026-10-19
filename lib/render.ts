@@ -545,6 +545,7 @@ function drawFloor(ctx: CanvasRenderingContext2D, o: DrawOpts, f: Floor, i: numb
     usd: f.usd,
     isHouse: f.isHouse,
     change24: f.change24,
+    bag: f.mint !== LOBBY_MINT,
     furniture: p?.furniture,
   });
   const visible = !o.view || (y + FLOOR_H > o.view.top && y < o.view.bottom);

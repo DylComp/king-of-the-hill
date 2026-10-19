@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { BASE_RATE, tierFor, msToNextTier, buyAndPlace, emptySave, floorEarned, cashOf, itemById, floorRate, MAX_FURNITURE, type Floor } from "./game.ts";
+import { BASE_RATE, ITEMS, tierFor, msToNextTier, buyAndPlace, emptySave, floorEarned, cashOf, itemById, floorRate, MAX_FURNITURE, type Floor } from "./game.ts";
 
 const DAY = 86_400_000;
 const now = Date.UTC(2026, 9, 18);
@@ -110,4 +110,20 @@ test("resident floor counts for achievements but not as a bag", () => {
   assert.equal(tokenFloors(floors).length, 0);
   const got = achievementsOf(floors, emptySave(), emptyStreak(), true, now);
   assert.ok(got.has("resident") && got.has("penthouse") && !got.has("house"));
+});
+
+test("the catalog: unique ids, sane tiers and prices, cheapest unlocks first", () => {
+  const ids = ITEMS.map((i) => i.id);
+  assert.equal(new Set(ids).size, ids.length);
+  for (const i of ITEMS) {
+    assert.ok(i.price > 0 && Number.isInteger(i.price), i.id);
+    assert.ok(i.minTier >= 0 && i.minTier <= 5, i.id);
+    assert.ok(["furniture", "pet", "outfit"].includes(i.kind), i.id);
+  }
+  for (let k = 1; k < ITEMS.length; k++) assert.ok(ITEMS[k - 1].minTier <= ITEMS[k].minTier, `${ITEMS[k].id} out of tier order`);
+  // every kind has something to buy on day zero and something for the penthouse
+  for (const kind of ["furniture", "pet", "outfit"]) {
+    const of = ITEMS.filter((i) => i.kind === kind);
+    assert.ok(of.some((i) => i.minTier <= 1) && of.some((i) => i.minTier === 5), kind);
+  }
 });

@@ -6,7 +6,7 @@ import { citizenSprite, petSprite, type Look } from "./people";
 import { BACK, type Room, makeRoom } from "./rooms/kit";
 import { aquarium, arcade, chandelier, couch, plant, piano } from "./rooms/props";
 
-type Piece = { w: number; draw: (room: Room, x: number, base: number) => void; hang?: boolean };
+import { MEME_PIECES, type Piece } from "./memepieces";
 
 export const PIECES: Record<string, Piece> = {
   crate: {
@@ -133,6 +133,7 @@ export const PIECES: Record<string, Piece> = {
       chandelier(room, x);
     },
   },
+  ...MEME_PIECES,
 };
 
 /** Lays bought furniture out left to right across the open middle of the room. */

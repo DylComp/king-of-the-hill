@@ -121,7 +121,9 @@ export function cashOf(floors: Floor[], owned: string[], bonus = 0, now = Date.n
 export type ItemKind = "furniture" | "pet" | "outfit";
 export type Item = { id: string; kind: ItemKind; name: string; price: number; minTier: TierId };
 
-export const ITEMS: Item[] = [
+/** Every buyable item, listed cheapest unlock first; ids are permanent (saves keep them). */
+export const ITEMS: Item[] = (
+  [
   { id: "crate", kind: "furniture", name: "milk crate", price: 20, minTier: 0 },
   { id: "lamp", kind: "furniture", name: "lava lamp", price: 70, minTier: 1 },
   { id: "beanbag", kind: "furniture", name: "beanbag", price: 120, minTier: 1 },
@@ -133,6 +135,20 @@ export const ITEMS: Item[] = [
   { id: "piano", kind: "furniture", name: "grand piano", price: 2600, minTier: 4 },
   { id: "throne", kind: "furniture", name: "gold throne", price: 7500, minTier: 5 },
   { id: "chandelier", kind: "furniture", name: "chandelier", price: 12000, minTier: 5 },
+  { id: "airdrop", kind: "furniture", name: "airdrop crate", price: 35, minTier: 0 },
+  { id: "piggy", kind: "furniture", name: "pump piggy bank", price: 60, minTier: 0 },
+  { id: "rugpull", kind: "furniture", name: "pulled rug", price: 90, minTier: 1 },
+  { id: "pilllamp", kind: "furniture", name: "pill lamp", price: 150, minTier: 1 },
+  { id: "candlecake", kind: "furniture", name: "green candle cake", price: 200, minTier: 1 },
+  { id: "curve", kind: "furniture", name: "bonding curve sign", price: 420, minTier: 2 },
+  { id: "frogstatue", kind: "furniture", name: "meme frog statue", price: 520, minTier: 2 },
+  { id: "portrait", kind: "furniture", name: "laser eyes portrait", price: 650, minTier: 2 },
+  { id: "rocket", kind: "furniture", name: "moon rocket", price: 1400, minTier: 3 },
+  { id: "safe", kind: "furniture", name: "hodl safe", price: 1100, minTier: 3 },
+  { id: "slots", kind: "furniture", name: "degen slots", price: 3200, minTier: 4 },
+  { id: "fountain", kind: "furniture", name: "whale fountain", price: 4500, minTier: 4 },
+  { id: "diamondcase", kind: "furniture", name: "diamond hands case", price: 16000, minTier: 5 },
+  { id: "lambo", kind: "furniture", name: "the lambo", price: 25000, minTier: 5 },
 
   { id: "rat", kind: "pet", name: "sewer rat", price: 40, minTier: 0 },
   { id: "cat", kind: "pet", name: "alley cat", price: 160, minTier: 1 },
@@ -140,6 +156,12 @@ export const ITEMS: Item[] = [
   { id: "frog", kind: "pet", name: "swamp frog", price: 1100, minTier: 3 },
   { id: "ape", kind: "pet", name: "bored ape", price: 3000, minTier: 4 },
   { id: "bull", kind: "pet", name: "golden bull", price: 10000, minTier: 5 },
+  { id: "pill", kind: "pet", name: "pump pill", price: 80, minTier: 0 },
+  { id: "hamster", kind: "pet", name: "degen hamster", price: 220, minTier: 1 },
+  { id: "penguin", kind: "pet", name: "chubby penguin", price: 650, minTier: 2 },
+  { id: "spacecat", kind: "pet", name: "space cat", price: 1600, minTier: 3 },
+  { id: "whale", kind: "pet", name: "baby whale", price: 5000, minTier: 4 },
+  { id: "phoenix", kind: "pet", name: "golden phoenix", price: 20000, minTier: 5 },
 
   { id: "hoodie", kind: "outfit", name: "grey hoodie", price: 30, minTier: 0 },
   { id: "pumptee", kind: "outfit", name: "pump green tee", price: 110, minTier: 1 },
@@ -147,7 +169,14 @@ export const ITEMS: Item[] = [
   { id: "suit", kind: "outfit", name: "black suit", price: 900, minTier: 3 },
   { id: "chain", kind: "outfit", name: "gold chain", price: 2400, minTier: 4 },
   { id: "crown", kind: "outfit", name: "crown", price: 9000, minTier: 5 },
-];
+  { id: "diamondtee", kind: "outfit", name: "diamond hands tee", price: 180, minTier: 1 },
+  { id: "backpack", kind: "outfit", name: "bag holder pack", price: 140, minTier: 1 },
+  { id: "lasers", kind: "outfit", name: "laser eyes", price: 700, minTier: 2 },
+  { id: "frogsuit", kind: "outfit", name: "frog hoodie", price: 520, minTier: 2 },
+  { id: "moonsuit", kind: "outfit", name: "moon suit", price: 3800, minTier: 4 },
+  { id: "goldsuit", kind: "outfit", name: "gold suit", price: 15000, minTier: 5 },
+  ] as Item[]
+).sort((a, b) => a.minTier - b.minTier || a.price - b.price);
 
 export const itemById = (id: string) => ITEMS.find((i) => i.id === id);
 export const MAX_FURNITURE = 4;

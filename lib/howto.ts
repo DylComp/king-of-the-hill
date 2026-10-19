@@ -32,6 +32,7 @@ export const DOCS: DocSection[] = [
       ["Rooms", "Each floor is a themed room. Three rooms per tier; the coin picks which."],
       ["Coin details", "Rooms show the coin's logo, colours and live price. More cash or gold appears as the bag grows."],
       ["Mood", "Windows rain when the coin is down 12% on the day and show fireworks when it is up 12%."],
+      ["Bag details", "Every coin you hold shows up on its floor: a sack stamped with its logo that grows with the bag (spilling coins, then gold bars), its ticker on a flag after a day, a plush of the coin at a week, a diamond hands trophy at a month, a rocket with the 24h move on green days and a HODL sign on red ones."],
       ["Token card", "Next to each floor: bag value, 24h move, time held, rent, level and time to the next tier."],
       ["Level", "Grows with bag size times hold time."],
       ["Citizens", `${citizensFor(0)} on bare walls up to ${citizensFor(5)} in a penthouse. They talk about the coin.`],
