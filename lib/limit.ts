@@ -17,6 +17,7 @@ export const LIMITS = {
   save: 60,
   og: 20,
   profile: 30,
+  names: 60,
   asset: 8,
   launch: 12,
   /** The launch page polls this every couple of seconds while a launch lands. */

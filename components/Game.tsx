@@ -49,6 +49,7 @@ import Logo from "./Logo";
 import PumpMeter from "./PumpMeter";
 import GitHubMark from "./GitHubMark";
 import XMark from "./XMark";
+import PumpName, { usePumpNames } from "./PumpName";
 import { connectWallet, isMobile, post, provider, questEvent, rememberRef, signIn as signInWallet, walletLinks } from "./wallet";
 import { ALL_QUESTS_BONUS, QUESTS, REFERRED_REWARD, REFERRER_REWARD, type QuestState, type Referrals } from "@/lib/quests";
 import HoverText from "./HoverText";
@@ -436,6 +437,7 @@ export default function Game() {
   const earned = achievementsOf(sorted, save, streak, !!owner && owner === me, now);
   const streakNow = liveStreak(streak, now);
   const nextDay = nextStreakDay(streak, now);
+  const nameOf = usePumpNames([owner, ...(board?.rows ?? []).map((r) => r.wallet), ...(board?.season?.rows ?? []).map((r) => r.wallet)]);
   const seasonLeft = board?.season ? Math.max(0, board.season.ends - now) : 0;
 
   const visit = useCallback(
@@ -578,7 +580,9 @@ export default function Game() {
                 {owner ? (
                   <span className="dim">
                     {owner === me ? "your tower " : "tower of "}
-                    <span className="green">{shortAddr(owner)}</span>
+                    <span className="green">
+                      <PumpName wallet={owner} name={nameOf(owner)} />
+                    </span>
                     {owner === me && <span className="chip live">saved to cloud</span>}
                   </span>
                 ) : (
@@ -889,7 +893,7 @@ export default function Game() {
                   >
                     <span className="pixel rank">{i + 1}</span>
                     <span className="green">
-                      {shortAddr(r.wallet)}
+                      <PumpName wallet={r.wallet} name={nameOf(r.wallet)} />
                       {r.house && <span className="chip">{HOUSE_SYMBOL}</span>}
                     </span>
                     <span className="hide-sm">{r.top === "RESIDENT" ? r.top : `$${r.top.toUpperCase()}`}</span>
@@ -924,7 +928,7 @@ export default function Game() {
                 >
                   <span className="pixel rank">{i + 1}</span>
                   <span className="green">
-                    {shortAddr(r.wallet)}
+                    <PumpName wallet={r.wallet} name={nameOf(r.wallet)} />
                     {r.house && <span className="chip">{HOUSE_SYMBOL}</span>}
                   </span>
                   <span className="hide-sm">{r.top === "RESIDENT" ? r.top : `$${r.top.toUpperCase()}`}</span>

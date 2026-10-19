@@ -341,3 +341,29 @@
 .live-banner .dim {
   flex: 1 1 220px;
 }
+.pump-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  vertical-align: middle;
+}
+.pump-name > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pump-name .pump-avatar {
+  flex: none;
+}
+.chart {
+  position: relative;
+}
+.chart-wait {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  pointer-events: none;
+}

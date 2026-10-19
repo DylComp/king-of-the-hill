@@ -2,7 +2,8 @@
 
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { type CityTower, arrange, buildingAt, cityHeight, cityWidth, drawCity } from "@/lib/city";
-import { HOUSE_SYMBOL, fmtCash, shortAddr } from "@/lib/game";
+import { HOUSE_SYMBOL, fmtCash } from "@/lib/game";
+import PumpName, { usePumpNames } from "./PumpName";
 
 type Props = { me: string | null; onVisit: (wallet: string) => void };
 
@@ -56,6 +57,8 @@ function City({ me, onVisit }: Props) {
     };
   }, [laid, rank]);
 
+  const nameOf = usePumpNames(hover != null && laid[hover] ? [laid[hover].wallet] : []);
+
   if (towers == null) return <div className="panel dim">Loading the city...</div>;
   if (!towers.length) return <div className="panel dim">The city is empty. Connect a wallet to build the first tower.</div>;
 
@@ -87,7 +90,7 @@ function City({ me, onVisit }: Props) {
         {h ? (
           <>
             <span className="pixel green">#{rank.get(h.wallet)}</span>
-            <span>{shortAddr(h.wallet)}</span>
+            <PumpName wallet={h.wallet} name={nameOf(h.wallet)} />
             {h.house && <span className="chip">{HOUSE_SYMBOL}</span>}
             <span className="dim">
               {h.floors} {h.floors === 1 ? "floor" : "floors"} · top floor {h.top === "RESIDENT" ? "home" : `$${h.top.toUpperCase()}`}

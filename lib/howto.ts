@@ -58,6 +58,7 @@ export const DOCS: DocSection[] = [
     items: [
       ["Buildings", "Each ranked tower, floors lit by tier. Green is $" + HOUSE_SYMBOL + ", gold is a penthouse."],
       ["Order", "Highest rent in the middle. Top three get a lit antenna."],
+      ["Pump names", "A tower whose owner has a pump.fun profile shows their pump name and picture in the city, skyline and tower view instead of a short wallet address."],
       ["Coin signs", "A tower with coins launched for its owner hangs a lit sign on its side with the count, flickering like neon."],
       ["Visit", "Hover for the owner and rent, tap to walk in."],
     ],

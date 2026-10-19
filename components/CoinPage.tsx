@@ -1,5 +1,6 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
+import { preconnect } from "react-dom";
 import { CoinLogo, ProfilePic } from "./Pics";
 import type { CoinView } from "@/lib/launch/registry";
 import { FEE_TIERS, FEE_TIER_NAMES } from "@/lib/launch/model";
@@ -16,6 +17,10 @@ export default function CoinPage({ mint }: { mint: string }) {
   const [missing, setMissing] = useState(false);
   const [fresh, setFresh] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Warm up the chart's connection while the coin's stats load.
+  preconnect("https://dexscreener.com");
+  preconnect("https://io.dexscreener.com");
 
   const load = useCallback(() => {
     fetch(`/api/token/${mint}`)
@@ -127,7 +132,7 @@ export default function CoinPage({ mint }: { mint: string }) {
 
             <div className="coin-cols">
               <div className="panel chart">
-                <iframe title={`${c.ticker} chart`} src={`https://dexscreener.com/solana/${mint}?embed=1&theme=dark&trades=0&info=0`} loading="lazy" />
+                <Chart mint={mint} ticker={c.ticker} />
               </div>
               <aside className="coin-side">
                 <a className="panel recipient" href={`/u/${c.recipient.wallet}`}>
@@ -172,3 +177,19 @@ export default function CoinPage({ mint }: { mint: string }) {
     </>
   );
 }
+
+// The DexScreener embed, trimmed to just the chart (no trades, tabs, toolbar or saved
+// settings) so it loads fast. Memoized so page refreshes never reload it.
+const Chart = memo(function Chart({ mint, ticker }: { mint: string; ticker: string }) {
+  const [ready, setReady] = useState(false);
+  return (
+    <>
+      {!ready && <span className="chart-wait pixel dim">loading chart</span>}
+      <iframe
+        title={`${ticker} chart`}
+        src={`https://dexscreener.com/solana/${mint}?embed=1&loadChartSettings=0&trades=0&tabs=0&info=0&chartLeftToolbar=0&chartTheme=dark&theme=dark&chartStyle=1&chartType=usd&interval=15`}
+        onLoad={() => setReady(true)}
+      />
+    </>
+  );
+});
