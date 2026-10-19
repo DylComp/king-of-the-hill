@@ -2867,3 +2867,24 @@ button.chip.on {
   border-color: var(--green);
   background: rgba(134, 239, 172, 0.06);
 }
+
+/* the intro only plays once a session (app/layout.tsx sets this before first paint) */
+html[data-booted] .boot {
+  display: none;
+}
+
+/* subtle way back to the list from a coin or a pump profile */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  color: var(--ink-dim);
+  font-size: 18px;
+  transition: color 0.15s, transform 0.15s var(--step);
+}
+.back-link:hover,
+.back-link:focus-visible {
+  color: var(--green);
+  transform: translateX(-3px);
+}

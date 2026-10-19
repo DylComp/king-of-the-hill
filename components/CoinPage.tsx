@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { memo, useCallback, useEffect, useState } from "react";
 import { preconnect } from "react-dom";
 import { CoinLogo, ProfilePic } from "./Pics";
@@ -52,9 +53,9 @@ export default function CoinPage({ mint }: { mint: string }) {
             <div className="panel empty-coins">
               <p className="pixel green">not launched here</p>
               <p className="dim">This coin wasn&apos;t launched on Pump Tower, or it is still landing. Give it a minute and refresh.</p>
-              <a className="btn" href="/tokens">
+              <Link className="btn" href="/tokens">
                 see all coins
-              </a>
+              </Link>
             </div>
           </section>
         </main>
@@ -79,6 +80,12 @@ export default function CoinPage({ mint }: { mint: string }) {
           </section>
         ) : (
           <section className="sec coin-detail">
+            <Link href="/tokens" className="back-link">
+              <svg width="12" height="12" viewBox="0 0 6 6" shapeRendering="crispEdges" aria-hidden>
+                <path fill="currentColor" d="M2 0h1v1H2zM1 1h1v1H1zM0 2h6v1H0zM1 3h1v1H1zM2 4h1v1H2z" />
+              </svg>
+              all tokens
+            </Link>
             {fresh && (
               <div className="panel live-banner">
                 <span className="pixel green">your coin is live</span>
@@ -137,7 +144,7 @@ export default function CoinPage({ mint }: { mint: string }) {
                 <Chart mint={mint} ticker={c.ticker} />
               </div>
               <aside className="coin-side">
-                <a className="panel recipient" href={`/u/${c.recipient.wallet}`}>
+                <Link className="panel recipient" href={`/u/${c.recipient.wallet}`}>
                   <span className="label">launched for</span>
                   <span className="pump-profile big">
                     <ProfilePic profile={c.recipient} size={56} />
@@ -146,7 +153,7 @@ export default function CoinPage({ mint }: { mint: string }) {
                       <span className="dim">gets 80% of creator fees</span>
                     </span>
                   </span>
-                </a>
+                </Link>
                 <div className="panel fees">
                   <span className="label">creator fees so far</span>
                   <span className="pixel big green">{fmtSol(c.feesSol)} SOL</span>

@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { CoinView, ProfileSummary } from "@/lib/launch/registry";
 import type { TokenTotals } from "@/app/api/tokens/route";
@@ -19,6 +20,10 @@ export default function Tokens() {
   const [more, setMore] = useState(false);
   const [q, setQ] = useState("");
   const [tab, setTab] = useState<View>("coins");
+  // Back links from a pump profile land on the profiles tab.
+  useEffect(() => {
+    if (new URL(window.location.href).searchParams.get("tab") === "profiles") setTab("profiles");
+  }, []);
   const [profiles, setProfiles] = useState<ProfileSummary[] | null>(null);
 
   useEffect(() => {
@@ -130,9 +135,9 @@ export default function Tokens() {
                 </button>
               ))}
             </div>
-            <a className="btn" href="/launch">
+            <Link className="btn" href="/launch">
               launch a coin
-            </a>
+            </Link>
           </div>
           {tab === "profiles" ? (
             profiles == null ? (
@@ -192,7 +197,7 @@ export default function Tokens() {
 function ProfileCard({ p, i }: { p: ProfileSummary; i: number }) {
   const name = profileName(p.profile);
   return (
-    <a className="panel profile-card" href={`/u/${p.profile.wallet}`} style={{ ["--i" as string]: i }}>
+    <Link className="panel profile-card" href={`/u/${p.profile.wallet}`} style={{ ["--i" as string]: i }}>
       <span className="profile-top">
         <ProfilePic profile={p.profile} size={48} />
         <span className="profile-name">
@@ -238,6 +243,6 @@ function ProfileCard({ p, i }: { p: ProfileSummary; i: number }) {
           top <span className="green">${p.top.ticker}</span> {p.top.mcapUsd != null ? `at ${fmtUsd(p.top.mcapUsd)}` : ""}
         </span>
       </span>
-    </a>
+    </Link>
   );
 }

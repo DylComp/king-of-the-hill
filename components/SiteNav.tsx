@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useEffect } from "react";
 import { GITHUB_URL, X_URL } from "@/lib/site";
 import { shortAddr } from "@/lib/game";
@@ -31,16 +32,16 @@ export default function SiteNav({ wallet, active }: { wallet: ReturnType<typeof 
   return (
     <>
       <header className="nav">
-        <a className="brand" href="/">
+        <Link className="brand" href="/">
           <Logo size={40} />
           <HoverText text="pump tower" className="pixel brand-word" />
           <PumpMeter />
-        </a>
+        </Link>
         <nav className="nav-links">
           {LINKS.map(([href, label]) => (
-            <a key={href} href={href} className={active === href ? "on" : undefined} aria-current={active === href ? "page" : undefined}>
+            <Link key={href} href={href} className={active === href ? "on" : undefined} aria-current={active === href ? "page" : undefined}>
               <HoverText text={label} />
-            </a>
+            </Link>
           ))}
         </nav>
         <a className="gh" href={GITHUB_URL} target="_blank" rel="noopener" title="source code on GitHub" aria-label="GitHub">
