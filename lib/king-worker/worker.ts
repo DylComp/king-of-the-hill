@@ -188,7 +188,6 @@ async function launches(
       await alert(j.state.outcome);
       return;
     }
-    count++;
     try {
       const mint = Keypair.generate();
       const { data: p } = await api(
@@ -222,6 +221,7 @@ async function launches(
         expires: p.lastValidBlockHeight,
         status: "pending",
       };
+      count++;
       j.state.launches.push(l);
       await j.save();
       await finishLaunch(j, l, deadline);
