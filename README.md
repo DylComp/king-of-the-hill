@@ -211,6 +211,8 @@ Every five minutes, `GET /api/king/feed` (Bearer `KING_FEED_SECRET`, or
 `board` every five minutes, `members` hourly. The worker reads them and posts
 `{ "feed": { "<path>": <json> } }` back to the same URL. A board older than ten
 minutes doesn't count for a crown; that hour has no King and its pot rolls over.
+`scripts/king-feed.mjs` does exactly this (board every five minutes, `--members`
+hourly) and needs only `KING_FEED_SECRET`; it holds no wallet keys.
 
 Payouts: `GET /api/king/payouts?status=pending` lists hours to pay; after sending,
 `POST /api/king/payouts` with `{ hour, signatures }` (Bearer `KING_PAYER_SECRET`
