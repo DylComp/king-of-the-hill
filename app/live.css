@@ -371,10 +371,14 @@
 /* ---------- king of the hill (components/King*.tsx) ---------- */
 .kq-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 420px);
   gap: 24px;
   align-items: end;
   margin-bottom: 16px;
+}
+.kq-mascot {
+  align-self: end;
+  filter: drop-shadow(0 0 18px rgba(255, 212, 59, 0.22)) drop-shadow(0 0 4px rgba(74, 222, 128, 0.35));
 }
 .kq-hero .lede {
   margin-bottom: 0;
@@ -600,6 +604,17 @@
   .kq-layout {
     grid-template-columns: minmax(0, 1fr);
   }
+  .kq-hero {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .kq-hero .kq-steps {
+    grid-column: 1 / -1;
+  }
+  .kq-mascot {
+    width: 120px;
+    height: 120px;
+    align-self: start;
+  }
   .kq-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -609,6 +624,10 @@
   }
 }
 @media (max-width: 560px) {
+  .kq-mascot {
+    width: 84px;
+    height: 84px;
+  }
   .kq-row {
     grid-template-columns: 22px minmax(0, 1fr) 64px 104px;
     gap: 6px;

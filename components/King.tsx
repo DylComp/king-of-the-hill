@@ -108,6 +108,8 @@ export default function King() {
       <main className="page king-page">
         <section className="sec king">
           <header className="kq-hero">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="kq-mascot pixelated" src="/king-logo.png" alt="" aria-hidden width={168} height={168} />
             <div>
               <span className="kicker">king of the hill · squad invitational</span>
               <h1 className="pixel display sm">every squad has a coin. every hour, one squad is king.</h1>
