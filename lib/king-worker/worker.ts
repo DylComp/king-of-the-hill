@@ -279,8 +279,9 @@ async function collections(j: Journal, treasury: Keypair, deadline: number) {
     let built;
     try {
       built = await collectTx(coin.mint, TREASURY, 1000);
-    } catch {
-      continue;
+    } catch (e) {
+      if (e instanceof Error && e.message === "Not enough fees to pay out yet, try again later.") continue;
+      throw Error("collection_prepare_failed");
     }
     const tx = decode(built.tx);
     checkLaunch(tx, treasury.publicKey);
@@ -288,6 +289,7 @@ async function collections(j: Journal, treasury: Keypair, deadline: number) {
     if (fee === null || fee > 100_000) throw Error("collection_fee_limit");
     const sim = await c.simulateTransaction(tx, {
       sigVerify: false,
+      replaceRecentBlockhash: true,
       commitment: "confirmed",
       accounts: { encoding: "base64", addresses: [TREASURY] },
     });
