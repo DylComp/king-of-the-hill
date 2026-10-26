@@ -506,6 +506,7 @@ export default function Game() {
             ["#skyline", "skyline"],
             ["#ladder", "ladder"],
             ["#catalog", "catalog"],
+            ["/king", "king"],
             ["/launch", "launch"],
             ["/tokens", "tokens"],
             ["/activity", "activity"],

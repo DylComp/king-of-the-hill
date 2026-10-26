@@ -16,6 +16,7 @@ const LINKS = [
   ["/#tower", "tower"],
   ["/#city", "city"],
   ["/#skyline", "skyline"],
+  ["/king", "king"],
   ["/launch", "launch"],
   ["/tokens", "tokens"],
   ["/activity", "activity"],
