@@ -14,6 +14,11 @@ const LATEST = "pt:king:latest";
 const NOW = "pt:king:now";
 export const latestBoard = () => getJson<Board>(LATEST);
 
+/** A board read longer ago than this doesn't count for a crown. */
+const FRESH = 10 * 60_000;
+/** Each hour's board reading must be taken in its first 20 minutes. */
+const READ_WINDOW = 20 * 60_000;
+
 const secret = () => process.env.KING_SECRET || process.env.CRON_SECRET || "";
 
 export async function runKing(now = Date.now()) {
@@ -22,18 +27,23 @@ export async function runKing(now = Date.now()) {
   const coins = await allSquadCoins();
   const log: string[] = [];
 
-  // Live board for the pages, refreshed every run.
-  const board = await competitionBoard();
-  await setJson(LATEST, board, 3600);
+  // Live board for the pages, refreshed every run. Without a fresh read (pump.fun down and
+  // no feed), fees are still read so the pot stays exact; the hour just gets no King.
+  const board = await competitionBoard().catch((e) => (log.push(`board: ${(e as Error).message}`), null));
+  if (board) await setJson(LATEST, board, 3600);
+  const fresh = board && now - board.fetchedAt <= FRESH ? board : null;
 
   // Top-of-hour readings.
-  if (!(await boardAt(hour))) {
-    await saveBoard(hour, Object.fromEntries(board.squads.map((s) => [s.groupId, s.realizedUsd])));
+  if (!(await feesAt(hour))) {
     const fees: Record<string, string> = {};
     const read = await lifetimes(coins.map((c) => c.mint));
     for (const c of coins) fees[c.mint] = read[c.mint] ?? (await previousFee(hour, c.mint));
     await saveFees(hour, fees);
-    log.push(`readings ${hourId(hour)}`);
+    log.push(`fees ${hourId(hour)}`);
+  }
+  if (fresh && now - hour <= READ_WINDOW && !(await boardAt(hour))) {
+    await saveBoard(hour, Object.fromEntries(fresh.squads.map((s) => [s.groupId, s.realizedUsd])));
+    log.push(`board ${hourId(hour)}`);
   }
 
   // Holder count at the hour's secret minute.
@@ -51,9 +61,10 @@ export async function runKing(now = Date.now()) {
   const prev = hour - HOUR;
   if (!(await reign(hourId(prev)))) {
     const [start, end, feesStart, feesEnd] = await Promise.all([boardAt(prev), boardAt(hour), feesAt(prev), feesAt(hour)]);
-    if (start && end && feesStart && feesEnd) {
-      const struck = new Set(board.squads.filter((s) => s.struck).map((s) => s.groupId));
-      const winner = pickKing({ hour: prev, start, end }, new Set(coins.map((c) => c.groupId)), struck);
+    // Wait for both board readings until the reading window closes; then crown without them.
+    if (feesStart && feesEnd && ((start && end) || now - hour > READ_WINDOW)) {
+      const struck = new Set((board?.squads ?? []).filter((s) => s.struck).map((s) => s.groupId));
+      const winner = start && end ? pickKing({ hour: prev, start, end }, new Set(coins.map((c) => c.groupId)), struck) : null;
       const coin = winner && coins.find((c) => c.groupId === winner.groupId)!;
       const carriedIn = await carried();
       const pot = potLamports(feesStart, feesEnd) + carriedIn;

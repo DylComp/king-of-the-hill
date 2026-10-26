@@ -198,3 +198,21 @@ The fee tracker, coin and profile pages poll every five seconds. The token list
 also polls, with a longer interval when many pages are loaded. Background
 reconciliation retains a ten-minute cache for payouts made outside the worker;
 treasury activity refreshes within a minute. Treasury deposits for gas never count as buyback revenue.
+
+### King of the Hill (squad coins)
+
+`/api/cron/king` runs every five minutes: it reads pump.fun's Squad Invitational
+board and each squad coin's lifetime creator fees at the top of the hour, counts
+holders at a secret minute, and crowns the previous hour. It never signs.
+
+pump.fun refuses requests from Vercel's servers, so a worker off Vercel feeds it.
+Every five minutes, `GET /api/king/feed` (Bearer `KING_FEED_SECRET`, or
+`CRON_SECRET`) returns the paths to read from `https://frontend-api-v3.pump.fun`:
+`board` every five minutes, `members` hourly. The worker reads them and posts
+`{ "feed": { "<path>": <json> } }` back to the same URL. A board older than ten
+minutes doesn't count for a crown; that hour has no King and its pot rolls over.
+
+Payouts: `GET /api/king/payouts?status=pending` lists hours to pay; after sending,
+`POST /api/king/payouts` with `{ hour, signatures }` (Bearer `KING_PAYER_SECRET`
+or `CRON_SECRET`) marks the hour paid. Squad coins launch from `/king/admin` by a
+wallet in `KING_LAUNCHERS` (default: the dev wallet).
