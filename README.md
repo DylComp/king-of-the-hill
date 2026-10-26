@@ -217,4 +217,10 @@ one of its other tokens the opposite way (a buy or a sell).
 Payouts: `GET /api/king/payouts?status=pending` lists hours to pay; after sending,
 `POST /api/king/payouts` with `{ hour, signatures }` (Bearer `KING_PAYER_SECRET`
 or `CRON_SECRET`) marks the hour paid. Squad coins launch from `/king/admin` by a
-wallet in `KING_LAUNCHERS` (default: the dev wallet).
+wallet in `KING_LAUNCHERS` (default: the dev wallet), or hands-free by the launch worker:
+`GET /api/king/launch/next` lists squads still without a coin; the worker makes a mint
+keypair, calls `POST /api/king/launch/prepare` with `{ groupId, mint, launcher }` and
+`Authorization: Bearer KING_LAUNCH_SECRET`, signs the returned `tx` (and `setup`, first
+launch only) with the launcher key and the mint key, posts them to `/api/launch/send`, then
+polls `POST /api/king/launch/confirm` with `{ mint }` until it returns the coin. The site
+never holds the key.
