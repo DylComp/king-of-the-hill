@@ -10,8 +10,9 @@ const env = Object.fromEntries(
     }),
 );
 try {
-  const r = await fetch("https://pumptowers.fun/api/cron/king-worker", {
+  const r = await fetch("https://pump-tower.vercel.app/api/cron/king-worker", {
     method: "POST",
+    redirect: "error",
     headers: { authorization: "Bearer " + env.KING_LAUNCH_SECRET },
     signal: AbortSignal.timeout(290000),
   });

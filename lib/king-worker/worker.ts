@@ -27,7 +27,8 @@ import {
   checkLaunch,
   assertBudget,
 } from "./safety.ts";
-const ORIGIN = "https://pumptowers.fun";
+// Stable internal origin survives custom-domain changes.
+const ORIGIN = "https://pump-tower.vercel.app";
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const decode = (s: string) =>
   VersionedTransaction.deserialize(Buffer.from(s, "base64"));
@@ -55,6 +56,7 @@ async function api(path: string, body?: unknown, secret?: string) {
       ...(secret ? { authorization: "Bearer " + secret } : {}),
     },
     body: body === undefined ? undefined : JSON.stringify(body),
+    redirect: "error",
     cache: "no-store",
     signal: AbortSignal.timeout(65_000),
   });
@@ -66,7 +68,9 @@ async function api(path: string, body?: unknown, secret?: string) {
   return { status: r.status, data: await r.json() };
 }
 export async function alert(event: string, hour?: string) {
-  const url = process.env.ALERT_WEBHOOK_URL;
+  const configured = process.env.ALERT_WEBHOOK_URL;
+  const url = configured === "https://pumptowers.fun/api/king/worker-alerts"
+    ? ORIGIN + "/api/king/worker-alerts" : configured;
   if (!url) return false;
   try {
     const message = `King of the Hill King worker: ${event}${hour ? " (" + hour + ")" : ""}`;
@@ -78,6 +82,7 @@ export async function alert(event: string, hour?: string) {
           ? { authorization: "Bearer " + process.env.KING_ALERT_SECRET }
           : {}),
       },
+      redirect: "error",
       body: JSON.stringify({ text: message, content: message, event, hour }),
       signal: AbortSignal.timeout(10_000),
     });

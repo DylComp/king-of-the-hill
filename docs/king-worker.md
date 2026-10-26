@@ -41,3 +41,5 @@ Validation: `npm run typecheck`, `npm test`, and Vercel production build. Live a
 
 - Launcher/dev: `KiNgDiSzoX9Z69LoRZh73QkBhJNLqxDbJKgQ2bHmon7`
 - Treasury: `kiNGXkmkJSMPQoFEdUZs68nANK16C1AjyQD2jVPY46C`
+
+Internal worker calls and local monitoring use `https://pump-tower.vercel.app` so custom-domain changes cannot break authenticated requests. Redirects are rejected. Public metadata follows the production domain supplied by Vercel.

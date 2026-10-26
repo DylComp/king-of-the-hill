@@ -11,7 +11,8 @@ const env = Object.fromEntries(
     }),
 );
 try {
-  const r = await fetch("https://pumptowers.fun/api/king/worker-alerts", {
+  const r = await fetch("https://pump-tower.vercel.app/api/king/worker-alerts", {
+    redirect: "error",
     headers: { authorization: "Bearer " + env.KING_ALERT_SECRET },
     signal: AbortSignal.timeout(15000),
   });
