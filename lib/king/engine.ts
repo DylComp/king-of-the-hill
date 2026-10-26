@@ -22,8 +22,9 @@ const SCAN_BUDGET = 35_000;
 const secret = () => process.env.KING_SECRET || process.env.CRON_SECRET || "";
 
 export async function runKing(now = Date.now()) {
-  const hour = hourOf(now);
-  if (hour > COMPETITION_ENDS + HOUR) return { done: "competition over" };
+  // Never crown post-cup hours. A delayed final crown may catch up after the deadline.
+  if (now >= COMPETITION_ENDS && await reign(hourId(COMPETITION_ENDS - HOUR))) return { done: "competition over" };
+  const hour = Math.min(hourOf(now), COMPETITION_ENDS);
   const coins = await allSquadCoins();
   const wallets = walletsOf(new Set(coins.map((c) => c.groupId)));
   const log: string[] = [];
