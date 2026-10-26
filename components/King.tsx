@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Reign, Squad } from "@/lib/king/model";
 import { HOLDERS_BPS, POT_BPS, squadSlug } from "@/lib/king/model";
 import { ago, fmtSol, fmtUsd } from "./CoinCard";
-import SiteNav from "./SiteNav";
+import SiteNav, { type Brand } from "./SiteNav";
 import { useMe } from "./useMe";
 
 export type BoardSquad = Squad & { coin: { mint: string; ticker: string; image: string | null; members: number; mcapUsd?: number | null; volUsd?: number | null } | null };
@@ -18,6 +18,8 @@ export type KingData = {
   endsAt: number;
   reigns: (Omit<Reign, "payouts"> & { payouts: number })[];
 };
+
+export const KING_BRAND: Brand = { name: "king of the hill", href: "/king", logo: "/king-logo.png" };
 
 export const sol = (lamports: string | number | bigint) => Number(lamports) / 1e9;
 export const pumpCoin = (mint: string) => `https://pump.fun/coin/${mint}`;
@@ -102,7 +104,7 @@ export default function King() {
 
   return (
     <>
-      <SiteNav wallet={wallet} active="/king" />
+      <SiteNav wallet={wallet} active="/king" brand={KING_BRAND} />
       <main className="page king-page">
         <section className="sec king">
           <header className="kq-hero">
@@ -135,7 +137,7 @@ export default function King() {
             <div className="panel tile kq-pot">
               <span className="label">pot this hour</span>
               <span className="pixel big green">{data ? `${fmtSol(sol(data.pot.lamports))} SOL` : "--"}</span>
-              <span className="dim">{HOLDERS_BPS / 100}% to holders · {100 - HOLDERS_BPS / 100}% burns $PTWR</span>
+              <span className="dim">{HOLDERS_BPS / 100}% to holders · {100 - HOLDERS_BPS / 100}% buy-and-burn</span>
             </div>
             <div className="panel tile">
               <span className="label">next crown in</span>

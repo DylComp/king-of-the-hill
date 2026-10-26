@@ -1,6 +1,6 @@
 // King of the Hill rules shared by the server, the cron and the pages. No chain or node code.
 // Every squad in pump.fun's Squad Invitational gets an unofficial fan coin. Its creator fees
-// are split on chain: half to the Pump Tower treasury (the King pot), half to the squad's
+// are split on chain: half to the treasury (the King pot), half to the squad's
 // members. Each hour the squad whose banked (realized) profit rose most is King, and the pot
 // pays holders of the King's coin in SOL.
 import { SITE_URL } from "../site.ts";

@@ -6,7 +6,7 @@ import type { Market } from "@/lib/launch/market";
 import { shortAddr } from "@/lib/game";
 import { CopyText } from "./CopyCA";
 import { fmtSol, fmtUsd } from "./CoinCard";
-import { Crown, SquadPic, pumpCoin, signed, sol, useKing, type BoardSquad } from "./King";
+import { Crown, KING_BRAND, SquadPic, pumpCoin, signed, sol, useKing, type BoardSquad } from "./King";
 import SiteNav from "./SiteNav";
 import { useMe } from "./useMe";
 
@@ -22,7 +22,7 @@ export default function KingSquad({ name }: { name: string }) {
 
   return (
     <>
-      <SiteNav wallet={wallet} active="/king" />
+      <SiteNav wallet={wallet} active="/king" brand={KING_BRAND} />
       <main className="page king-page">
         <section className="sec king">
           <Link href="/king" className="back-link">
@@ -89,7 +89,7 @@ export default function KingSquad({ name }: { name: string }) {
                           <div className="kq-row kq-share" key={sh.address}>
                             <span className="pixel dim">{i === 0 ? "pot" : i}</span>
                             <span>
-                              {i === 0 ? <b>King pot (Pump Tower treasury)</b> : <b>{m?.username ? `@${m.username}` : shortAddr(sh.address)}</b>}
+                              {i === 0 ? <b>King pot (treasury)</b> : <b>{m?.username ? `@${m.username}` : shortAddr(sh.address)}</b>}
                               <span className="dim mono"> {shortAddr(sh.address)}</span>
                             </span>
                             <span className="r pixel green">{sh.shareBps / 100}%</span>

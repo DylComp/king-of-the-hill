@@ -3,7 +3,7 @@
 // each launch; this tab makes each mint key, checks every transaction, and the wallet signs.
 import { useMemo, useState } from "react";
 import { POT_BPS, MAX_MEMBERS } from "@/lib/king/model";
-import { SquadPic, signed, useKing, type KingData } from "./King";
+import { KING_BRAND, SquadPic, signed, useKing, type KingData } from "./King";
 import SiteNav from "./SiteNav";
 import { useMe } from "./useMe";
 import { fromB64, post, provider, rejected, toB64 } from "./wallet";
@@ -103,7 +103,7 @@ export default function KingAdmin() {
 
   return (
     <>
-      <SiteNav wallet={wallet} active="/king" />
+      <SiteNav wallet={wallet} active="/king" brand={KING_BRAND} />
       <main className="page king-page">
         <section className="sec king">
           <span className="kicker">king of the hill · launch wallet only</span>

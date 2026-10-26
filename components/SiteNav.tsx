@@ -23,8 +23,11 @@ const LINKS = [
   ["/#docs", "docs"],
 ] as const;
 
+/** A section with its own name and mark, like King of the Hill. */
+export type Brand = { name: string; href: string; logo: string };
+
 /** The game's nav for the launchpad pages, with the same wallet button. */
-export default function SiteNav({ wallet, active }: { wallet: ReturnType<typeof useMe>; active?: string }) {
+export default function SiteNav({ wallet, active, brand }: { wallet: ReturnType<typeof useMe>; active?: string; brand?: Brand }) {
   const { me, connect, signOut, mobilePick, setMobilePick, note, setNote } = wallet;
   useEffect(() => {
     if (!note) return;
@@ -34,11 +37,19 @@ export default function SiteNav({ wallet, active }: { wallet: ReturnType<typeof 
   return (
     <>
       <header className="nav">
-        <Link className="brand" href="/">
-          <Logo size={40} />
-          <HoverText text="pump tower" className="pixel brand-word" />
-          <PumpMeter />
-        </Link>
+        {brand ? (
+          <Link className="brand" href={brand.href}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="logo-svg pixelated" src={brand.logo} alt="" aria-hidden width={40} height={40} decoding="async" />
+            <HoverText text={brand.name} className="pixel brand-word" />
+          </Link>
+        ) : (
+          <Link className="brand" href="/">
+            <Logo size={40} />
+            <HoverText text="pump tower" className="pixel brand-word" />
+            <PumpMeter />
+          </Link>
+        )}
         <nav className="nav-links">
           {LINKS.map(([href, label]) => (
             <Link key={href} href={href} className={active === href ? "on" : undefined} aria-current={active === href ? "page" : undefined}>

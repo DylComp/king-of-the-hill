@@ -135,7 +135,7 @@ export const DOCS: DocSection[] = [
     summary: "A fan coin for every squad in pump.fun's Squad Invitational, at pumptowers.fun/king.",
     items: [
       ["Squad coins", "Every squad on pump.fun's Squad Invitational board gets an unofficial pump.fun fan coin named after it. Not affiliated with the squad or pump.fun."],
-      ["Fee split", `${POT_BPS / 100}% of each coin's creator fees go to the King pot (the Pump Tower treasury). The other ${100 - POT_BPS / 100}% is split equally across up to ${MAX_MEMBERS} of the squad's members, owner first. Locked in the launch transaction, admin revoked.`],
+      ["Fee split", `${POT_BPS / 100}% of each coin's creator fees go to the King pot (the treasury). The other ${100 - POT_BPS / 100}% is split equally across up to ${MAX_MEMBERS} of the squad's members, owner first. Locked in the launch transaction, admin revoked.`],
       ["The crown", "Every hour, the squad with a coin whose banked (realized) profit on pump's board rose the most is King. Paper profit doesn't count. Struck squads can't win."],
       ["The pot", `The treasury's share of every squad coin's fees earned that hour, plus anything rolled over. ${HOLDERS_BPS / 100}% goes to holders of the King's coin, ${100 - HOLDERS_BPS / 100}% buys back and burns $${HOUSE_SYMBOL}.`],
       ["Getting paid", `Hold the King's coin. Holders are counted at a secret minute each hour, so buying right before the crown doesn't work. Paid in SOL, pro rata to your bag, top ${MAX_PAYEES} holders. Payouts under ${Number(MIN_PAYOUT_LAMPORTS) / 1e9} SOL roll into the next hour.`],
