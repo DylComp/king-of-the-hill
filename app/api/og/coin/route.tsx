@@ -36,7 +36,7 @@ export async function GET(req: Request) {
     (
       <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: "#08090b", color: "#e7e9ee", fontFamily: "Term", padding: 56, gap: 36 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontFamily: "Pixel", fontSize: 22, color: "#86efac" }}>PUMP TOWER</div>
+          <div style={{ fontFamily: "Pixel", fontSize: 22, color: "#86efac" }}>KING OF THE HILL</div>
           <div style={{ fontSize: 30, color: "#8a8f9e" }}>{`launched on ${SITE_HOST}`}</div>
         </div>
         {c ? (

@@ -320,7 +320,7 @@ function roof(ctx: CanvasRenderingContext2D, w: number, t: number, compact: bool
     rect(ctx, bx + 52, top - 6, 2, 6, "#27272a");
     box(ctx, bx, top - 30, 62, 24, "#0b1510");
     outline(ctx, bx, top - 30, 62, 24, "#166534");
-    tiny(ctx, "$PTWR", bx + 6, top - 27, GREEN);
+    tiny(ctx, "KING", bx + 6, top - 27, GREEN);
     tiny(ctx, houseLive ? "BUY + BURN" : "LAUNCHING", bx + 6, top - 20, houseLive ? GOLD : "#e2e8f0");
     tiny(ctx, houseLive ? "3X RENT" : "SOON", bx + 6, top - 13, "#94a3b8");
     glow(ctx, bx + 31, top - 18, 34, GREEN_HI, 0.06 + 0.03 * Math.sin(t / 500));
@@ -519,7 +519,7 @@ export type DrawOpts = {
   scene: Scene;
   compact?: boolean;
   houseLive?: boolean;
-  /** The owner's pump.fun username, lit up in the rooftop neon instead of "PUMP TOWER". */
+  /** The owner's pump.fun username, lit up in the rooftop neon instead of "KING OF THE HILL". */
   owner?: string | null;
   /** Logical y range on screen; floors outside it skip their animation. */
   view?: { top: number; bottom: number } | null;
@@ -690,7 +690,7 @@ export function drawTower(ctx: CanvasRenderingContext2D, o: DrawOpts) {
   const H = towerHeight(floors.length);
   ctx.imageSmoothingEnabled = false;
   sky(ctx, w, H, t);
-  roof(ctx, w, t, !!o.compact, !!o.houseLive, o.owner ? `@${o.owner}`.toUpperCase().slice(0, 14) : "PUMP TOWER");
+  roof(ctx, w, t, !!o.compact, !!o.houseLive, o.owner ? `@${o.owner}`.toUpperCase().slice(0, 14) : "KING OF THE HILL");
 
   // facade behind the floors
   const bodyH = Math.max(floors.length, 1) * FLOOR_H;

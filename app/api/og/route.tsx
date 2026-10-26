@@ -29,7 +29,7 @@ export async function GET(req: Request) {
       <div style={{ width: "100%", height: "100%", display: "flex", background: "#08090b", color: "#e7e9ee", fontFamily: "Term", padding: 56 }}>
         <div style={{ display: "flex", flexDirection: "column", flex: 1, justifyContent: "space-between" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            <div style={{ fontFamily: "Pixel", fontSize: 22, color: "#86efac" }}>PUMP TOWER</div>
+            <div style={{ fontFamily: "Pixel", fontSize: 22, color: "#86efac" }}>KING OF THE HILL</div>
             <div style={{ fontFamily: "Pixel", fontSize: 40, lineHeight: 1.3 }}>{w && isAddress(w) ? `${shortAddr(w)}'s tower` : "your bags are a building"}</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 40 }}>
@@ -49,7 +49,7 @@ export async function GET(req: Request) {
         </div>
         <div style={{ display: "flex", flexDirection: "column", width: 420, alignItems: "center", justifyContent: "flex-end" }}>
           <div style={{ display: "flex", width: 360, height: 46, background: "#16171d", border: "3px solid #2a2c33", alignItems: "center", justifyContent: "center", fontFamily: "Pixel", fontSize: 16, color: "#4ade80" }}>
-            PUMP TOWER
+            KING OF THE HILL
           </div>
           {sorted.length > SHOW && (
             <div style={{ display: "flex", width: 400, height: 30, background: "#16171d", justifyContent: "center", alignItems: "center", fontSize: 24, color: "#8a8f9e" }}>
