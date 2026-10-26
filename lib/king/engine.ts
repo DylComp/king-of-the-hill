@@ -8,7 +8,7 @@
 //    most SOL and writes the payout list. The treasury workers send the SOL; nothing here signs.
 import { getJson, setJson } from "../redis";
 import { lifetimeLamports, holderBalances } from "./chain";
-import { COMPETITION_ENDS, HOLDERS_BPS, HOUR, hourId, hourOf, pickKing, potLamports, snapshotMinute, splitPot, type Reign } from "./model";
+import { COMPETITION_ENDS, HOLDERS_BPS, HOUR, hourId, hourOf, pickKing, potLamports, snapshotMinute, splitPot, seedNewCoinFees, type Reign } from "./model";
 import { allScannedSince, scanWallets } from "./scan";
 import { struckSquads, walletsOf } from "./source";
 import { allSquadCoins, bankedAt, carried, feesAt, hasHolders, holdersAt, reign, saveFees, saveHolders, saveReign, setCarried } from "./store";
@@ -36,6 +36,13 @@ export async function runKing(now = Date.now()) {
     for (const c of coins) fees[c.mint] = read[c.mint] ?? (await previousFee(hour, c.mint));
     await saveFees(hour, fees);
     log.push(`fees ${hourId(hour)}`);
+  }
+
+  // Coins launched after the boundary must not lose their entire first hour of fees.
+  const baseline = await feesAt(hour);
+  if (baseline) {
+    const seeded = seedNewCoinFees(baseline, coins, hour);
+    if (Object.keys(seeded).length !== Object.keys(baseline).length) await saveFees(hour, seeded);
   }
 
   // Holder count at the hour's secret minute.
