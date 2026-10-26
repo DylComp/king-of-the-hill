@@ -81,173 +81,21 @@ export function Crown({ size = 16 }: { size?: number }) {
   );
 }
 
+type TrackingData = {mode:string;board:{wallets:number;initializedWallets:number};squads:BoardSquad[];crowns:{hour:string;squad:string|null;gainSol:number;provisional:boolean}[]};
 export default function King() {
-  const wallet = useMe();
-  const { data, error } = useKing<KingData>("/api/king");
-  const now = useClock();
-  const [q, setQ] = useState("");
-  const [onlyCoins, setOnlyCoins] = useState(false);
-  const last = data?.reigns.find((r) => r.king);
-  const crowns = useMemo(() => {
-    const n = new Map<string, number>();
-    for (const r of data?.reigns ?? []) if (r.king) n.set(r.king.groupId, (n.get(r.king.groupId) ?? 0) + 1);
-    return n;
-  }, [data]);
-  const shown = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    return (data?.squads ?? []).filter((s) => (!onlyCoins || s.coin) && (!term || s.name.toLowerCase().includes(term) || s.coin?.ticker.toLowerCase().includes(term)));
-  }, [data, q, onlyCoins]);
-
-  return (
-    <>
-      <SiteNav wallet={wallet} active="/king" brand={KING_BRAND} />
-      <main className="page king-page">
-        <section className="sec king">
-          <header className="kq-hero">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className="kq-mascot pixelated" src="/king-logo.png" alt="" aria-hidden width={168} height={168} />
-            <div>
-              <span className="kicker">king of the hill · squad invitational</span>
-              <h1 className="pixel display sm">every squad has a coin. every hour, one squad is king.</h1>
-              <p className="lede">
-                Buy the coin of the squad you think banks the most SOL this hour, read straight from its members&apos; wallets on chain. When it&apos;s crowned, holders split{" "}
-                {HOLDERS_BPS / 100}% of the pot in SOL. The pot is {POT_BPS / 100}% of every squad coin&apos;s creator fees; the other {100 - POT_BPS / 100}% goes to that squad&apos;s members.
-              </p>
-            </div>
-            <ol className="kq-steps">
-              {[
-                ["pick a squad", "buy its coin on pump"],
-                ["they bank SOL", "most SOL taken off the table this hour"],
-                ["you get SOL", "pro rata to your bag"],
-              ].map(([t, b], i) => (
-                <li key={t}>
-                  <span className="lp-num pixel">{i + 1}</span>
-                  <span>
-                    <b className="pixel">{t}</b>
-                    <span className="dim">{b}</span>
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </header>
-
-          <div className="kq-stats">
-            <div className="panel tile kq-pot">
-              <span className="label">pot this hour</span>
-              <span className="pixel big green">{data ? `${fmtSol(sol(data.pot.lamports))} SOL` : "--"}</span>
-              <span className="dim">{HOLDERS_BPS / 100}% to holders · {100 - HOLDERS_BPS / 100}% rolls over</span>
-            </div>
-            <div className="panel tile">
-              <span className="label">next crown in</span>
-              <span className="pixel big">{data ? countdown(data.pot.nextCrown - now) : "--:--:--"}</span>
-              <span className="dim">holders counted at a secret minute</span>
-            </div>
-            <div className="panel tile">
-              <span className="label">reigning king</span>
-              {last?.king ? (
-                <Link className="pixel big kq-reigning" href={`/king/${squadSlug(last.king.squad)}`}>
-                  <Crown size={14} /> {last.king.squad}
-                </Link>
-              ) : (
-                <span className="pixel big dim">none yet</span>
-              )}
-              <span className="dim">{last?.king ? `${solSigned(last.king.gainSol)} SOL banked in ${last.hour.slice(11, 13)}:00 UTC` : "first crown at the top of the hour"}</span>
-            </div>
-            <div className="panel tile">
-              <span className="label">squad coins</span>
-              <span className="pixel big">{data?.coins ?? "--"}</span>
-              <span className="dim">{data ? `${data.board.wallets} member wallets watched` : ""}</span>
-            </div>
-            <div className="panel tile">
-              <span className="label">cup ends in</span>
-              <span className="pixel big">{data ? countdown(data.endsAt - now) : "--"}</span>
-              <span className="dim">nov 9, 14:00 UTC</span>
-            </div>
-          </div>
-
-          <div className="token-tools">
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="search squad or ticker" aria-label="search squads" />
-            <div className="tabs">
-              <button className={`tab${!onlyCoins ? " on" : ""}`} onClick={() => setOnlyCoins(false)}>all squads</button>
-              <button className={`tab${onlyCoins ? " on" : ""}`} onClick={() => setOnlyCoins(true)}>with coins</button>
-            </div>
-          </div>
-
-          <div className="kq-layout">
-            <div className="panel kq-board">
-              <div className="kq-row kq-headrow pixel">
-                <span>#</span>
-                <span>squad</span>
-                <span className="r">this hour</span>
-                <span className="r hide-sm">last hour</span>
-                <span className="r hide-sm">cup so far</span>
-                <span className="r">coin</span>
-              </div>
-              {!data && <p className="pixel blink tiny-pixel kq-pad">{error ?? "loading the board"}</p>}
-              {shown.map((s, i) => {
-                const king = last?.king?.groupId === s.groupId;
-                return (
-                  <div key={s.groupId} className={`kq-row${king ? " king" : ""}${s.struck ? " struck" : ""}`} style={{ ["--i" as string]: i }}>
-                    <span className="pixel dim">{s.rank}</span>
-                    <Link className="kq-name" href={`/king/${squadSlug(s.name)}`}>
-                      <SquadPic src={s.image} name={s.name} size={30} />
-                      <span>
-                        <b>{king && <Crown size={11} />} {s.name}</b>
-                        <span className="dim">
-                          {s.members} members{crowns.get(s.groupId) ? ` · ${crowns.get(s.groupId)}× king` : ""}
-                          {s.coin?.mcapUsd ? ` · ${fmtUsd(s.coin.mcapUsd)} mcap` : ""}
-                        </span>
-                      </span>
-                    </Link>
-                    <span className={`r mono ${s.bankedHour == null ? "dim" : s.bankedHour >= 0 ? "green" : "red"}`}>{solSigned(s.bankedHour)}</span>
-                    <span className="r mono dim hide-sm">{solSigned(s.bankedLast)}</span>
-                    <span className="r mono hide-sm">{solSigned(s.bankedTotal)}</span>
-                    <span className="r">
-                      {s.coin ? (
-                        <a className="btn small" href={pumpCoin(s.coin.mint)} target="_blank" rel="noopener" title={`buy $${s.coin.ticker} on pump.fun`}>
-                          ${s.coin.ticker}
-                        </a>
-                      ) : (
-                        <span className="dim tiny">soon</span>
-                      )}
-                    </span>
-                  </div>
-                );
-              })}
-              {data && !shown.length && <p className="dim kq-pad">No squads match.</p>}
-            </div>
-
-            <aside className="panel kq-log">
-              <h2 className="pixel lp-title">
-                <span>log</span> past kings
-              </h2>
-              {!data?.reigns.length && <p className="dim">The first King is crowned at the top of the next hour.</p>}
-              <ol>
-                {data?.reigns.map((r) => (
-                  <li key={r.hour}>
-                    <span className="pixel tiny">{r.hour.slice(5, 10)} {r.hour.slice(11, 13)}:00</span>
-                    {r.king ? (
-                      <Link href={`/king/${squadSlug(r.king.squad)}`}>
-                        <Crown size={10} /> {r.king.squad} <span className="green">{solSigned(r.king.gainSol)} SOL</span>
-                      </Link>
-                    ) : (
-                      <span className="dim">no king · pot rolls over</span>
-                    )}
-                    <span className="dim">
-                      {fmtSol(sol(r.potLamports))} SOL pot{r.king ? ` · ${r.payouts} paid` : ""} ·{" "}
-                      <a href={`/api/king/payouts?hour=${r.hour}`} target="_blank" rel="noopener">{r.status === "paid" ? "paid" : "list"}</a>
-                    </span>
-                  </li>
-                ))}
-              </ol>
-              <p className="dim tiny kq-fine">
-                Unofficial. Not affiliated with pump.fun or any squad. Squads and members are pump.fun&apos;s top 100 as the cup locked
-                {data ? ` (read ${ago(data.board.takenAt)})` : ""}; SOL banked is read from each member&apos;s wallet on chain, in SOL. Coins can go to zero.
-              </p>
-            </aside>
-          </div>
-        </section>
-      </main>
-    </>
-  );
+ const wallet=useMe();const {data,error}=useKing<TrackingData>("/api/king",30_000);const [query,setQuery]=useState("");
+ const squads=data?.squads.filter(s=>s.name.toLowerCase().includes(query.toLowerCase()))??[];
+ return <><SiteNav wallet={wallet} active="/king" brand={KING_BRAND}/><main><section className="sec">
+ <div className="sec-head"><span className="kicker">king of the hill / squad tracker</span><h1 className="pixel display sm">all squads. one crown.</h1>
+ <p className="lede">Follow all 100 squads in pump.fun’s Squad Invitational. The squad whose members bank the most SOL from trading takes the hourly crown.</p>
+ <p className="dim">Wallet tracking only. No squad tokens, automatic launches, holder payouts or buybacks.</p>
+ <p className="dim">{data?`${data.board.initializedWallets} / ${data.board.wallets} wallets initialized` : "Loading tracker"}. New squads count from their first scan; figures update as the scanner rotates through wallets.</p></div>
+ {error&&<p role="status">{error}</p>}
+ <label>Find a squad <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="squad name" /></label>
+ <div style={{overflowX:"auto",marginTop:24}}><table style={{width:"100%",textAlign:"left"}}><thead><tr><th>Squad</th><th>This hour · SOL</th><th>Last hour · SOL</th><th>Members</th></tr></thead><tbody>
+ {squads.map(s=><tr key={s.groupId}><td style={{padding:"12px 8px"}}><Link href={`/king/${encodeURIComponent(squadSlug(s.name))}`}>{s.name}</Link></td><td>{solSigned(s.bankedHour)}</td><td>{solSigned(s.bankedLast)}</td><td>{s.members}</td></tr>)}
+ </tbody></table></div>
+ <div className="sec-head" style={{marginTop:40}}><h2 className="pixel">hourly crowns</h2><p className="dim">Crowns begin after the first full hour of the all-squad tracker. Crowns are leaderboard recognition, not cash rewards.</p></div>
+ {data?.crowns.map(c=><p key={c.hour}>{c.hour} · {c.squad??"No positive trading result"} · {solSigned(c.gainSol)} SOL {c.provisional?"(partial scan coverage)":""}</p>)}
+ </section></main></>;
 }

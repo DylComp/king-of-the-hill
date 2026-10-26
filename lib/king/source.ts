@@ -51,3 +51,6 @@ export async function competitionBoard(tracked: Set<string>, now = Date.now()): 
   squads.sort((a, b) => Number(b.bankedHour != null) - Number(a.bankedHour != null) || (b.bankedHour ?? 0) - (a.bankedHour ?? 0) || a.rank - b.rank);
   return { takenAt: SNAPSHOT_AT, squads };
 }
+
+/** All squads participate without requiring a token. */
+export const trackedSquads = () => new Set(SQUADS.map(s => s.groupId));

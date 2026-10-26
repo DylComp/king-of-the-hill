@@ -1,45 +1,15 @@
-# King of the Hill worker
+# King of the Hill: tracking only
 
-Production: `pump-tower` / `www.kingofthehills.fun`. The worker runs in the same Vercel project as the site. Signing keys are server-only environment secrets. Redis holds the durable journal, never private keys. Existing profile-buyback, profile-claim and dev-fee jobs stay disabled.
+Production: https://www.kingofthehills.fun, Vercel project pump-tower.
 
-## Schedule and activation
+The user retired the coin-based competition. All 100 squads are tracked through member wallet activity, regardless of whether they ever had a token. The nine previous tokens are removed from the active board; their immutable on-chain records, hosted metadata and historical financial journals remain preserved.
 
-- `/api/cron/king`: every five minutes; reads chain data and produces hourly allocations.
-- `/api/cron/king-worker`: every ten minutes; authenticated with `CRON_SECRET`.
-- Signing requires `KING_WORKER_ENABLED=true` and a configured alert webhook. Before a finalized single-launch acceptance test, every scheduled run is restricted to that one test. Once it passes, subsequent runs perform normal work.
-- An authenticated POST to `/api/cron/king-worker` using `KING_LAUNCH_SECRET` attempts at most one launch. A persisted successful test prevents additional launches from repeated test requests.
-- The test refuses to start below 0.1 SOL in the launcher. Normal cycles attempt up to five launches; each checks the balance again.
-- The worker can be enabled while awaiting funding. It spends nothing below the launch threshold, retries the single-launch acceptance after funding, and enters normal operation only after its finalized signature and locked fee split are confirmed.
+Automatic and manual launches are hard-disabled. The signing worker GET/POST and direct runKingWorker entry point return disabled regardless of env. Launch prepare/send/confirm endpoints return 410; the queue is empty. KING_WORKER_ENABLED is false in Production. The signer cron is removed. Legacy payout writes return 410. No new SOL transactions are made by the tracker.
 
-## Environment
+Only /api/cron/king remains scheduled every five minutes. It reads on-chain wallet transactions, stores trading results, and awards informational hourly crowns in a separate tracking namespace. It does not claim fees, distribute payouts, buy tokens or burn. Existing treasury funds remain untouched.
 
-`KING_LAUNCHER_SECRET_KEY` and `KING_TREASURY_SECRET_KEY` are JSON arrays of 64 bytes. `KING_LAUNCHERS` contains the launcher public key. `KING_LAUNCH_SECRET`, `KING_PAYER_SECRET` and `KING_ALERT_SECRET` are independent random secrets. `ALERT_WEBHOOK_URL` targets the authenticated inbox at `/api/king/worker-alerts`. Existing `HELIUS_API_KEY`, Redis credentials and `CRON_SECRET` are reused. Secrets are present only in Vercel and ignored mode-0600 `.env.*.local` files. Do not paste them into commands, logs, issues or commits.
+Tracking begins per wallet at its first scan. The API reports initialized wallet count and lastScan progress. Rankings during initialization are incomplete. Crowns start after the first full hour following activation; delayed incomplete coverage is marked provisional. RPC and hosting can still incur provider costs, but the tracker spends no SOL.
 
-New KING wallets replace the site's dev/launcher and treasury for future launches. Existing coins have immutable fee splits pointing to their original wallets; changing site configuration cannot reroute them. The new project token is not announced. PTWR is no longer connected to the site or King worker.
+The authenticated legacy alert inbox remains readable for audit, but the monitor watches public tracker health and scan freshness instead of retired signer outcomes. Old funding alerts are obsolete and must not request top-ups.
 
-## Payment guarantees
-
-- Validate integer lamports, unique payees, cup hours and holder/pot allocation sums before signing.
-- Pin each hour's allocation digest. Changed allocations fail closed.
-- Reserve 0.05 SOL plus rollover and estimated transaction overhead before spending.
-- Batch eight SOL transfers. Persist signed bytes, signature, expiry and wallet list before broadcast. Mark `hour + wallet` paid only after a successful finalized receipt matching the signed message.
-- A Redis compare-and-swap journal and 300-second lease fence concurrent invocations. Never reset or delete it to retry a payment.
-- Retry the exact same signed transaction while valid. An expired transaction with an unknown result stays blocked for investigation; it never creates a fresh payment. A finalized failed transaction may be replaced, since it executed no transfers.
-- No buybacks or burns. 80% of each winning pot is allocated to holders; the other 20% and unpaid dust roll forward in SOL. Nonzero legacy burn allocations fail closed.
-- Acknowledge the hour only after all holder transfers finalize, including their public signatures.
-- Stop new launches at November 9, 2026, 14:00 UTC. Stop worker signing after the final eligible hour (13:00–14:00 UTC) is published as paid and no pending reigns remain. Later cron requests return without signing.
-
-## Alerts and recovery
-
-The webhook writes deduplicated events into a bounded Redis inbox. An authenticated GET returns sanitized alerts and worker status; no signed transaction bytes or private key material. `node scripts/check-king-alerts.mjs` reads the local alert secret and prints only this sanitized response. The Codex heartbeat reports meaningful new failures or recoveries and stays quiet otherwise. Notifications depend on the Codex automation host being available; the Vercel worker and persisted inbox run independently.
-
-For `expired_unresolved`, inspect finalized chain history for the recorded signature before any repair. For insufficient treasury funds, replenish the treasury; do not reduce the reserved rollover or fabricate a paid result. Failed alerts remain visible through worker outcomes and the read-only status endpoint. Preserve all journal records through redeployments.
-
-Validation: `npm run typecheck`, `npm test`, and Vercel production build. Live acceptance additionally requires a finalized launch transaction and on-chain verification of the locked treasury/member fee split.
-
-## Public wallet addresses
-
-- Launcher/dev: `KiNgDiSzoX9Z69LoRZh73QkBhJNLqxDbJKgQ2bHmon7`
-- Treasury: `kiNGXkmkJSMPQoFEdUZs68nANK16C1AjyQD2jVPY46C`
-
-Internal worker calls and local monitoring use `https://pump-tower.vercel.app` so custom-domain changes cannot break authenticated requests. Redirects are rejected. Public metadata uses `https://www.kingofthehills.fun`. The bare domain redirects to www; old pumptowers.fun domains remain as compatibility redirects for already-minted metadata URLs.
+Validation: npm run typecheck and npm test. Regression tests assert stale enabling env cannot restart the signer and all launch submission paths reject.

@@ -8,10 +8,10 @@ import ErrorReporter from "@/components/ErrorReporter";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "king of the hill",
-  description: "Squads compete. Holders win SOL. Follow the hourly King of the Hill and explore your Solana tower.",
+  description: "Follow every squad and its trading results. No squad tokens or automatic launches.",
   openGraph: {
     title: "king of the hill",
-    description: "Squads compete for the hourly crown. Holders of the winning squad coin earn SOL.",
+    description: "Squads compete for the hourly crown, tracked through their wallets.",
     images: ["/king/opengraph-image"],
   },
   twitter: { card: "summary_large_image", images: ["/king/opengraph-image"] },

@@ -16,9 +16,6 @@ const LINKS = [
   ["/#city", "city"],
   ["/#skyline", "skyline"],
   ["/king", "king"],
-  ["/launch", "launch"],
-  ["/tokens", "tokens"],
-  ["/activity", "activity"],
   ["/#docs", "docs"],
 ] as const;
 
