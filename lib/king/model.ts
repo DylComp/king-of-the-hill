@@ -221,7 +221,7 @@ export type Reign = {
 export function seedNewCoinFees(start: Record<string, string>, coins: { mint: string; createdAt: number }[], hour: number) {
   const next = { ...start };
   for (const c of coins) {
-    if (!(c.mint in next) && c.createdAt >= hour && c.createdAt < hour + HOUR) next[c.mint] = "0";
+    if (c.createdAt >= hour && c.createdAt < hour + HOUR) next[c.mint] = "0";
   }
   return next;
 }

@@ -6,7 +6,7 @@
 //  - at a secret minute inside the hour, counts the holders of every squad coin;
 //  - once every wallet has been scanned past the hour's end, crowns the squad that banked the
 //    most SOL and writes the payout list. The treasury workers send the SOL; nothing here signs.
-import { getJson, setJson } from "../redis";
+import { getJson, setJson, redis } from "../redis";
 import { lifetimeLamports, holderBalances } from "./chain";
 import { COMPETITION_ENDS, HOLDERS_BPS, HOUR, hourId, hourOf, pickKing, potLamports, snapshotMinute, splitPot, seedNewCoinFees, type Reign } from "./model";
 import { allScannedSince, scanWallets } from "./scan";
@@ -42,7 +42,10 @@ export async function runKing(now = Date.now()) {
   const baseline = await feesAt(hour);
   if (baseline) {
     const seeded = seedNewCoinFees(baseline, coins, hour);
-    if (Object.keys(seeded).length !== Object.keys(baseline).length) await saveFees(hour, seeded);
+    if (JSON.stringify(seeded) !== JSON.stringify(baseline)) {
+      await saveFees(hour, seeded);
+      await redis("DEL", NOW);
+    }
   }
 
   // Holder count at the hour's secret minute.
