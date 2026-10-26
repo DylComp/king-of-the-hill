@@ -134,7 +134,7 @@ export const DOCS: DocSection[] = [
     title: "King of the Hill",
     summary: "A fan coin for every squad in pump.fun's Squad Invitational, at pumptowers.fun/king.",
     items: [
-      ["Squad coins", "Each of the top 100 squads in pump.fun's Squad Invitational gets an unofficial pump.fun fan coin named after it. Not affiliated with the squad or pump.fun."],
+      ["Squad coins", "Each of the top 100 squads in pump.fun's Squad Invitational gets an unofficial pump.fun fan coin named after it. Not affiliated with the squad or pump.fun. Squads whose names contain slurs don't get one."],
       ["Fee split", `${POT_BPS / 100}% of each coin's creator fees go to the King pot (the treasury). The other ${100 - POT_BPS / 100}% is split equally across up to ${MAX_MEMBERS} of the squad's members, owner first. Locked in the launch transaction, admin revoked.`],
       ["The crown", "Every hour, the squad with a coin whose members banked the most SOL is King. Banked SOL is read straight from every member's wallet on chain: SOL out of their trades minus SOL into them, wrapped SOL and network fees included, and sells into USDC or USDT counted at SOL's price. Plain transfers and airdrops don't count, and neither does paper profit. Struck squads can't win."],
       ["The pot", `The treasury's share of every squad coin's fees earned that hour, plus anything rolled over. ${HOLDERS_BPS / 100}% goes to holders of the King's coin, ${100 - HOLDERS_BPS / 100}% buys back and burns $${HOUSE_SYMBOL}.`],

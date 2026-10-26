@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { MAX_MEMBERS, MIN_PAYOUT_LAMPORTS, WSOL, coinName, coinTicker, pickKing, potLamports, sameShares, snapshotMinute, splitPot, squadShares, tradeLamports, type Member, type RpcTx } from "./king/model.ts";
+import { MAX_MEMBERS, MIN_PAYOUT_LAMPORTS, WSOL, coinName, coinTicker, launchable, pickKing, potLamports, sameShares, snapshotMinute, splitPot, squadShares, tradeLamports, type Member, type RpcTx } from "./king/model.ts";
 
 const T = "pTWrBR7VzpAzztwYaLnot5sxP4a9tBJjyi1CLF4Xz1Z";
 const w = (i: number) => "Abc" + "1".repeat(38) + String.fromCharCode(65 + i);
@@ -20,6 +20,11 @@ test("squad shares: treasury half, members equal, owner first, capped", () => {
   // The treasury and duplicate wallets are never paid twice.
   assert.equal(squadShares([m(1), m(1), { ...m(3), wallet: T }], T).length, 2);
   assert.ok(sameShares(s, [...s].reverse()));
+});
+
+test("squads named with slurs don't get coins", () => {
+  for (const n of ["OnlyNiggers", "thejewishcabal", "rugandrape", "RetardCabal", "proRetards"]) assert.equal(launchable(n), false, n);
+  for (const n of ["Underground", "Synagogue", "drillers", "Schizophrenics", "RaceRelations", "grapes"]) assert.equal(launchable(n), true, n);
 });
 
 test("coin names and tickers fit pump's limits", () => {

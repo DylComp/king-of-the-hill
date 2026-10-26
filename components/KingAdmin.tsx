@@ -2,7 +2,7 @@
 // Launch wallet only: launches squad fan coins, a few per wallet approval. The server builds
 // each launch; this tab makes each mint key, checks every transaction, and the wallet signs.
 import { useMemo, useState } from "react";
-import { POT_BPS, MAX_MEMBERS } from "@/lib/king/model";
+import { POT_BPS, MAX_MEMBERS, launchable } from "@/lib/king/model";
 import { KING_BRAND, SquadPic, useKing, type KingData } from "./King";
 import SiteNav from "./SiteNav";
 import { useMe } from "./useMe";
@@ -27,7 +27,7 @@ export default function KingAdmin() {
   const [lines, setLines] = useState<Line[]>([]);
   const [busy, setBusy] = useState(false);
   const [count, setCount] = useState(10);
-  const todo = useMemo(() => (data?.squads ?? []).filter((s) => !s.coin && !s.struck), [data]);
+  const todo = useMemo(() => (data?.squads ?? []).filter((s) => !s.coin && !s.struck && launchable(s.name)), [data]);
   const note = (groupId: string, state: string, ok?: boolean) => setLines((l) => l.map((x) => (x.groupId === groupId ? { ...x, state, ok } : x)));
 
   async function launch(ids: string[]) {
