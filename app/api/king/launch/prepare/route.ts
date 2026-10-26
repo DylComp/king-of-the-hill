@@ -4,7 +4,7 @@ import { sessionWallet } from "@/lib/auth";
 import { limited } from "@/lib/limit";
 import { isAddress } from "@/lib/launch/model";
 import { getCoin } from "@/lib/launch/registry";
-import { canLaunch, prepareSquadLaunch } from "@/lib/king/launch";
+import { canLaunch, prepareSquadLaunch, workerAuthorized } from "@/lib/king/launch";
 import { launchable } from "@/lib/king/model";
 import { competitionBoard } from "@/lib/king/source";
 import { allSquadCoins, claimLaunch, releaseLaunch, squadCoin } from "@/lib/king/store";
@@ -15,9 +15,10 @@ export async function POST(req: Request) {
   const slow = await limited(req, "launch");
   if (slow) return slow;
   try {
-    const launcher = await sessionWallet();
+    const b = await body<{ mint: string; groupId: string; launcher?: string }>(req);
+    // A signed-in launch wallet in the browser, or the launch worker with its secret.
+    const launcher = workerAuthorized(req) && typeof b.launcher === "string" ? b.launcher : await sessionWallet();
     if (!canLaunch(launcher)) return json({ error: "Only the launch wallet can launch squad coins." }, 403);
-    const b = await body<{ mint: string; groupId: string }>(req);
     if (!isAddress(b.mint) || typeof b.groupId !== "string") return json({ error: "bad request" }, 400);
     if (await squadCoin(b.groupId)) return json({ error: "That squad already has a coin." }, 409);
     if (await getCoin(b.mint)) return json({ error: "That coin address is taken. Try again." }, 409);
