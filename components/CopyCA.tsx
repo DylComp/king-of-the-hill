@@ -5,14 +5,14 @@ import { useState } from "react";
 import { HOUSE_MINT, HOUSE_SYMBOL, shortAddr } from "@/lib/game";
 
 /** A pixel check mark. */
-const Check = () => (
+export const Check = () => (
   <svg width="10" height="8" viewBox="0 0 5 4" shapeRendering="crispEdges" aria-hidden>
     <path fill="currentColor" d="M4 0h1v1H4zM3 1h1v1H3zM0 2h1v1H0zM2 2h1v1H2zM1 3h1v1H1z" />
   </svg>
 );
 
 /** Copies text, falling back to a hidden text field where the clipboard API is missing or refused (wallet in-app browsers, older Safari). */
-async function copyText(text: string): Promise<boolean> {
+export async function copyText(text: string): Promise<boolean> {
   try {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(text);
@@ -104,6 +104,27 @@ export function NavCA() {
         </>
       ) : (
         "ca"
+      )}
+    </button>
+  );
+}
+
+/** Any address with a copy button: shows it short, copies it whole. */
+export function CopyText({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      className={`btn ghost small mono${copied ? " copied" : ""}`}
+      onClick={() => void copyText(text).then((ok) => ok && (setCopied(true), setTimeout(() => setCopied(false), 1600)))}
+      title="copy"
+    >
+      {copied ? (
+        <>
+          <Check /> COPIED
+        </>
+      ) : (
+        shortAddr(text)
       )}
     </button>
   );

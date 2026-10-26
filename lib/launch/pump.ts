@@ -67,14 +67,16 @@ const b64 = (b: Uint8Array) => Buffer.from(b).toString("base64");
  * 80% recipient / 20% treasury (which also revokes the admin, so the split is permanent),
  * and optionally the dev buy. Simulated before it is returned.
  */
-export async function prepareLaunch(o: { draft: Draft; launcher: string; mint: string; recipient: string; treasury: string; metadataUri: string }): Promise<Prepared> {
+export async function prepareLaunch(o: { draft: Draft; launcher: string; mint: string; recipient: string; treasury: string; metadataUri: string; split?: { address: string; shareBps: number }[] }): Promise<Prepared> {
   const user = key(o.launcher, "launcher");
   const mint = key(o.mint, "mint");
   if (!PublicKey.isOnCurve(user.toBytes()) || !PublicKey.isOnCurve(mint.toBytes())) throw Error("Launcher and mint must be signing keys.");
   if ([o.launcher, o.recipient, o.treasury].includes(o.mint)) throw Error("The mint must be a new key.");
   const uri = new URL(o.metadataUri);
   if (uri.protocol !== "https:" || o.metadataUri.length > 200) throw Error("Metadata must be a short https link.");
-  const split = shares(o.recipient, o.treasury).map((s) => ({ address: key(s.address, "fee"), shareBps: s.shareBps }));
+  // Squad coins pass their own split (treasury plus up to 8 members); everything else is 80/20.
+  const split = (o.split ?? shares(o.recipient, o.treasury)).map((s) => ({ address: key(s.address, "fee"), shareBps: s.shareBps }));
+  if (split.length > 10 || split.reduce((n, s) => n + s.shareBps, 0) !== 10_000 || split.some((s) => s.address.equals(mint))) throw Error("Bad fee split.");
   const lamports = initialBuyLamports(o.draft.initialBuy);
 
   const conn = connection();
@@ -180,25 +182,25 @@ function decodeCurve(a: AccountInfo<Buffer>): BondingCurve {
   return PUMP_SDK.decodeBondingCurve(a);
 }
 
-export function checkSharing(c: SharingConfig, mint: string, recipient: string, treasury: string) {
-  const want = shares(recipient, treasury);
+export function checkSharing(c: SharingConfig, mint: string, recipient: string, treasury: string, split?: { address: string; shareBps: number }[]) {
+  const want = split ?? shares(recipient, treasury);
   return (
     c.mint.toBase58() === mint &&
     c.adminRevoked === true &&
-    c.shareholders.length === 2 &&
+    c.shareholders.length === want.length &&
     want.every((w) => c.shareholders.some((s) => s.address.toBase58() === w.address && s.shareBps === w.shareBps))
   );
 }
 
 /** Reads a launched coin back off chain and confirms it is ours: 80/20 locked, no fee-diverting modes. */
-export async function verifyLaunch(mint: string, recipient: string, treasury: string) {
+export async function verifyLaunch(mint: string, recipient: string, treasury: string, split?: { address: string; shareBps: number }[]) {
   const m = key(mint, "mint");
   const conn = connection();
   const [sharing, curve] = await conn.getMultipleAccountsInfo([feeSharingConfigPda(m), bondingCurvePda(m)], "confirmed");
   if (!sharing?.owner.equals(PUMP_FEE_PROGRAM_ID) || !curve?.owner.equals(PUMP_PROGRAM_ID)) return { ok: false as const, reason: "not on chain yet" };
   const c = PUMP_SDK.decodeSharingConfig(sharing);
   const b = decodeCurve(curve);
-  if (!checkSharing(c, mint, recipient, treasury)) return { ok: false as const, reason: "fee split doesn't match" };
+  if (!checkSharing(c, mint, recipient, treasury, split)) return { ok: false as const, reason: "fee split doesn't match" };
   if (!b.creator.equals(feeSharingConfigPda(m)) || b.isMayhemMode || b.isCashbackCoin) return { ok: false as const, reason: "coin settings don't match" };
   return { ok: true as const, complete: b.complete };
 }

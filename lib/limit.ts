@@ -30,6 +30,8 @@ export const LIMITS = {
   tokens: 300,
   collect: 30,
   quests: 180,
+  /** King of the Hill board and squad pages, polled like the tokens page. */
+  king: 300,
 } as const;
 
 export type LimitName = keyof typeof LIMITS;

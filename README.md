@@ -198,3 +198,23 @@ The fee tracker, coin and profile pages poll every five seconds. The token list
 also polls, with a longer interval when many pages are loaded. Background
 reconciliation retains a ten-minute cache for payouts made outside the worker;
 treasury activity refreshes within a minute. Treasury deposits for gas never count as buyback revenue.
+
+### King of the Hill (squad coins)
+
+`/api/cron/king` runs every five minutes and is also the worker that watches the
+squads. It reads each squad coin's lifetime creator fees at the top of the hour,
+counts holders at a secret minute, scans the member wallets of every squad with a
+coin for new trades (Helius RPC: `getSignaturesForAddress` then `getTransaction`,
+about 35 seconds per run, longest-unscanned first), and crowns the previous hour
+once every wallet has been scanned past its end (or 25 minutes in). It never signs.
+
+pump.fun refuses scripted reads of its squad API, so the top 100 squads and their
+members were read once in a browser when the cup locked membership and are kept in
+`lib/king/squads.json`. Banked SOL per trade is the wallet's SOL change (wrapped SOL
+included, USDC/USDT converted at SOL's DexScreener price) in a transaction that moved
+one of its other tokens the opposite way (a buy or a sell).
+
+Payouts: `GET /api/king/payouts?status=pending` lists hours to pay; after sending,
+`POST /api/king/payouts` with `{ hour, signatures }` (Bearer `KING_PAYER_SECRET`
+or `CRON_SECRET`) marks the hour paid. Squad coins launch from `/king/admin` by a
+wallet in `KING_LAUNCHERS` (default: the dev wallet).

@@ -367,3 +367,299 @@
   font-size: 10px;
   pointer-events: none;
 }
+
+/* ---------- king of the hill (components/King*.tsx) ---------- */
+.kq-hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 420px);
+  gap: 24px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+.kq-mascot {
+  align-self: end;
+  filter: drop-shadow(0 0 18px rgba(255, 212, 59, 0.22)) drop-shadow(0 0 4px rgba(74, 222, 128, 0.35));
+}
+.kq-hero .lede {
+  margin-bottom: 0;
+}
+.kq-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.kq-steps li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.kq-steps li:last-child {
+  border-color: var(--line-strong);
+  background: var(--green-ghost);
+}
+.kq-steps li > span:last-child {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  font-size: 16px;
+}
+.kq-steps b {
+  font-size: 8px;
+  font-weight: normal;
+  color: var(--ink);
+  min-width: 128px;
+}
+.kq-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.kq-stats .tile {
+  align-items: flex-start;
+  gap: 6px;
+  animation: ignite 0.6s var(--step) backwards;
+}
+.kq-stats .big {
+  font-size: clamp(11px, 1.3vw, 16px);
+}
+.kq-pot {
+  border-color: var(--line-strong);
+  background: linear-gradient(180deg, var(--green-ghost), transparent 70%), var(--panel);
+}
+.kq-reigning {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  color: #fde68a;
+}
+.kq-crown {
+  color: #fde68a;
+  vertical-align: -1px;
+  flex: none;
+}
+.kq-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 12px;
+  align-items: start;
+}
+.kq-board {
+  padding: 4px 0;
+  overflow: hidden;
+}
+.kq-board > .lp-title,
+.kq-board > p {
+  padding: 10px 14px 0;
+}
+.kq-pad {
+  padding: 14px;
+}
+.kq-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1.6fr) 92px 92px 92px 128px;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 17px;
+  animation: stamp 0.35s steps(4) backwards;
+  animation-delay: calc(min(var(--i, 0), 14) * 25ms);
+}
+.kq-row:last-child {
+  border-bottom: 0;
+}
+.kq-row .r {
+  text-align: right;
+  justify-self: end;
+}
+.kq-headrow {
+  font-size: 7px;
+  color: var(--ink-faint);
+  animation: none;
+}
+.kq-row.king {
+  background: linear-gradient(90deg, rgba(253, 230, 138, 0.09), transparent 60%);
+  box-shadow: inset 3px 0 0 #fde68a;
+}
+.kq-row.struck {
+  opacity: 0.45;
+}
+.kq-row .btn.small {
+  padding: 7px 9px;
+  font-size: 8px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kq-name {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  color: var(--ink);
+}
+.kq-name > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.05;
+}
+.kq-name b {
+  font-weight: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kq-name:hover b {
+  color: var(--green);
+}
+.kq-name .dim {
+  font-size: 14px;
+}
+.kq-pic {
+  flex: none;
+  border-radius: 6px;
+  object-fit: cover;
+  image-rendering: auto;
+  border: 1px solid var(--line);
+}
+.kq-pic.fallback {
+  display: grid;
+  place-items: center;
+  font-family: var(--pixel);
+  font-size: 9px;
+  background: var(--panel-2);
+  color: var(--green);
+}
+.kq-share {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+}
+.kq-ca {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px;
+}
+.kq-log {
+  position: sticky;
+  top: 76px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: calc(100vh - 96px);
+  overflow: auto;
+}
+.kq-log ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.kq-log li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--line);
+  font-size: 16px;
+}
+.kq-log li .pixel.tiny {
+  font-size: 7px;
+  color: var(--ink-faint);
+}
+.kq-log a {
+  color: var(--ink);
+}
+.kq-log a:hover {
+  color: var(--green);
+}
+.kq-fine {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.2;
+}
+.kq-squad-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.kq-squad-head .lede {
+  margin-bottom: 0;
+}
+.kq-squad-head .kq-pic {
+  border-color: var(--line-strong);
+}
+@media (max-width: 980px) {
+  .kq-hero,
+  .kq-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .kq-hero {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .kq-hero .kq-steps {
+    grid-column: 1 / -1;
+  }
+  .kq-mascot {
+    width: 120px;
+    height: 120px;
+    align-self: start;
+  }
+  .kq-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .kq-log {
+    position: static;
+    max-height: none;
+  }
+}
+@media (max-width: 560px) {
+  .kq-mascot {
+    width: 84px;
+    height: 84px;
+  }
+  .kq-row {
+    grid-template-columns: 22px minmax(0, 1fr) 64px 104px;
+    gap: 6px;
+    padding: 8px 10px;
+    font-size: 15px;
+  }
+  .kq-headrow {
+    font-size: 7px;
+  }
+  .kq-stats .kq-pot {
+    grid-column: 1 / -1;
+  }
+  .kq-name .kq-pic {
+    width: 24px;
+    height: 24px;
+  }
+  .kq-row .hide-sm {
+    display: none;
+  }
+  .kq-share {
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+  }
+  .kq-squad-head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .kq-squad-head .btn {
+    grid-column: 1 / -1;
+  }
+  .kq-steps b {
+    min-width: 0;
+  }
+}
+.pixelated {
+  image-rendering: pixelated;
+}
