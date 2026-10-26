@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { redis } from "../redis.ts";
 import type { BuybackAttempt } from "../buyback/buyback-model.ts";
 export type Attempt = {
+  mint?: string;
   signed: string;
   signature: string;
   expires: number;

@@ -6,6 +6,7 @@ import {
   VersionedTransaction,
 } from "@solana/web3.js";
 import bs58 from "bs58";
+import { refreshClaimedFees } from "../launch/registry";
 import { reconcileAttempt } from "./reconcile.ts";
 import {
   TOKEN_PROGRAM_ID,
@@ -232,6 +233,12 @@ async function launches(
     }
   }
 }
+async function refreshCollection(a: Attempt) {
+  // Older pending records predate the mint field; recover it from their signed message.
+  const mint = a.mint ?? (await allSquadCoins()).find(c => decode(a.signed).message.staticAccountKeys.some(k => k.toBase58() === c.mint))?.mint;
+  if (!mint) throw Error("collection_mint_unknown");
+  await refreshClaimedFees(mint, a.signature);
+}
 async function collections(j: Journal, treasury: Keypair, deadline: number) {
   if (j.state.collection?.failed) {
     delete j.state.collection;
@@ -239,6 +246,7 @@ async function collections(j: Journal, treasury: Keypair, deadline: number) {
   }
   if (j.state.collection) {
     if (!(await settle(j, j.state.collection))) return;
+    await refreshCollection(j.state.collection);
     delete j.state.collection;
     await j.save();
   }
@@ -291,6 +299,7 @@ async function collections(j: Journal, treasury: Keypair, deadline: number) {
       continue;
     tx.sign([treasury]);
     j.state.collection = {
+      mint: coin.mint,
       signed: encode(tx),
       signature: signature(tx),
       expires: built.lastValidBlockHeight,
@@ -298,6 +307,7 @@ async function collections(j: Journal, treasury: Keypair, deadline: number) {
     };
     await j.save();
     if (!(await waitSettlement(j, j.state.collection, deadline))) return;
+    await refreshCollection(j.state.collection);
     delete j.state.collection;
     await j.save();
   }
