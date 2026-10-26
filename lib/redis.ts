@@ -25,9 +25,10 @@ export async function redis<T = unknown>(...cmd: Arg[]): Promise<T> {
   return json.result as T;
 }
 
-export async function pipeline(cmds: Arg[][]): Promise<unknown[]> {
+/** Several commands in one round trip; `atomic` runs them as one MULTI/EXEC transaction. */
+export async function pipeline(cmds: Arg[][], atomic = false): Promise<unknown[]> {
   if (!hasDb()) throw new NoDb();
-  const res = await fetch(`${URL_()}/pipeline`, {
+  const res = await fetch(`${URL_()}/${atomic ? "multi-exec" : "pipeline"}`, {
     method: "POST",
     headers: { authorization: `Bearer ${TOKEN()}`, "content-type": "application/json" },
     body: JSON.stringify(cmds),

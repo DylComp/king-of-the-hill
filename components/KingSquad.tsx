@@ -6,7 +6,7 @@ import type { Market } from "@/lib/launch/market";
 import { shortAddr } from "@/lib/game";
 import { CopyText } from "./CopyCA";
 import { fmtSol, fmtUsd } from "./CoinCard";
-import { Crown, KING_BRAND, SquadPic, pumpCoin, signed, sol, useKing, type BoardSquad } from "./King";
+import { Crown, KING_BRAND, SquadPic, pumpCoin, sol, solSigned, useKing, type BoardSquad } from "./King";
 import SiteNav from "./SiteNav";
 import { useMe } from "./useMe";
 
@@ -42,7 +42,7 @@ export default function KingSquad({ name }: { name: string }) {
                     {data.reigns.length > 0 && <Crown size={22} />} {title}
                   </h1>
                   <p className="lede">
-                    {data.reigns.length ? `King ${data.reigns.length}× so far, paying holders ${fmtSol(won)} SOL.` : "Not crowned yet."} Banked profit is what counts for the crown.
+                    {data.reigns.length ? `King ${data.reigns.length}× so far, paying holders ${fmtSol(won)} SOL.` : "Not crowned yet."} The crown goes to the squad whose members bank the most SOL in the hour, read from their wallets on chain.
                   </p>
                 </div>
                 {c && (
@@ -54,19 +54,19 @@ export default function KingSquad({ name }: { name: string }) {
 
               <div className="kq-stats">
                 <div className="panel tile">
-                  <span className="label">banked</span>
-                  <span className={`pixel big ${(s?.realizedUsd ?? 0) >= 0 ? "green" : "red"}`}>{s ? signed(s.realizedUsd) : "--"}</span>
-                  <span className="dim">realized, counts for king</span>
+                  <span className="label">this hour</span>
+                  <span className={`pixel big ${(s?.bankedHour ?? 0) >= 0 ? "green" : "red"}`}>{solSigned(s?.bankedHour)} SOL</span>
+                  <span className="dim">{s?.bankedHour == null ? "tracked once its coin launches" : "banked on chain, counts for king"}</span>
                 </div>
                 <div className="panel tile">
-                  <span className="label">paper</span>
-                  <span className="pixel big">{s ? signed(s.unrealizedUsd) : "--"}</span>
-                  <span className="dim">open positions</span>
+                  <span className="label">last hour</span>
+                  <span className="pixel big">{solSigned(s?.bankedLast)} SOL</span>
+                  <span className="dim">{s?.members ?? 0} member wallets</span>
                 </div>
                 <div className="panel tile">
-                  <span className="label">cup total</span>
-                  <span className="pixel big">{s ? signed(s.pnlUsd) : "--"}</span>
-                  <span className="dim">{s?.struck ? "struck by pump" : "pump's ranking"}</span>
+                  <span className="label">cup so far</span>
+                  <span className="pixel big">{solSigned(s?.bankedTotal)} SOL</span>
+                  <span className="dim">{s?.struck ? "struck by pump" : `pump rank #${s?.rank ?? "--"} at the lock`}</span>
                 </div>
                 <div className="panel tile">
                   <span className="label">coin market cap</span>
@@ -114,7 +114,7 @@ export default function KingSquad({ name }: { name: string }) {
                     {data.reigns.map((r) => (
                       <li key={r.hour}>
                         <span className="pixel tiny">{r.hour.slice(5, 10)} {r.hour.slice(11, 13)}:00</span>
-                        <span className="green">{signed(r.king!.gainUsd)} banked</span>
+                        <span className="green">{solSigned(r.king!.gainSol)} SOL banked</span>
                         <span className="dim">
                           {fmtSol(sol(r.holdersLamports))} SOL to {r.payouts} holders ·{" "}
                           <a href={`/api/king/payouts?hour=${r.hour}`} target="_blank" rel="noopener">list</a>

@@ -1,6 +1,6 @@
 "use client";
 // King of the Hill: every squad in pump.fun's Squad Invitational has a fan coin. Each hour the
-// squad whose banked profit rose most is King, and holders of its coin split the pot in SOL.
+// squad whose members bank the most SOL (read on chain) is King, and its holders split the pot.
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { Reign, Squad } from "@/lib/king/model";
@@ -11,7 +11,7 @@ import { useMe } from "./useMe";
 
 export type BoardSquad = Squad & { coin: { mint: string; ticker: string; image: string | null; members: number; mcapUsd?: number | null; volUsd?: number | null } | null };
 export type KingData = {
-  board: { builtAt: number; totalRanked: number; entries: number };
+  board: { takenAt: number; wallets: number };
   squads: BoardSquad[];
   coins: number;
   pot: { lamports: string; hourStart: number; nextCrown: number };
@@ -24,6 +24,8 @@ export const KING_BRAND: Brand = { name: "king of the hill", href: "/king", logo
 export const sol = (lamports: string | number | bigint) => Number(lamports) / 1e9;
 export const pumpCoin = (mint: string) => `https://pump.fun/coin/${mint}`;
 export const signed = (n: number) => `${n < 0 ? "-" : "+"}${fmtUsd(Math.abs(n))}`;
+/** SOL with a sign, or a dash for squads that aren't tracked. */
+export const solSigned = (n: number | null | undefined) => (n == null ? "--" : `${n < 0 ? "-" : "+"}${fmtSol(Math.abs(n))}`);
 
 export function useKing<T>(url: string, every = 10_000) {
   const [data, setData] = useState<T | null>(null);
@@ -95,12 +97,6 @@ export default function King() {
     const term = q.trim().toLowerCase();
     return (data?.squads ?? []).filter((s) => (!onlyCoins || s.coin) && (!term || s.name.toLowerCase().includes(term) || s.coin?.ticker.toLowerCase().includes(term)));
   }, [data, q, onlyCoins]);
-  const paperShare = useMemo(() => {
-    const top = (data?.squads ?? []).slice(0, 100);
-    const paper = top.reduce((n, s) => n + Math.max(0, s.unrealizedUsd), 0);
-    const total = top.reduce((n, s) => n + Math.abs(s.realizedUsd) + Math.max(0, s.unrealizedUsd), 0);
-    return total ? Math.round((paper / total) * 100) : null;
-  }, [data]);
 
   return (
     <>
@@ -114,14 +110,14 @@ export default function King() {
               <span className="kicker">king of the hill · squad invitational</span>
               <h1 className="pixel display sm">every squad has a coin. every hour, one squad is king.</h1>
               <p className="lede">
-                Buy the coin of the squad you think banks the most profit this hour. When it&apos;s crowned, holders split {HOLDERS_BPS / 100}% of the pot in SOL. The pot is {POT_BPS / 100}% of every
-                squad coin&apos;s creator fees; the other {100 - POT_BPS / 100}% goes to that squad&apos;s members.
+                Buy the coin of the squad you think banks the most SOL this hour, read straight from its members&apos; wallets on chain. When it&apos;s crowned, holders split{" "}
+                {HOLDERS_BPS / 100}% of the pot in SOL. The pot is {POT_BPS / 100}% of every squad coin&apos;s creator fees; the other {100 - POT_BPS / 100}% goes to that squad&apos;s members.
               </p>
             </div>
             <ol className="kq-steps">
               {[
                 ["pick a squad", "buy its coin on pump"],
-                ["they bank profit", "biggest realized gain this hour"],
+                ["they bank SOL", "most SOL taken off the table this hour"],
                 ["you get SOL", "pro rata to your bag"],
               ].map(([t, b], i) => (
                 <li key={t}>
@@ -155,17 +151,17 @@ export default function King() {
               ) : (
                 <span className="pixel big dim">none yet</span>
               )}
-              <span className="dim">{last?.king ? `${signed(last.king.gainUsd)} banked in ${last.hour.slice(11, 13)}:00 UTC` : "first crown at the top of the hour"}</span>
+              <span className="dim">{last?.king ? `${solSigned(last.king.gainSol)} SOL banked in ${last.hour.slice(11, 13)}:00 UTC` : "first crown at the top of the hour"}</span>
             </div>
             <div className="panel tile">
               <span className="label">squad coins</span>
               <span className="pixel big">{data?.coins ?? "--"}</span>
-              <span className="dim">{data ? `${data.board.entries} squads in the cup` : ""}</span>
+              <span className="dim">{data ? `${data.board.wallets} member wallets watched` : ""}</span>
             </div>
             <div className="panel tile">
               <span className="label">cup ends in</span>
               <span className="pixel big">{data ? countdown(data.endsAt - now) : "--"}</span>
-              <span className="dim">{paperShare != null ? `${paperShare}% of top-100 profit is still paper` : "nov 9, 14:00 UTC"}</span>
+              <span className="dim">nov 9, 14:00 UTC</span>
             </div>
           </div>
 
@@ -182,12 +178,12 @@ export default function King() {
               <div className="kq-row kq-headrow pixel">
                 <span>#</span>
                 <span>squad</span>
-                <span className="r">banked</span>
-                <span className="r hide-sm">paper</span>
-                <span className="r hide-sm">total</span>
+                <span className="r">this hour</span>
+                <span className="r hide-sm">last hour</span>
+                <span className="r hide-sm">cup so far</span>
                 <span className="r">coin</span>
               </div>
-              {!data && <p className="pixel blink tiny-pixel kq-pad">{error ?? "loading pump's board"}</p>}
+              {!data && <p className="pixel blink tiny-pixel kq-pad">{error ?? "loading the board"}</p>}
               {shown.map((s, i) => {
                 const king = last?.king?.groupId === s.groupId;
                 return (
@@ -203,9 +199,9 @@ export default function King() {
                         </span>
                       </span>
                     </Link>
-                    <span className={`r mono ${s.realizedUsd >= 0 ? "green" : "red"}`}>{signed(s.realizedUsd)}</span>
-                    <span className="r mono dim hide-sm">{signed(s.unrealizedUsd)}</span>
-                    <span className="r mono hide-sm">{signed(s.pnlUsd)}</span>
+                    <span className={`r mono ${s.bankedHour == null ? "dim" : s.bankedHour >= 0 ? "green" : "red"}`}>{solSigned(s.bankedHour)}</span>
+                    <span className="r mono dim hide-sm">{solSigned(s.bankedLast)}</span>
+                    <span className="r mono hide-sm">{solSigned(s.bankedTotal)}</span>
                     <span className="r">
                       {s.coin ? (
                         <a className="btn small" href={pumpCoin(s.coin.mint)} target="_blank" rel="noopener" title={`buy $${s.coin.ticker} on pump.fun`}>
@@ -232,7 +228,7 @@ export default function King() {
                     <span className="pixel tiny">{r.hour.slice(5, 10)} {r.hour.slice(11, 13)}:00</span>
                     {r.king ? (
                       <Link href={`/king/${squadSlug(r.king.squad)}`}>
-                        <Crown size={10} /> {r.king.squad} <span className="green">{signed(r.king.gainUsd)}</span>
+                        <Crown size={10} /> {r.king.squad} <span className="green">{solSigned(r.king.gainSol)} SOL</span>
                       </Link>
                     ) : (
                       <span className="dim">no king · pot rolls over</span>
@@ -245,8 +241,8 @@ export default function King() {
                 ))}
               </ol>
               <p className="dim tiny kq-fine">
-                Unofficial. Not affiliated with pump.fun or any squad. Board data is pump.fun&apos;s preliminary leaderboard
-                {data ? `, updated ${ago(data.board.builtAt)}` : ""}. Coins can go to zero.
+                Unofficial. Not affiliated with pump.fun or any squad. Squads and members are pump.fun&apos;s top 100 as the cup locked
+                {data ? ` (read ${ago(data.board.takenAt)})` : ""}; SOL banked is read from each member&apos;s wallet on chain, in SOL. Coins can go to zero.
               </p>
             </aside>
           </div>

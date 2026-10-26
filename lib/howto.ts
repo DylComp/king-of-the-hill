@@ -134,14 +134,14 @@ export const DOCS: DocSection[] = [
     title: "King of the Hill",
     summary: "A fan coin for every squad in pump.fun's Squad Invitational, at pumptowers.fun/king.",
     items: [
-      ["Squad coins", "Every squad on pump.fun's Squad Invitational board gets an unofficial pump.fun fan coin named after it. Not affiliated with the squad or pump.fun."],
+      ["Squad coins", "Each of the top 100 squads in pump.fun's Squad Invitational gets an unofficial pump.fun fan coin named after it. Not affiliated with the squad or pump.fun."],
       ["Fee split", `${POT_BPS / 100}% of each coin's creator fees go to the King pot (the treasury). The other ${100 - POT_BPS / 100}% is split equally across up to ${MAX_MEMBERS} of the squad's members, owner first. Locked in the launch transaction, admin revoked.`],
-      ["The crown", "Every hour, the squad with a coin whose banked (realized) profit on pump's board rose the most is King. Paper profit doesn't count. Struck squads can't win."],
+      ["The crown", "Every hour, the squad with a coin whose members banked the most SOL is King. Banked SOL is read straight from every member's wallet on chain: SOL out of their trades minus SOL into them, wrapped SOL and network fees included, and sells into USDC or USDT counted at SOL's price. Plain transfers and airdrops don't count, and neither does paper profit. Struck squads can't win."],
       ["The pot", `The treasury's share of every squad coin's fees earned that hour, plus anything rolled over. ${HOLDERS_BPS / 100}% goes to holders of the King's coin, ${100 - HOLDERS_BPS / 100}% buys back and burns $${HOUSE_SYMBOL}.`],
       ["Getting paid", `Hold the King's coin. Holders are counted at a secret minute each hour, so buying right before the crown doesn't work. Paid in SOL, pro rata to your bag, top ${MAX_PAYEES} holders. Payouts under ${Number(MIN_PAYOUT_LAMPORTS) / 1e9} SOL roll into the next hour.`],
       ["Left out", "Program accounts (the bonding curve, the PumpSwap pool), the treasury and the launch wallet never get holder payouts."],
       ["Public list", "Each hour's King, pot and every payout is published at /api/king/payouts, and the treasury workers send exactly that list."],
-      ["Data", "Squad rankings are pump.fun's public, preliminary leaderboard. The cup runs until Nov 9, 14:00 UTC."],
+      ["Data", "Squads and their members come from pump.fun's board, read once when the cup locked membership. A squad's wallets are watched from the moment its coin launches, every five minutes. Our crown is our own on-chain count, not pump.fun's ranking. The cup runs until Nov 9, 14:00 UTC."],
     ],
   },
   {

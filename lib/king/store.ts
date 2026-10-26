@@ -13,6 +13,10 @@ const k = {
   reigns: "pt:king:reigns",
   carry: "pt:king:carry",
   launching: (groupId: string) => `pt:king:launching:${groupId}`,
+  banked: (hour: number) => `pt:king:banked:${hour}`,
+  bankedTotal: "pt:king:banked",
+  cursor: "pt:king:cursor",
+  scanned: "pt:king:scanned",
 };
 export const kingKeys = k;
 
@@ -41,9 +45,39 @@ export async function allSquadCoins(): Promise<SquadCoin[]> {
   return raw.flatMap((r) => (r ? [JSON.parse(r) as SquadCoin] : []));
 }
 
-/** Banked profit per squad at the top of an hour, kept a week. */
-export const saveBoard = (hour: number, realized: Record<string, number>) => setJson(k.board(hour), realized, WEEK);
-export const boardAt = (hour: number) => getJson<Record<string, number>>(k.board(hour));
+const hash = async (key: string): Promise<Record<string, string>> => {
+  if (!hasDb()) return {};
+  const flat = (await redis<string[] | null>("HGETALL", key)) ?? [];
+  const out: Record<string, string> = {};
+  for (let i = 0; i + 1 < flat.length; i += 2) out[flat[i]] = flat[i + 1];
+  return out;
+};
+
+/** Lamports each squad's members banked in an hour, and since tracking began. */
+export const bankedAt = (hour: number) => hash(k.banked(hour));
+export const bankedTotal = () => hash(k.bankedTotal);
+
+/** Per wallet: the newest transaction already counted, and when it was last scanned. */
+export const cursors = () => hash(k.cursor);
+export const scannedAt = () => hash(k.scanned);
+
+/**
+ * Records one wallet's scan: what its squad banked per hour, and how far the scan got.
+ * One transaction, so the cursor only moves together with the numbers it counted.
+ */
+export async function saveScan(groupId: string, wallet: string, perHour: Map<number, bigint>, cursor: string | null, at: number) {
+  const cmds: (string | number)[][] = [];
+  let total = 0n;
+  for (const [hour, lamports] of perHour) {
+    if (lamports === 0n) continue;
+    cmds.push(["HINCRBY", k.banked(hour), groupId, lamports.toString()], ["EXPIRE", k.banked(hour), 30 * 86_400]);
+    total += lamports;
+  }
+  if (total !== 0n) cmds.push(["HINCRBY", k.bankedTotal, groupId, total.toString()]);
+  if (cursor) cmds.push(["HSET", k.cursor, wallet, cursor]);
+  cmds.push(["HSET", k.scanned, wallet, at]);
+  await pipeline(cmds, true);
+}
 
 /** Lifetime creator fees per squad coin (lamports) at the top of an hour. */
 export const saveFees = (hour: number, fees: Record<string, string>) => setJson(k.fees(hour), fees, WEEK);

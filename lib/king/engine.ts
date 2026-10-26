@@ -1,23 +1,23 @@
-// Server-only: the King of the Hill clock. Runs every few minutes from a cron:
-//  - at the top of each hour, reads every squad's banked profit and every squad coin's
-//    lifetime fees;
+// Server-only: the King of the Hill clock, run every five minutes by a cron. It's also the
+// worker that watches the squads:
+//  - every run, scans the wallets of every squad with a coin for new trades (scan.ts) and adds
+//    the SOL they banked to their squad's hour;
+//  - at the top of each hour, reads every squad coin's lifetime creator fees (the pot);
 //  - at a secret minute inside the hour, counts the holders of every squad coin;
-//  - once the next hour's readings are in, crowns the squad whose banked profit rose most
-//    and writes the payout list. The treasury workers send the SOL; nothing here signs.
+//  - once every wallet has been scanned past the hour's end, crowns the squad that banked the
+//    most SOL and writes the payout list. The treasury workers send the SOL; nothing here signs.
 import { getJson, setJson } from "../redis";
 import { lifetimeLamports, holderBalances } from "./chain";
 import { COMPETITION_ENDS, HOLDERS_BPS, HOUR, hourId, hourOf, pickKing, potLamports, snapshotMinute, splitPot, type Reign } from "./model";
-import { competitionBoard, type Board } from "./source";
-import { allSquadCoins, boardAt, carried, feesAt, hasHolders, holdersAt, reign, saveBoard, saveFees, saveHolders, saveReign, setCarried } from "./store";
+import { allScannedSince, scanWallets } from "./scan";
+import { struckSquads, walletsOf } from "./source";
+import { allSquadCoins, bankedAt, carried, feesAt, hasHolders, holdersAt, reign, saveFees, saveHolders, saveReign, setCarried } from "./store";
 
-const LATEST = "pt:king:latest";
 const NOW = "pt:king:now";
-export const latestBoard = () => getJson<Board>(LATEST);
-
-/** A board read longer ago than this doesn't count for a crown. */
-const FRESH = 10 * 60_000;
-/** Each hour's board reading must be taken in its first 20 minutes. */
-const READ_WINDOW = 20 * 60_000;
+/** If some wallets still aren't scanned this long after an hour ends, crown it with what's in. */
+const SCAN_GRACE = 25 * 60_000;
+/** Time each run spends scanning wallets, inside the cron's 60 seconds. */
+const SCAN_BUDGET = 35_000;
 
 const secret = () => process.env.KING_SECRET || process.env.CRON_SECRET || "";
 
@@ -25,25 +25,16 @@ export async function runKing(now = Date.now()) {
   const hour = hourOf(now);
   if (hour > COMPETITION_ENDS + HOUR) return { done: "competition over" };
   const coins = await allSquadCoins();
+  const wallets = walletsOf(new Set(coins.map((c) => c.groupId)));
   const log: string[] = [];
 
-  // Live board for the pages, refreshed every run. Without a fresh read (pump.fun down and
-  // no feed), fees are still read so the pot stays exact; the hour just gets no King.
-  const board = await competitionBoard().catch((e) => (log.push(`board: ${(e as Error).message}`), null));
-  if (board) await setJson(LATEST, board, 3600);
-  const fresh = board && now - board.fetchedAt <= FRESH ? board : null;
-
-  // Top-of-hour readings.
+  // Top-of-hour fee readings first: they bound the pot exactly.
   if (!(await feesAt(hour))) {
     const fees: Record<string, string> = {};
     const read = await lifetimes(coins.map((c) => c.mint));
     for (const c of coins) fees[c.mint] = read[c.mint] ?? (await previousFee(hour, c.mint));
     await saveFees(hour, fees);
     log.push(`fees ${hourId(hour)}`);
-  }
-  if (fresh && now - hour <= READ_WINDOW && !(await boardAt(hour))) {
-    await saveBoard(hour, Object.fromEntries(fresh.squads.map((s) => [s.groupId, s.realizedUsd])));
-    log.push(`board ${hourId(hour)}`);
   }
 
   // Holder count at the hour's secret minute.
@@ -57,14 +48,18 @@ export async function runKing(now = Date.now()) {
     if (counted) log.push(`holders ${counted}`);
   }
 
+  // Watch the squads' wallets, with whatever time the run has left.
+  const scan = await scanWallets(wallets, now + SCAN_BUDGET);
+  log.push(`scanned ${scan.scanned}/${wallets.length} wallets, ${scan.txs} txs${scan.failed ? `, ${scan.failed} failed` : ""}`);
+
   // Crown last hour.
   const prev = hour - HOUR;
   if (!(await reign(hourId(prev)))) {
-    const [start, end, feesStart, feesEnd] = await Promise.all([boardAt(prev), boardAt(hour), feesAt(prev), feesAt(hour)]);
-    // Wait for both board readings until the reading window closes; then crown without them.
-    if (feesStart && feesEnd && ((start && end) || now - hour > READ_WINDOW)) {
-      const struck = new Set((board?.squads ?? []).filter((s) => s.struck).map((s) => s.groupId));
-      const winner = start && end ? pickKing({ hour: prev, start, end }, new Set(coins.map((c) => c.groupId)), struck) : null;
+    const [feesStart, feesEnd] = await Promise.all([feesAt(prev), feesAt(hour)]);
+    // Wait until every wallet has been scanned past the hour's end (or the grace runs out).
+    if (feesStart && feesEnd && ((await allScannedSince(wallets, hour + 60_000)) || now - hour > SCAN_GRACE)) {
+      const banked = Object.fromEntries(Object.entries(await bankedAt(prev)).map(([id, l]) => [id, Number(BigInt(l)) / 1e9]));
+      const winner = pickKing(banked, new Set(coins.map((c) => c.groupId)), struckSquads());
       const coin = winner && coins.find((c) => c.groupId === winner.groupId)!;
       const carriedIn = await carried();
       const pot = potLamports(feesStart, feesEnd) + carriedIn;
@@ -83,7 +78,7 @@ export async function runKing(now = Date.now()) {
         const split = splitPot(holders, Object.entries(balances).map(([wallet, a]) => ({ wallet, amount: BigInt(a) })));
         r = {
           hour: hourId(prev),
-          king: { groupId: coin.groupId, squad: coin.squad, mint: coin.mint, gainUsd: winner!.gainUsd },
+          king: { groupId: coin.groupId, squad: coin.squad, mint: coin.mint, gainSol: winner!.gainSol },
           potLamports: pot.toString(),
           holdersLamports: split.paid.toString(),
           burnLamports: (pot - holders).toString(),

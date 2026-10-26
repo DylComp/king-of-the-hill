@@ -201,18 +201,18 @@ treasury activity refreshes within a minute. Treasury deposits for gas never cou
 
 ### King of the Hill (squad coins)
 
-`/api/cron/king` runs every five minutes: it reads pump.fun's Squad Invitational
-board and each squad coin's lifetime creator fees at the top of the hour, counts
-holders at a secret minute, and crowns the previous hour. It never signs.
+`/api/cron/king` runs every five minutes and is also the worker that watches the
+squads. It reads each squad coin's lifetime creator fees at the top of the hour,
+counts holders at a secret minute, scans the member wallets of every squad with a
+coin for new trades (Helius RPC: `getSignaturesForAddress` then `getTransaction`,
+about 35 seconds per run, longest-unscanned first), and crowns the previous hour
+once every wallet has been scanned past its end (or 25 minutes in). It never signs.
 
-pump.fun refuses requests from Vercel's servers, so a worker off Vercel feeds it.
-Every five minutes, `GET /api/king/feed` (Bearer `KING_FEED_SECRET`, or
-`CRON_SECRET`) returns the paths to read from `https://frontend-api-v3.pump.fun`:
-`board` every five minutes, `members` hourly. The worker reads them and posts
-`{ "feed": { "<path>": <json> } }` back to the same URL. A board older than ten
-minutes doesn't count for a crown; that hour has no King and its pot rolls over.
-`scripts/king-feed.mjs` does exactly this (board every five minutes, `--members`
-hourly) and needs only `KING_FEED_SECRET`; it holds no wallet keys.
+pump.fun refuses scripted reads of its squad API, so the top 100 squads and their
+members were read once in a browser when the cup locked membership and are kept in
+`lib/king/squads.json`. Banked SOL per trade is the wallet's SOL change (wrapped SOL
+included, USDC/USDT converted at SOL's DexScreener price) in a transaction that moved
+one of its other tokens the opposite way (a buy or a sell).
 
 Payouts: `GET /api/king/payouts?status=pending` lists hours to pay; after sending,
 `POST /api/king/payouts` with `{ hour, signatures }` (Bearer `KING_PAYER_SECRET`

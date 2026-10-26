@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { MAX_MEMBERS, MIN_PAYOUT_LAMPORTS, coinName, coinTicker, pickKing, potLamports, sameShares, snapshotMinute, splitPot, squadShares, type Member } from "./king/model.ts";
+import { MAX_MEMBERS, MIN_PAYOUT_LAMPORTS, WSOL, coinName, coinTicker, pickKing, potLamports, sameShares, snapshotMinute, splitPot, squadShares, tradeLamports, type Member, type RpcTx } from "./king/model.ts";
 
 const T = "pTWrBR7VzpAzztwYaLnot5sxP4a9tBJjyi1CLF4Xz1Z";
 const w = (i: number) => "Abc" + "1".repeat(38) + String.fromCharCode(65 + i);
@@ -30,13 +30,40 @@ test("coin names and tickers fit pump's limits", () => {
   assert.equal(coinTicker("__"), "SQUAD");
 });
 
-test("king is the biggest banked gain among squads with coins", () => {
-  const board = { hour: 0, start: { a: 100, b: 0, c: 50, d: 0 }, end: { a: 90, b: 40, c: 100, d: 500, e: 900 } };
-  assert.deepEqual(pickKing(board, new Set(["a", "b", "c"])), { groupId: "c", gainUsd: 50 });
-  assert.deepEqual(pickKing(board, new Set(["a", "b", "c", "d"]), new Set(["d"])), { groupId: "c", gainUsd: 50 });
-  assert.equal(pickKing(board, new Set(["a"])), null);
-  // New squads (no start reading) can't win their first hour.
-  assert.equal(pickKing(board, new Set(["e"])), null);
+test("king is the squad with a coin that banked the most SOL", () => {
+  const banked = { a: -10, b: 40, c: 50, d: 500 };
+  assert.deepEqual(pickKing(banked, new Set(["a", "b", "c"])), { groupId: "c", gainSol: 50 });
+  assert.deepEqual(pickKing(banked, new Set(["a", "b", "c", "d"]), new Set(["d"])), { groupId: "c", gainSol: 50 });
+  assert.equal(pickKing(banked, new Set(["a"])), null);
+  assert.equal(pickKing(banked, new Set(["e"])), null);
+});
+
+test("banked SOL counts trades only, wrapped SOL included", () => {
+  const W = "Wa11et1111111111111111111111111111111111111";
+  const tb = (mint: string, amount: string, owner = W) => ({ owner, mint, uiTokenAmount: { amount } });
+  const tx = (pre: number, post: number, preT: ReturnType<typeof tb>[], postT: ReturnType<typeof tb>[], err: unknown = null): RpcTx => ({
+    blockTime: 1,
+    meta: { err, preBalances: [pre, 5], postBalances: [post, 5], preTokenBalances: preT, postTokenBalances: postT },
+    transaction: { message: { accountKeys: [W, "Other111111111111111111111111111111111111111"] } },
+  });
+  // Sold tokens for 2 SOL (minus fee).
+  assert.equal(tradeLamports(tx(1e9, 2.99e9, [tb("Mint", "500")], [tb("Mint", "0")]), W), 1_990_000_000n);
+  // Bought: negative.
+  assert.equal(tradeLamports(tx(3e9, 2e9, [], [tb("Mint", "10")]), W), -1_000_000_000n);
+  // Sold into wrapped SOL that stayed wrapped: still banked.
+  assert.equal(tradeLamports(tx(1e9, 1e9 - 5000, [tb("Mint", "5"), tb(WSOL, "0")], [tb("Mint", "0"), tb(WSOL, "700000000")]), W), 699_995_000n);
+  // A plain SOL transfer, a failed trade, someone else's tokens, a wallet not in the tx: not counted.
+  assert.equal(tradeLamports(tx(1e9, 5e9, [], []), W), null);
+  assert.equal(tradeLamports(tx(1e9, 2e9, [tb("Mint", "5")], [tb("Mint", "0")], { err: 1 }), W), null);
+  assert.equal(tradeLamports(tx(1e9, 2e9, [tb("Mint", "5", "Else")], [tb("Mint", "0", "Else")]), W), null);
+  assert.equal(tradeLamports(tx(1e9, 2e9, [tb("Mint", "5")], [tb("Mint", "0")]), "Nobody111111111111111111111111111111111111"), null);
+  // Sold into USDC: counted at SOL's dollar price (200 USDC at $200 = 1 SOL), unknown price: not counted.
+  const usdc = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+  assert.equal(tradeLamports(tx(1e9, 1e9, [tb("Mint", "5")], [tb("Mint", "0"), tb(usdc, "200000000")]), W, 200), 1_000_000_000n);
+  assert.equal(tradeLamports(tx(1e9, 1e9, [tb("Mint", "5")], [tb("Mint", "0"), tb(usdc, "200000000")]), W), null);
+  // Sending tokens or USDC away while paying the fee: not a trade.
+  assert.equal(tradeLamports(tx(1e9, 1e9 - 5000, [tb("Mint", "5")], [tb("Mint", "0")]), W), null);
+  assert.equal(tradeLamports(tx(1e9, 1e9, [tb(usdc, "20000000")], [tb(usdc, "0")]), W, 200), null);
 });
 
 test("pot is the treasury half of fees earned in the hour", () => {
