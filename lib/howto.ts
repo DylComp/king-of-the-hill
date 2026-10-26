@@ -106,7 +106,7 @@ export const DOCS: DocSection[] = [
   {
     id: "launchpad",
     title: "Launchpad",
-    summary: "Launch a pump.fun coin for any pump user, at pumptowers.fun/launch.",
+    summary: "Launch a pump.fun coin for any pump user, at kingofthehills.fun/launch.",
     items: [
       ["Pick a user", "Search a pump.fun username, paste a profile link or a wallet. Their picture, name and wallet show up before you launch."],
       ["Fee split", `${SPLIT.recipientBps / 100}% of the coin's creator fees go to that user's wallet, ${SPLIT.treasuryBps / 100}% to the King of the Hill treasury. Set and locked in the launch transaction itself; nobody can change it after.`],
@@ -117,15 +117,15 @@ export const DOCS: DocSection[] = [
       ["Tokens page", "Every coin launched here with its logo, fee tier, creator fees, market cap and 24h volume, plus totals across all coins: coins, pump profiles, creator fees, volume and market cap."],
       ["Fees routed", `A tracker on the activity page following every creator fee: ${SPLIT.recipientBps / 100}% to pump profiles, ${SPLIT.treasuryBps / 100}% to the treasury.`],
       ["Pump profiles", "A tab on the tokens page listing every pump user coins were launched for: how many coins, total fees, what they have earned, combined market cap and 24h volume, their latest launch and top coin."],
-      ["Coin page", "Chart, links, who it pays, fees so far and its floor milestone, at pumptowers.fun/t/ plus the coin's address."],
+      ["Coin page", "Chart, links, who it pays, fees so far and its floor milestone, at kingofthehills.fun/t/ plus the coin's address."],
       ["Share card", "Every coin page has its own share image with the logo, ticker, who it pays, fees and market cap, shown when the link is posted on X or Telegram."],
-      ["Profiles", "pumptowers.fun/u/ plus a wallet shows a pump user's coins, what they've earned and a link to their tower."],
+      ["Profiles", "kingofthehills.fun/u/ plus a wallet shows a pump user's coins, what they've earned and a link to their tower."],
     ],
   },
   {
     id: "king",
     title: "King of the Hill",
-    summary: "A fan coin for every squad in pump.fun's Squad Invitational, at pumptowers.fun/king.",
+    summary: "A fan coin for every squad in pump.fun's Squad Invitational, at kingofthehills.fun/king.",
     items: [
       ["Squad coins", "Each of the top 100 squads in pump.fun's Squad Invitational gets an unofficial pump.fun fan coin named after it. Not affiliated with the squad or pump.fun. Coins launch automatically, best-ranked squads first. Squads whose names contain slurs don't get one."],
       ["Fee split", `${POT_BPS / 100}% of each coin's creator fees go to the King pot (the treasury). The other ${100 - POT_BPS / 100}% is split equally across up to ${MAX_MEMBERS} of the squad's members, owner first. Locked in the launch transaction, admin revoked.`],

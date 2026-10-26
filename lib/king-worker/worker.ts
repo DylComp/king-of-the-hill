@@ -452,7 +452,9 @@ export async function runKingWorker(test = false) {
             treasury,
             Math.min(deadline, Date.now() + 60_000),
           );
-        } catch {
+        } catch (e) {
+          const code = e instanceof Error && /^[a-z_]+$/.test(e.message) ? e.message : "rpc_or_sdk_error";
+          console.error("king collection failure", code);
           await alert("collection_failed");
           j.state.outcome = "collection_failed";
         }

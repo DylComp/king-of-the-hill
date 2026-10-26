@@ -1,9 +1,19 @@
-// The site's public address. Vercel sets VERCEL_PROJECT_PRODUCTION_URL to the
-// project's production domain (the custom domain once one is attached), so links,
-// share cards and metadata follow the domain without code changes.
-const host = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL || "pumptowers.fun";
-export const SITE_HOST = host.replace(/^https?:\/\//, "");
+// Canonical public origin is shared by server rendering, browser links and token metadata.
+// Internal authenticated worker calls use the stable project origin separately.
+export const SITE_HOST = "www.kingofthehills.fun";
 export const SITE_URL = `https://${SITE_HOST}`;
+
+/** Repoint only our own historical URLs; preserve external image/social hosts. */
+export function canonicalSiteUrl(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  try {
+    const url = new URL(value);
+    if (["pumptowers.fun", "www.pumptowers.fun", "pump-tower.vercel.app", "kingofthehills.fun"].includes(url.hostname)) {
+      return SITE_URL + url.pathname + url.search + url.hash;
+    }
+  } catch {}
+  return value;
+}
 
 /** Source code, linked from the nav and footer. */
 export const GITHUB_URL = "https://github.com/DylComp/pump-tower";
