@@ -1,6 +1,6 @@
 # King of the Hill worker
 
-Production: `pump-tower` / `pumptowers.fun`. The worker runs in the same Vercel project as the site. Signing keys are server-only environment secrets. Redis holds the durable journal, never private keys. Existing profile-buyback, profile-claim and dev-fee jobs stay disabled.
+Production: `pump-tower` / `www.kingofthehills.fun`. The worker runs in the same Vercel project as the site. Signing keys are server-only environment secrets. Redis holds the durable journal, never private keys. Existing profile-buyback, profile-claim and dev-fee jobs stay disabled.
 
 ## Schedule and activation
 
@@ -42,4 +42,4 @@ Validation: `npm run typecheck`, `npm test`, and Vercel production build. Live a
 - Launcher/dev: `KiNgDiSzoX9Z69LoRZh73QkBhJNLqxDbJKgQ2bHmon7`
 - Treasury: `kiNGXkmkJSMPQoFEdUZs68nANK16C1AjyQD2jVPY46C`
 
-Internal worker calls and local monitoring use `https://pump-tower.vercel.app` so custom-domain changes cannot break authenticated requests. Redirects are rejected. Public metadata follows the production domain supplied by Vercel.
+Internal worker calls and local monitoring use `https://pump-tower.vercel.app` so custom-domain changes cannot break authenticated requests. Redirects are rejected. Public metadata uses `https://www.kingofthehills.fun`. The bare domain redirects to www; old pumptowers.fun domains remain as compatibility redirects for already-minted metadata URLs.

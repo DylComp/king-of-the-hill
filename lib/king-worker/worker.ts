@@ -273,8 +273,20 @@ async function collections(j: Journal, treasury: Keypair, deadline: number) {
     }
     const tx = decode(built.tx);
     checkLaunch(tx, treasury.publicKey);
-    const fee = (await c.getFeeForMessage(tx.message, "confirmed")).value;
-    if (fee === null || fee > 100_000) throw Error("collection_fee_limit");
+    let fee: number | null = null;
+    // RPC backends can temporarily disagree about a blockhash even after finalization.
+    // Refresh only this unsigned transaction; persist the matching expiry before broadcast.
+    for (let attempt = 0; attempt < 3 && fee === null; attempt++) {
+      if (attempt) {
+        await pause(500);
+        const block = await c.getLatestBlockhash("finalized");
+        tx.message.recentBlockhash = block.blockhash;
+        built.lastValidBlockHeight = block.lastValidBlockHeight;
+      }
+      fee = (await c.getFeeForMessage(tx.message, "confirmed")).value;
+    }
+    if (fee === null) throw Error("collection_fee_quote_unavailable");
+    if (fee > 100_000) throw Error("collection_fee_limit");
     const sim = await c.simulateTransaction(tx, {
       sigVerify: false,
       replaceRecentBlockhash: true,
