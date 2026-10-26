@@ -5,6 +5,7 @@ import { limited } from "@/lib/limit";
 import { isAddress } from "@/lib/launch/model";
 import { getCoin } from "@/lib/launch/registry";
 import { canLaunch, prepareSquadLaunch } from "@/lib/king/launch";
+import { launchable } from "@/lib/king/model";
 import { competitionBoard } from "@/lib/king/source";
 import { allSquadCoins, claimLaunch, releaseLaunch, squadCoin } from "@/lib/king/store";
 
@@ -23,6 +24,7 @@ export async function POST(req: Request) {
     const board = await competitionBoard(new Set((await allSquadCoins()).map((c) => c.groupId)));
     const squad = board.squads.find((s) => s.groupId === b.groupId);
     if (!squad) return json({ error: "That squad isn't in the cup's top 100." }, 404);
+    if (!launchable(squad.name)) return json({ error: "That squad's name has a slur, so it doesn't get a coin." }, 403);
     if (!(await claimLaunch(squad.groupId))) return json({ error: "That squad is already launching." }, 409);
     try {
       return json(await prepareSquadLaunch(squad, launcher!, b.mint));

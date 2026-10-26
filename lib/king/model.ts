@@ -62,6 +62,10 @@ export type SquadCoin = {
 export const squadSlug = (name: string) => name.trim().toLowerCase();
 export const squadPage = (name: string) => `${SITE_URL}/king/${encodeURIComponent(squadSlug(name))}`;
 
+/** Squad names with slurs never get a coin carrying the site's link. */
+const SLURS = /n[i1]gg|jew|(^|[^g])rape|retard|fag/i;
+export const launchable = (squad: string) => !SLURS.test(squad);
+
 export function coinName(squad: string) {
   const name = `${squad.trim()} squad`;
   return new TextEncoder().encode(name).length <= 32 ? name : squad.trim().slice(0, 32);
