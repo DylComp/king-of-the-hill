@@ -13,7 +13,7 @@ export const COMPETITION_ENDS = Date.parse("2026-11-09T14:00:00Z");
 export const POT_BPS = 5000;
 /** pump.fun allows 10 shareholders, and 8 members keep the launch inside one transaction. */
 export const MAX_MEMBERS = 8;
-/** Of each hour's pot: holders of the King's coin, then $PTWR buy-and-burn. */
+/** Of each hour's pot: 80% to holders; the rest remains in the treasury as rollover. */
 export const HOLDERS_BPS = 8000;
 /** Holders paid per hour, largest first, so one hour is a bounded number of transfers. */
 export const MAX_PAYEES = 200;
@@ -224,4 +224,11 @@ export function seedNewCoinFees(start: Record<string, string>, coins: { mint: st
     if (c.createdAt >= hour && c.createdAt < hour + HOUR) next[c.mint] = "0";
   }
   return next;
+}
+
+/** Unspent holder dust and the former burn share both stay in SOL. */
+export function allocateKingPot(pot: bigint, balances: { wallet: string; amount: bigint }[]) {
+  const holders = pot * BigInt(HOLDERS_BPS) / 10_000n;
+  const split = splitPot(holders, balances);
+  return { ...split, burn: 0n, rollover: pot - holders + split.rollover };
 }

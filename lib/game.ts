@@ -1,14 +1,13 @@
 // Pure game rules: hold-time tiers, citizens, cash and the item catalog.
 // Shared by the server route, the canvas renderer and the tests.
 
-/** $PTWR's official mint, live on pump.fun. */
-export const HOUSE_MINT: string | null = "5ChT61vPfByx2NApxSNT4iPMTRCV39m5z88bXYcppump";
-export const HOUSE_SYMBOL = "PTWR";
+/** New project token has not been announced; never link the former PTWR mint. */
+export const HOUSE_MINT: string | null = null;
+export const HOUSE_SYMBOL = "TBA";
 export const isHouseMint = (mint: string) => HOUSE_MINT != null && mint === HOUSE_MINT;
 
 /**
- * The Pump Tower treasury: 20% of every launchpad coin's creator fees go here for $PTWR
- * buybacks. Launching also requires the dev wallet to create its address lookup table.
+ * The King of the Hill treasury: 20% of every launchpad coin's creator fees go here. Launching also requires the dev wallet to create its address lookup table.
  */
 export const TREASURY_WALLET: string | null = "kiNGXkmkJSMPQoFEdUZs68nANK16C1AjyQD2jVPY46C";
 /** dlao's vanity dev wallet. Only it can set up the launchpad's address lookup table. */
@@ -303,7 +302,7 @@ export type Achievement = { id: string; name: string; hint: string };
 export const ACHIEVEMENTS: Achievement[] = [
   { id: "resident", name: "resident", hint: "sign in and move in" },
   { id: "first-buy", name: "first purchase", hint: "buy anything" },
-  { id: "house", name: "house money", hint: "hold $PTWR" },
+  { id: "house", name: "house money", hint: "project token coming soon" },
   { id: "loft", name: "loft life", hint: "a floor held 7+ days" },
   { id: "penthouse", name: "penthouse", hint: "a floor held 30+ days" },
   { id: "skyscraper", name: "skyscraper", hint: "10+ floors" },

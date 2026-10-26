@@ -52,7 +52,7 @@ export default function CoinPage({ mint }: { mint: string }) {
           <section className="sec">
             <div className="panel empty-coins">
               <p className="pixel green">not launched here</p>
-              <p className="dim">This coin wasn&apos;t launched on Pump Tower, or it is still landing. Give it a minute and refresh.</p>
+              <p className="dim">This coin wasn&apos;t launched on King of the Hill, or it is still landing. Give it a minute and refresh.</p>
               <Link className="btn" href="/tokens">
                 see all coins
               </Link>
@@ -67,7 +67,7 @@ export default function CoinPage({ mint }: { mint: string }) {
   const progress = c && next != null ? Math.min(1, (c.feesSol - prev) / (next - prev)) : 1;
   const who = c ? (c.recipient.username ? `@${c.recipient.username}` : shortAddr(c.recipient.wallet)) : "";
   const share = c
-    ? `https://x.com/intent/post?text=${encodeURIComponent(`$${c.ticker} is live on pump.fun, launched for ${who} on Pump Tower. 80% of fees to them, 20% buys back $PTWR.`)}&url=${encodeURIComponent(`${SITE_URL}/t/${mint}`)}`
+    ? `https://x.com/intent/post?text=${encodeURIComponent(`$${c.ticker} is live on pump.fun, launched for ${who} on King of the Hill. 80% of fees to them, 20% goes to the treasury.`)}&url=${encodeURIComponent(`${SITE_URL}/t/${mint}`)}`
     : "#";
 
   return (
@@ -162,7 +162,7 @@ export default function CoinPage({ mint }: { mint: string }) {
                       {who} <b>{fmtSol(c.recipientSol)}</b>
                     </span>
                     <span>
-                      $PTWR buybacks <b>{fmtSol(c.feesSol - c.recipientSol)}</b>
+                      Treasury fees <b>{fmtSol(c.feesSol - c.recipientSol)}</b>
                     </span>
                   </div>
                   {(c.pendingSol ?? 0) > 0 && <span className="dim">{fmtSol(c.pendingSol!)} SOL waiting, paid out automatically.</span>}

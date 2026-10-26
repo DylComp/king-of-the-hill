@@ -1,5 +1,5 @@
 "use client";
-// The $PTWR contract address with a copy button, wherever the site mentions the coin, plus a
+// The announced project contract address with a copy button, wherever the site mentions the coin, plus a
 // link to buy it on pump.fun.
 import { useState } from "react";
 import { HOUSE_MINT, HOUSE_SYMBOL, shortAddr } from "@/lib/game";

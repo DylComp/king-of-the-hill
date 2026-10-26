@@ -47,7 +47,6 @@ import TowerView from "./TowerView";
 import { CatalogSection, DocsSection, KIND_LABEL, KINDS, LadderSection } from "./Sections";
 import City from "./City";
 import Logo from "./Logo";
-import PumpMeter from "./PumpMeter";
 import GitHubMark from "./GitHubMark";
 import XMark from "./XMark";
 import CopyCA, { NavCA } from "./CopyCA";
@@ -77,7 +76,7 @@ function demoFloors(now: number): Floor[] {
   });
   return [
     f("BLOOP", 44, 26_400, 31.2),
-    f(HOUSE_SYMBOL, 33, 4_200, 18.4, true),
+    ...(HOUSE_MINT ? [f(HOUSE_SYMBOL, 33, 4_200, 18.4, true)] : []),
     f("GRUNT", 18, 12_500, -3.1),
     f("NOODL", 9, 860, 27.5),
     f("MOGGY", 4, 140, -22.8),
@@ -434,7 +433,7 @@ export default function Game() {
   const progress =
     !sel || nextMs == null ? 1 : Math.min(1, Math.max(0, 1 - nextMs / ((TIERS[selTier + 1].minDays - TIERS[selTier].minDays) * DAY)));
   const holdsHouse = sorted.some((f) => f.isHouse);
-  // $PTWR is live: its floors, buy links and the rooftop billboard are on.
+  // Token-specific features stay hidden until the new mint is announced.
   const launched = HOUSE_MINT != null;
   const empty = !!owner && !loading && !error && tokenFloors(sorted).length === 0;
   const earned = achievementsOf(sorted, save, streak, !!owner && owner === me, now);
@@ -496,8 +495,8 @@ export default function Game() {
       <header className="nav">
         <a className="brand" href="#tower">
           <Logo size={40} />
-          <HoverText text="pump tower" className="pixel brand-word" />
-          <PumpMeter />
+          <HoverText text="king of the hill" className="pixel brand-word" />
+
         </a>
         <nav className="nav-links">
           {[
@@ -528,7 +527,7 @@ export default function Game() {
         <a className="gh" href={GITHUB_URL} target="_blank" rel="noopener" title="source code on GitHub" aria-label="GitHub">
           <GitHubMark />
         </a>
-        <a className="gh" href={X_URL} target="_blank" rel="noopener" title="Pump Tower on X" aria-label="Pump Tower on X">
+        <a className="gh" href={X_URL} target="_blank" rel="noopener" title="King of the Hill on X" aria-label="King of the Hill on X">
           <XMark />
         </a>
         {me ? (
@@ -662,7 +661,7 @@ export default function Game() {
                   <span className="pixel green tiny-pixel">empty lot</span>
                   <span className="dim">
                     No bags big enough for a floor yet. Any listed coin worth $0.50 or more moves in as a floor
-                    {launched ? `, and $${HOUSE_SYMBOL} floors pay triple.` : `, and $${HOUSE_SYMBOL} floors will pay triple once it launches.`}
+                    {launched ? `, and $${HOUSE_SYMBOL} floors pay triple.` : "."}
                   </span>
                   {owner !== me && db && (
                     <button className="btn small" onClick={connect}>
@@ -674,11 +673,11 @@ export default function Game() {
 
               {!holdsHouse && owner && !loading && !empty && (
                 <div className="panel house-cta">
-                  <span className="pixel green tiny-pixel">{launched ? `no $${HOUSE_SYMBOL} floor` : `$${HOUSE_SYMBOL} launches soon`}</span>
+                  <span className="pixel green tiny-pixel">{launched ? `no $${HOUSE_SYMBOL} floor` : "new project token coming soon"}</span>
                   <span className="dim">
                     {launched
                       ? `A $${HOUSE_SYMBOL} floor earns triple rent. Pick some up on pump.fun and it moves in.`
-                      : "When it does, holding it adds a neon floor that earns triple rent."}
+                      : "The verified contract will appear here when announced."}
                   </span>
                   <CopyCA className="cta-ca" />
                 </div>
@@ -855,7 +854,7 @@ export default function Game() {
               as="p"
               by="word"
               className="lede"
-              text="Every ranked tower in Pump Tower, side by side. Green floors hold $PTWR, gold floors are penthouses. Tap any building to walk in."
+              text="Every ranked tower in King of the Hill, side by side. Gold floors are penthouses. Tap any building to walk in."
             />
           </div>
           <City me={me} onVisit={visit} />
@@ -1020,7 +1019,7 @@ export default function Game() {
         <div className="shop-modal" role="dialog" aria-label="open in a wallet" onClick={(e) => e.target === e.currentTarget && setWalletPick(false)}>
           <div className="panel wallet-pick">
             <p className="pixel green">connect on your phone</p>
-            <p className="dim">Phone browsers can't talk to wallets. Open Pump Tower inside your wallet app instead:</p>
+            <p className="dim">Phone browsers can't talk to wallets. Open King of the Hill inside your wallet app instead:</p>
             {walletLinks().map((l) => (
               <a key={l.name} className="btn" href={l.href}>
                 open in {l.name}

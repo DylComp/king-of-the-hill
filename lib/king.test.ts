@@ -107,3 +107,11 @@ test('new squad coins start at zero fees within their creation hour without rese
  assert.deepEqual(seeded,{old:'100',new:'0'});
  assert.equal(potLamports(seeded,{old:'100',new:'2000000'}),1000000n);
 });
+
+import { allocateKingPot } from './king/model.ts';
+test('King retains the former burn share and holder dust in SOL', () => {
+ const split=allocateKingPot(10000000n, [{wallet:'holder',amount:1n}]);
+ assert.equal(split.paid,8000000n); assert.equal(split.rollover,2000000n); assert.equal(split.burn,0n);
+ const empty=allocateKingPot(10000000n, []);
+ assert.equal(empty.paid,0n); assert.equal(empty.rollover,10000000n); assert.equal(empty.burn,0n);
+});

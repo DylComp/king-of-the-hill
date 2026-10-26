@@ -8,7 +8,7 @@
 //    most SOL and writes the payout list. The treasury workers send the SOL; nothing here signs.
 import { getJson, setJson, redis } from "../redis";
 import { lifetimeLamports, holderBalances } from "./chain";
-import { COMPETITION_ENDS, HOLDERS_BPS, HOUR, hourId, hourOf, pickKing, potLamports, snapshotMinute, splitPot, seedNewCoinFees, type Reign } from "./model";
+import { COMPETITION_ENDS, HOLDERS_BPS, HOUR, hourId, hourOf, pickKing, potLamports, snapshotMinute, allocateKingPot, seedNewCoinFees, type Reign } from "./model";
 import { allScannedSince, scanWallets } from "./scan";
 import { struckSquads, walletsOf } from "./source";
 import { allSquadCoins, bankedAt, carried, feesAt, hasHolders, holdersAt, reign, saveFees, saveHolders, saveReign, setCarried } from "./store";
@@ -85,19 +85,18 @@ export async function runKing(now = Date.now()) {
           balances = await holderBalances(coin.mint, coin.launcher);
           snapshotAt = now;
         }
-        const holders = (pot * BigInt(HOLDERS_BPS)) / 10_000n;
-        const split = splitPot(holders, Object.entries(balances).map(([wallet, a]) => ({ wallet, amount: BigInt(a) })));
+        const split = allocateKingPot(pot, Object.entries(balances).map(([wallet, a]) => ({ wallet, amount: BigInt(a) })));
         r = {
           hour: hourId(prev),
           king: { groupId: coin.groupId, squad: coin.squad, mint: coin.mint, gainSol: winner!.gainSol },
           potLamports: pot.toString(),
           holdersLamports: split.paid.toString(),
-          burnLamports: (pot - holders).toString(),
+          burnLamports: "0",
           carriedInLamports: carriedIn.toString(),
           rolloverLamports: split.rollover.toString(),
           snapshotAt,
           payouts: split.payouts,
-          status: split.payouts.length || pot > holders ? "pending" : "paid",
+          status: split.payouts.length ? "pending" : "paid",
         };
       }
       await saveReign(r);

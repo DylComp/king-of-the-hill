@@ -1,4 +1,4 @@
-// Server-only: builds and checks Pump Tower launches with pump.fun's official SDK.
+// Server-only: builds and checks King of the Hill launches with pump.fun's official SDK.
 // The launcher's wallet and a fresh mint key are the only signers. We never hold a key:
 // the server builds an unsigned transaction, the browser signs it, the server reads
 // the result back off chain. Same shape as fub's 80/20 launches, SOL pairs only.

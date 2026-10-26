@@ -8,17 +8,9 @@ import {
 import bs58 from "bs58";
 import { refreshClaimedFees } from "../launch/registry";
 import { reconcileAttempt } from "./reconcile.ts";
-import {
-  TOKEN_PROGRAM_ID,
-  TOKEN_2022_PROGRAM_ID,
-  getAssociatedTokenAddressSync,
-  createAssociatedTokenAccountIdempotentInstruction,
-} from "@solana/spl-token";
 import { connection, collectTx, verifyLaunch } from "../launch/pump";
 import { allSquadCoins, reign } from "../king/store";
 import type { Reign } from "../king/model";
-import { buybackChain, verifyBuybackPlan } from "../buyback/buyback-chain.ts";
-import type { BuybackPolicy } from "../buyback/buyback-model.ts";
 import {
   openJournal,
   type Journal,
@@ -28,7 +20,6 @@ import {
 import {
   DEV,
   TREASURY,
-  MINT,
   END,
   LAUNCH_MIN,
   RESERVE,
@@ -78,7 +69,7 @@ export async function alert(event: string, hour?: string) {
   const url = process.env.ALERT_WEBHOOK_URL;
   if (!url) return false;
   try {
-    const message = `Pump Towers King worker: ${event}${hour ? " (" + hour + ")" : ""}`;
+    const message = `King of the Hill King worker: ${event}${hour ? " (" + hour + ")" : ""}`;
     const r = await fetch(url, {
       method: "POST",
       headers: {
@@ -96,16 +87,8 @@ export async function alert(event: string, hour?: string) {
   }
 }
 async function settle(j: Journal, a: Attempt) {
-  const c = connection();
-  return reconcileAttempt(j, a, c, async (attempt) => {
-    const state = await buybackChain(c, attempt.plan.policy).reconcile(attempt);
-    if (
-      state.kind !== "settled" ||
-      !state.receipt.success ||
-      BigInt(state.receipt.burned) <= 0n
-    )
-      throw Error("burn_receipt_mismatch");
-  });
+  if (a.burn) throw Error("burns_disabled");
+  return reconcileAttempt(j, a, connection(), async () => { throw Error("burns_disabled"); });
 }
 async function finishLaunch(j: Journal, l: Launch, deadline: number) {
   if (l.status !== "pending") return l.status === "finalized";
@@ -346,6 +329,7 @@ async function payouts(j: Journal, treasury: Keypair, deadline: number) {
           await j.save();
         }
         if (h.digest !== checked.digest) throw Error("hour_allocation_changed");
+        if (h.attempts.some(a => a.burn)) throw Error("burns_disabled");
         // Reconcile all persisted batches before constructing any new transfer.
         let unsettled = false;
         for (const a of h.attempts.filter((a) => !a.failed)) {
@@ -354,30 +338,17 @@ async function payouts(j: Journal, treasury: Keypair, deadline: number) {
             break;
           }
           for (const wallet of a.wallets ?? []) h.paid[wallet] = a.signature;
-          if (a.burn)
-            h.burnDone =
-              h.attempts
-                .filter((x) => x.burn && x.status === "finalized" && !x.failed)
-                .reduce((n, x) => n + BigInt(x.burn!.plan.inputCap), 0n) >=
-              checked.burn;
           await j.save();
         }
         if (unsettled) return;
         const remaining = r.payouts.filter((p) => !h.paid[p.wallet]);
-        const burnedBudget = h.attempts
-          .filter((a) => a.burn && a.status === "finalized" && !a.failed)
-          .reduce((n, a) => n + BigInt(a.burn!.plan.inputCap), 0n);
-        const burnRemaining = checked.burn - burnedBudget;
-        const spend =
-          remaining.reduce((n, p) => n + BigInt(p.lamports), 0n) +
-          burnRemaining;
+        const spend = remaining.reduce((n, p) => n + BigInt(p.lamports), 0n);
         const c = connection();
         // Include network overhead and protect this hour's carried balance as well as reserve.
         assertBudget(
           BigInt(await c.getBalance(treasury.publicKey, "confirmed")),
           spend,
-          BigInt(Math.ceil(remaining.length / 8)) * 5000n +
-            ((burnRemaining + 9_999_999_999n) / 10_000_000_000n) * 10_000_000n,
+          BigInt(Math.ceil(remaining.length / 8)) * 5000n,
           checked.rollover,
         );
         if (remaining.length) {
@@ -405,87 +376,6 @@ async function payouts(j: Journal, treasury: Keypair, deadline: number) {
             expires: block.lastValidBlockHeight,
             status: "pending",
             wallets: batch.map((p) => p.wallet),
-          };
-          h.attempts.push(a);
-          await j.save();
-          await settle(j, a);
-          again = true;
-          continue;
-        }
-        if (!h.burnDone) {
-          // Provision the new treasury's PTWR account once, with a durable receipt.
-          const mintKey = new PublicKey(MINT),
-            mintAccount = await c.getAccountInfo(mintKey, "finalized");
-          if (
-            !mintAccount ||
-            ![TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID].some((p) =>
-              p.equals(mintAccount.owner),
-            )
-          )
-            throw Error("unsupported_mint_owner");
-          const ata = getAssociatedTokenAddressSync(
-            mintKey,
-            treasury.publicKey,
-            false,
-            mintAccount.owner,
-          );
-          if (!(await c.getAccountInfo(ata, "confirmed"))) {
-            const block = await c.getLatestBlockhash("confirmed");
-            const tx = new VersionedTransaction(
-              new TransactionMessage({
-                payerKey: treasury.publicKey,
-                recentBlockhash: block.blockhash,
-                instructions: [
-                  createAssociatedTokenAccountIdempotentInstruction(
-                    treasury.publicKey,
-                    ata,
-                    treasury.publicKey,
-                    mintKey,
-                    mintAccount.owner,
-                  ),
-                ],
-              }).compileToV0Message(),
-            );
-            tx.sign([treasury]);
-            const a: Attempt = {
-              signed: encode(tx),
-              signature: signature(tx),
-              expires: block.lastValidBlockHeight,
-              status: "pending",
-            };
-            h.attempts.push(a);
-            await j.save();
-            await settle(j, a);
-            again = true;
-            continue;
-          }
-          // Reuse the existing atomic exact-output purchase + burn, with this hour's allocation.
-          const chunk =
-            burnRemaining > 10_000_000_000n ? 10_000_000_000n : burnRemaining;
-          const policy: BuybackPolicy = {
-            purpose: "king-hour",
-            treasury: TREASURY,
-            mint: MINT,
-            maxInput: chunk.toString(),
-            maxOverhead: "10000000",
-            dailyCap: (chunk + 10_000_000n).toString(),
-            slippageBps: 100,
-          };
-          const plan = await buybackChain(c, policy).prepare(
-            (chunk + 10_000_000n).toString(),
-          );
-          if (!plan) throw Error("burn_budget_unavailable");
-          await verifyBuybackPlan(plan);
-          const tx = decode(plan.unsigned);
-          tx.sign([treasury]);
-          const signed = encode(tx),
-            sig = signature(tx);
-          const a: Attempt = {
-            signed,
-            signature: sig,
-            expires: plan.lastValidBlockHeight,
-            status: "pending",
-            burn: { id: "king:" + r.hour, plan, signed, signature: sig },
           };
           h.attempts.push(a);
           await j.save();

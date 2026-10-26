@@ -1,5 +1,5 @@
 // Called once the launch lands: reads the coin back off chain and, only if the 80/20
-// split is locked in, lists it on Pump Tower.
+// split is locked in, lists it on King of the Hill.
 import { body, fail, json } from "@/lib/api";
 import { limited } from "@/lib/limit";
 import { isAddress, type Draft } from "@/lib/launch/model";

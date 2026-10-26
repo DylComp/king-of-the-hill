@@ -1,4 +1,4 @@
-// The docs shown in the "docs" section: what Pump Tower is, then every
+// The docs shown in the "docs" section: what King of the Hill is, then every
 // section of the site and its features, in page order. Kept next to the rules so each change
 // updates it in the same commit; numbers are read from the rules, not typed in.
 import {
@@ -20,7 +20,7 @@ import { ALL_QUESTS_BONUS, QUESTS, REFERRED_REWARD, REFERRER_REWARD } from "./qu
 export type DocSection = { id: string; title: string; summary: string; items: [string, string][] };
 
 export const DOCS_INTRO =
-  "Pump Tower turns a Solana wallet into a pixel skyscraper. Every coin you hold is a floor. The longer you hold it, the better the floor gets and the more rent it pays in game cash. The launchpad lets anyone launch a pump.fun coin for any pump user, who gets most of its creator fees and a tower of their own. The rest buys back $PTWR and burns it, live on the activity page.";
+  "King of the Hill turns a Solana wallet into a pixel skyscraper. Every coin you hold is a floor. The longer you hold it, the better the floor gets and the more rent it pays in game cash. The launchpad lets anyone launch a pump.fun coin for any pump user, who gets most of its creator fees and a tower of their own. The remaining fees stay in the treasury. King of the Hill pays eligible winning-squad holders in SOL.";
 
 export const DOCS: DocSection[] = [
   {
@@ -99,16 +99,9 @@ export const DOCS: DocSection[] = [
   },
   {
     id: "coin",
-    title: `$${HOUSE_SYMBOL}`,
-    summary: "The game's coin, backed by buybacks, burns and perks in the game.",
-    items: [
-      ["HQ floor", `Holding $${HOUSE_SYMBOL} adds a neon Pump HQ floor that earns ${HOUSE_BOOST}x the rent of any other bag.`],
-      ["In game", "That triple rent is game cash, so $" + HOUSE_SYMBOL + " holders unlock furniture, pets and outfits fastest."],
-      ["Buybacks", `${SPLIT.treasuryBps / 100}% of the creator fees from every coin launched on the launchpad go to the buy & burn wallet, which buys $${HOUSE_SYMBOL} on the market.`],
-      ["Burns", `Every $${HOUSE_SYMBOL} bought back is burned in the same transaction, so the supply only goes down.`],
-      ["Burn tracker", "Total burned, its share of the 1B supply, SOL spent and each recent burn with its transaction, live below and on the activity page."],
-      ["Contract", "Copy it just below, or from the CA button in the menu on any page, then buy it on pump.fun."],
-    ],
+    title: "Project token",
+    summary: "A new token is planned for King of the Hill.",
+    items: [["Contract", "The verified contract will appear here after it is announced. The previous project's token is not used."], ["Treasury", "No automatic token purchases or burns. Funds remain in SOL."]],
   },
   {
     id: "launchpad",
@@ -116,13 +109,13 @@ export const DOCS: DocSection[] = [
     summary: "Launch a pump.fun coin for any pump user, at pumptowers.fun/launch.",
     items: [
       ["Pick a user", "Search a pump.fun username, paste a profile link or a wallet. Their picture, name and wallet show up before you launch."],
-      ["Fee split", `${SPLIT.recipientBps / 100}% of the coin's creator fees go to that user's wallet, ${SPLIT.treasuryBps / 100}% to the Pump Tower treasury to buy back $${HOUSE_SYMBOL}. Set and locked in the launch transaction itself; nobody can change it after.`],
+      ["Fee split", `${SPLIT.recipientBps / 100}% of the coin's creator fees go to that user's wallet, ${SPLIT.treasuryBps / 100}% to the King of the Hill treasury. Set and locked in the launch transaction itself; nobody can change it after.`],
       ["One approval", "Coin, fee split and optional dev buy happen in one transaction, so nobody can buy before you. Your wallet and a one-time mint key made in your browser are the only signers. No setup: launching is open to every wallet."],
       ["Kept", "Bonding curve, graduation to PumpSwap, dev buy, name, ticker, picture, description, X and Telegram links."],
       ["Off", "Custom websites (every coin's site is its page here), and mayhem mode, cashback and holder rewards mode, which would take the creator fees away from the split."],
       ["Payouts", "Fees collect on pump.fun and are paid out automatically, 80/20, to the pump profile and the treasury. Nobody has to press anything."],
       ["Tokens page", "Every coin launched here with its logo, fee tier, creator fees, market cap and 24h volume, plus totals across all coins: coins, pump profiles, creator fees, volume and market cap."],
-      ["Fees routed", `A tracker on the activity page following every creator fee: ${SPLIT.recipientBps / 100}% to pump profiles, ${SPLIT.treasuryBps / 100}% to the treasury, then bought back and burned as $${HOUSE_SYMBOL}.`],
+      ["Fees routed", `A tracker on the activity page following every creator fee: ${SPLIT.recipientBps / 100}% to pump profiles, ${SPLIT.treasuryBps / 100}% to the treasury.`],
       ["Pump profiles", "A tab on the tokens page listing every pump user coins were launched for: how many coins, total fees, what they have earned, combined market cap and 24h volume, their latest launch and top coin."],
       ["Coin page", "Chart, links, who it pays, fees so far and its floor milestone, at pumptowers.fun/t/ plus the coin's address."],
       ["Share card", "Every coin page has its own share image with the logo, ticker, who it pays, fees and market cap, shown when the link is posted on X or Telegram."],
@@ -137,7 +130,7 @@ export const DOCS: DocSection[] = [
       ["Squad coins", "Each of the top 100 squads in pump.fun's Squad Invitational gets an unofficial pump.fun fan coin named after it. Not affiliated with the squad or pump.fun. Coins launch automatically, best-ranked squads first. Squads whose names contain slurs don't get one."],
       ["Fee split", `${POT_BPS / 100}% of each coin's creator fees go to the King pot (the treasury). The other ${100 - POT_BPS / 100}% is split equally across up to ${MAX_MEMBERS} of the squad's members, owner first. Locked in the launch transaction, admin revoked.`],
       ["The crown", "Every hour, the squad with a coin whose members banked the most SOL is King. Banked SOL is read straight from every member's wallet on chain: SOL out of their trades minus SOL into them, wrapped SOL and network fees included, and sells into USDC or USDT counted at SOL's price. Plain transfers and airdrops don't count, and neither does paper profit. Struck squads can't win."],
-      ["The pot", `The treasury's share of every squad coin's fees earned that hour, plus anything rolled over. ${HOLDERS_BPS / 100}% goes to holders of the King's coin, ${100 - HOLDERS_BPS / 100}% buys back and burns $${HOUSE_SYMBOL}.`],
+      ["The pot", `The treasury's share of every squad coin's fees earned that hour, plus anything rolled over. ${HOLDERS_BPS / 100}% goes to holders of the King's coin, ${100 - HOLDERS_BPS / 100}% stays in SOL and rolls into the next hour.`],
       ["Getting paid", `Hold the King's coin. Holders are counted at a secret minute each hour, so buying right before the crown doesn't work. Paid in SOL, pro rata to your bag, top ${MAX_PAYEES} holders. Payouts under ${Number(MIN_PAYOUT_LAMPORTS) / 1e9} SOL roll into the next hour.`],
       ["Left out", "Program accounts (the bonding curve, the PumpSwap pool), the treasury and the launch wallet never get holder payouts."],
       ["Public list", "Each hour's King, pot and every payout is published at /api/king/payouts, and the treasury workers send exactly that list."],
@@ -145,23 +138,15 @@ export const DOCS: DocSection[] = [
     ],
   },
   {
-    id: "activity",
-    title: "Activity",
-    summary: "Live buybacks, burns and fees, at pumptowers.fun/activity.",
-    items: [
-      ["Totals", `Total creator fees collected, $${HOUSE_SYMBOL} burned and its share of the supply, SOL spent on buybacks and what pump profiles have been paid.`],
-      ["Fee flow", "The same fees-routed tracker as the tokens page, step by step from creator fees to burned tokens."],
-      ["Wallet feed", `The buy & burn wallet${TREASURY_WALLET ? ` (${TREASURY_WALLET.slice(0, 4)}…${TREASURY_WALLET.slice(-4)})` : ""}'s latest transactions, each labelled fees in, buy & burn or sent, with a link to Solscan.`],
-      ["Buybacks", `Each recent buyback: SOL spent, $${HOUSE_SYMBOL} burned and its transaction.`],
-      ["Live", "Everything refreshes every 30 seconds while the page is open."],
-    ],
+    id: "activity", title: "Activity", summary: "Hourly King results and public SOL payout receipts.",
+    items: [["Results", "Each hour shows the winner, holder allocation and rollover."], ["Proof", "Paid hours link to the worker's finalized transaction signatures on Solscan."], ["Rollover", "The former burn share stays in SOL and carries into the next hour's pot."]],
   },
   {
     id: "launch-floors",
     title: "Launch floors",
     summary: "Coins launched for you live in your tower.",
     items: [
-      ["Their tower", "Launching a coin for a pump user puts up their Pump Tower in the city and skyline right away, even if they've never visited. The launch page shows it before you launch, with the fee milestone for each floor upgrade."],
+      ["Their tower", "Launching a coin for a pump user puts up their King of the Hill in the city and skyline right away, even if they've never visited. The launch page shows it before you launch, with the fee milestone for each floor upgrade."],
       ["Floor", "Every coin launched for a wallet becomes a floor in its tower, held or not. It ages from launch day like any bag."],
       ["Milestones", FEE_TIER_NAMES.map((n, i) => `${n} at ${FEE_TIERS[i]} SOL`).join(", ") + " of lifetime creator fees. Each one lifts the floor a room tier at once."],
       ["Cash", `Your share of fees paid out adds $${CASH_PER_SOL.toLocaleString("en-US")} of game cash per SOL, on top of the SOL itself.`],
@@ -174,8 +159,8 @@ export const DOCS: DocSection[] = [
     items: [
       ["Read only", "The game only reads balances and history. The launchpad is the only thing that asks for a transaction, and your wallet shows exactly what each one does before you approve."],
       ["Sign in", "A free message signature to prove the wallet is yours. It can't move tokens."],
-      ["Wallets", "Phantom, Solflare and Backpack. On a phone, connect opens Pump Tower inside the Phantom or Solflare app."],
-      ["Treasury", "The buy & burn wallet is public. Every transaction it makes is listed on the activity page and checkable on Solscan."],
+      ["Wallets", "Phantom, Solflare and Backpack. On a phone, connect opens King of the Hill inside the Phantom or Solflare app."],
+      ["Treasury", "The treasury wallet is public. Hourly payout signatures are listed on the activity page and checkable on Solscan."],
       ["Source", "The full code is on GitHub, linked in the menu and footer."],
       ["Fair use", "Request caps sit far above normal play and only stop bot floods. Pump profiles and pictures are cached and keep working even if pump.fun is briefly down, and a busy moment is retried for you."],
     ],

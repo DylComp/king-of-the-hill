@@ -15,7 +15,7 @@ Production: `pump-tower` / `pumptowers.fun`. The worker runs in the same Vercel 
 
 `KING_LAUNCHER_SECRET_KEY` and `KING_TREASURY_SECRET_KEY` are JSON arrays of 64 bytes. `KING_LAUNCHERS` contains the launcher public key. `KING_LAUNCH_SECRET`, `KING_PAYER_SECRET` and `KING_ALERT_SECRET` are independent random secrets. `ALERT_WEBHOOK_URL` targets the authenticated inbox at `/api/king/worker-alerts`. Existing `HELIUS_API_KEY`, Redis credentials and `CRON_SECRET` are reused. Secrets are present only in Vercel and ignored mode-0600 `.env.*.local` files. Do not paste them into commands, logs, issues or commits.
 
-New KING wallets replace the site's dev/launcher and treasury for future launches. Existing coins have immutable fee splits pointing to their original wallets; changing site configuration cannot reroute them. The official PTWR mint remains `5ChT61vPfByx2NApxSNT4iPMTRCV39m5z88bXYcppump`.
+New KING wallets replace the site's dev/launcher and treasury for future launches. Existing coins have immutable fee splits pointing to their original wallets; changing site configuration cannot reroute them. The new project token is not announced. PTWR is no longer connected to the site or King worker.
 
 ## Payment guarantees
 
@@ -25,9 +25,8 @@ New KING wallets replace the site's dev/launcher and treasury for future launche
 - Batch eight SOL transfers. Persist signed bytes, signature, expiry and wallet list before broadcast. Mark `hour + wallet` paid only after a successful finalized receipt matching the signed message.
 - A Redis compare-and-swap journal and 300-second lease fence concurrent invocations. Never reset or delete it to retry a payment.
 - Retry the exact same signed transaction while valid. An expired transaction with an unknown result stays blocked for investigation; it never creates a fresh payment. A finalized failed transaction may be replaced, since it executed no transfers.
-- Reuse the existing atomic PTWR exact-output purchase and burn, with a budget capped by the hour's burn allocation. Large budgets split into chunks of at most 10 SOL; unused quote/slippage headroom remains in treasury. Tiny allocations may still fail simulation if they cannot purchase a token unit.
-- Provision the treasury's PTWR token account once, recording that transaction durably too.
-- Acknowledge the hour only after all holder transfers and burns finalize, including their public signatures.
+- No buybacks or burns. 80% of each winning pot is allocated to holders; the other 20% and unpaid dust roll forward in SOL. Nonzero legacy burn allocations fail closed.
+- Acknowledge the hour only after all holder transfers finalize, including their public signatures.
 - Stop new launches at November 9, 2026, 14:00 UTC. Stop worker signing after the final eligible hour (13:00–14:00 UTC) is published as paid and no pending reigns remain. Later cron requests return without signing.
 
 ## Alerts and recovery

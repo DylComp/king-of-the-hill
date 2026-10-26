@@ -12,7 +12,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   if (!w || !isAddress(w)) return {};
   // A pump.fun profile's name reads better than an address (cached, and skipped if pump is slow).
   const p = await Promise.race([findProfile(w).catch(() => null), new Promise<null>((r) => setTimeout(() => r(null), 1500))]);
-  const title = `${p?.username ? `@${p.username}` : shortAddr(w)}'s tower · pump tower`;
+  const title = `${p?.username ? `@${p.username}` : shortAddr(w)}'s tower · king of the hill`;
   const image = `/api/og?w=${w}`;
   return {
     title,

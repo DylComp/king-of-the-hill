@@ -7,7 +7,6 @@ export const LAUNCH_MIN = 100_000_000;
 export const END = Date.parse("2026-11-09T14:00:00Z");
 export const TREASURY = "kiNGXkmkJSMPQoFEdUZs68nANK16C1AjyQD2jVPY46C";
 export const DEV = "KiNgDiSzoX9Z69LoRZh73QkBhJNLqxDbJKgQ2bHmon7";
-export const MINT = "5ChT61vPfByx2NApxSNT4iPMTRCV39m5z88bXYcppump";
 export function checkedReign(r: Reign) {
   if (!/^2026-\d{2}-\d{2}T\d{2}Z$/.test(r.hour)) throw Error("invalid_hour");
   const ms = Date.parse(r.hour.replace("Z", ":00:00Z"));
@@ -37,6 +36,7 @@ export function checkedReign(r: Reign) {
     throw Error("payouts_exceed_allocation");
   const burn = rawLamports(r.burnLamports),
     rollover = rawLamports(r.rolloverLamports);
+  if (burn !== 0n) throw Error("burns_disabled");
   if (total + burn + rollover > rawLamports(r.potLamports))
     throw Error("allocations_exceed_pot");
   const digest = createHash("sha256")

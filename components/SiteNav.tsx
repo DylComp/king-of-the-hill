@@ -8,7 +8,6 @@ import XMark from "./XMark";
 import { NavCA } from "./CopyCA";
 import HoverText from "./HoverText";
 import Logo from "./Logo";
-import PumpMeter from "./PumpMeter";
 import { walletLinks } from "./wallet";
 import type { useMe } from "./useMe";
 
@@ -46,8 +45,8 @@ export default function SiteNav({ wallet, active, brand }: { wallet: ReturnType<
         ) : (
           <Link className="brand" href="/">
             <Logo size={40} />
-            <HoverText text="pump tower" className="pixel brand-word" />
-            <PumpMeter />
+            <HoverText text="king of the hill" className="pixel brand-word" />
+
           </Link>
         )}
         <nav className="nav-links">
@@ -61,7 +60,7 @@ export default function SiteNav({ wallet, active, brand }: { wallet: ReturnType<
         <a className="gh" href={GITHUB_URL} target="_blank" rel="noopener" title="source code on GitHub" aria-label="GitHub">
           <GitHubMark />
         </a>
-        <a className="gh" href={X_URL} target="_blank" rel="noopener" title="Pump Tower on X" aria-label="Pump Tower on X">
+        <a className="gh" href={X_URL} target="_blank" rel="noopener" title="King of the Hill on X" aria-label="King of the Hill on X">
           <XMark />
         </a>
         {me ? (
@@ -78,7 +77,7 @@ export default function SiteNav({ wallet, active, brand }: { wallet: ReturnType<
         <div className="shop-modal" role="dialog" aria-label="open in a wallet" onClick={(e) => e.target === e.currentTarget && setMobilePick(false)}>
           <div className="panel wallet-pick">
             <p className="pixel green">connect on your phone</p>
-            <p className="dim">Phone browsers can&apos;t talk to wallets. Open Pump Tower inside your wallet app instead:</p>
+            <p className="dim">Phone browsers can&apos;t talk to wallets. Open King of the Hill inside your wallet app instead:</p>
             {walletLinks().map((l) => (
               <a key={l.name} className="btn" href={l.href}>
                 open in {l.name}

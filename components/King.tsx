@@ -19,7 +19,7 @@ export type KingData = {
   reigns: (Omit<Reign, "payouts"> & { payouts: number })[];
 };
 
-export const KING_BRAND: Brand = { name: "king of the hill", href: "/king", logo: "/king-logo.png" };
+export const KING_BRAND: Brand = { name: "king of the hill", href: "/", logo: "/king-logo.png" };
 
 export const sol = (lamports: string | number | bigint) => Number(lamports) / 1e9;
 export const pumpCoin = (mint: string) => `https://pump.fun/coin/${mint}`;
@@ -135,7 +135,7 @@ export default function King() {
             <div className="panel tile kq-pot">
               <span className="label">pot this hour</span>
               <span className="pixel big green">{data ? `${fmtSol(sol(data.pot.lamports))} SOL` : "--"}</span>
-              <span className="dim">{HOLDERS_BPS / 100}% to holders · {100 - HOLDERS_BPS / 100}% buy-and-burn</span>
+              <span className="dim">{HOLDERS_BPS / 100}% to holders · {100 - HOLDERS_BPS / 100}% rolls over</span>
             </div>
             <div className="panel tile">
               <span className="label">next crown in</span>

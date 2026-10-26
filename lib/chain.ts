@@ -226,7 +226,7 @@ export async function buildTower(owner: string): Promise<Floor[]> {
   return candidates.map((c, i) => ({
     mint: c.h.mint,
     symbol: c.isHouse ? HOUSE_SYMBOL : (c.m?.symbol ?? c.h.mint.slice(0, 4)).trim(),
-    name: c.isHouse ? "Pump Tower" : (c.m?.name ?? "unknown").trim(),
+    name: c.isHouse ? "King of the Hill" : (c.m?.name ?? "unknown").trim(),
     image: c.m?.image ?? null,
     amount: c.h.amount,
     usd: c.usd,

@@ -19,7 +19,7 @@ export async function alert(where: string, e: unknown) {
     ]);
     const hook = process.env.ALERT_WEBHOOK_URL;
     if (first === "OK" && hook) {
-      const text = `pump tower error in ${where}: ${msg}`;
+      const text = `king of the hill error in ${where}: ${msg}`;
       await fetch(hook, {
         method: "POST",
         headers: { "content-type": "application/json" },

@@ -30,7 +30,7 @@ test("a phantom-style ed25519 signature verifies against the base58 wallet", asy
   const { publicKey, privateKey } = generateKeyPairSync("ed25519");
   const raw = Buffer.from(publicKey.export({ format: "jwk" }).x!, "base64url");
   const wallet = b58(raw);
-  const msg = Buffer.from("Pump Tower sign in\nNonce: abc");
+  const msg = Buffer.from("King of the Hill sign in\nNonce: abc");
   const sig = sign(null, msg, privateKey);
   const { createPublicKey, verify } = await import("node:crypto");
   const key = createPublicKey({ key: { kty: "OKP", crv: "Ed25519", x: Buffer.from(base58Decode(wallet)).toString("base64url") }, format: "jwk" });

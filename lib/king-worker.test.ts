@@ -19,9 +19,9 @@ const fixture = (): Reign => ({
   king: null,
   potLamports: "10000000",
   holdersLamports: "8000000",
-  burnLamports: "2000000",
+  burnLamports: "0",
   carriedInLamports: "0",
-  rolloverLamports: "0",
+  rolloverLamports: "2000000",
   snapshotAt: null,
   payouts: [{ wallet, tokens: "100", lamports: "8000000" }],
   status: "pending",
@@ -91,26 +91,6 @@ test("launch signer checks reject substituted mint or payer and extra signatures
   );
   tx.sign([payer, mint]);
   assert.throws(() => checkLaunch(tx, payer.publicKey, mint.publicKey));
-});
-
-import {
-  validateBuybackPolicy,
-  buybackInput,
-} from "./buyback/buyback-model.ts";
-import { MINT, TREASURY } from "./king-worker/safety.ts";
-test("King dust burns are bounded to their hour; old buyback minimum stays unchanged", () => {
-  const p = {
-    purpose: "king-hour" as const,
-    treasury: TREASURY,
-    mint: MINT,
-    maxInput: "100",
-    maxOverhead: "10000000",
-    dailyCap: "10000100",
-    slippageBps: 100,
-  };
-  validateBuybackPolicy(p);
-  assert.equal(buybackInput(p, "10000100", 90000000n), 100n);
-  assert.throws(() => validateBuybackPolicy({ ...p, purpose: undefined }));
 });
 
 import { reconcileAttempt } from "./king-worker/reconcile.ts";
@@ -316,4 +296,9 @@ test("journal serializes invocations, survives restart and fences an expired own
   await second.close();
   assert.equal(await openJournal(command), null);
   await third.close();
+});
+
+test("King refuses legacy burn allocations before signing", () => {
+ const r=fixture(); r.burnLamports="2000000"; r.rolloverLamports="0";
+ assert.throws(()=>checkedReign(r), /burns_disabled/);
 });

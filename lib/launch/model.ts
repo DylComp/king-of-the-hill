@@ -20,7 +20,7 @@ export const emptyDraft: Draft = { name: "", ticker: "", description: "", twitte
 
 export const isAddress = (s: unknown): s is string => typeof s === "string" && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(s);
 
-/** Every coin's website is its page here, so traders always land back on Pump Tower. */
+/** Every coin's website is its page here, so traders always land back on King of the Hill. */
 export const tokenPage = (mint: string) => `${SITE_URL}/t/${mint}`;
 
 const bytes = (s: string) => new TextEncoder().encode(s).length;

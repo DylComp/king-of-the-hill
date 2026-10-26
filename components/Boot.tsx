@@ -82,7 +82,7 @@ export default function Boot() {
       </div>
       <div className="boot-core">
         <Logo size={96} />
-        <div className="pixel boot-title">pump tower</div>
+        <div className="pixel boot-title">king of the hill</div>
         <div className="boot-bar">
           <span style={{ width: `${pct}%` }} />
         </div>

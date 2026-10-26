@@ -1,7 +1,6 @@
 "use client";
 // The launchpad: pick a pump.fun user, design the coin, launch it in one wallet approval.
-// 80% of its creator fees go to that user and 20% to the Pump Tower treasury for $PTWR
-// buybacks, locked on chain in the same transaction that creates the coin.
+// 80% of its creator fees go to that user and 20% to the King of the Hill treasury, locked on chain in the same transaction that creates the coin.
 import { type ChangeEvent, type DragEvent, type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { FEE_TIERS, FEE_TIER_NAMES, SPLIT, MAX_IMAGE_BYTES, cleanDraft, emptyDraft, initialBuyLamports, type Draft } from "@/lib/launch/model";
 import type { Profile } from "@/lib/launch/registry";
@@ -246,7 +245,7 @@ export default function Launch() {
               <h1 className="pixel display sm">launch a coin for any pump user</h1>
               <p className="lede">
                 They get {pct(SPLIT.recipientBps)} of its creator fees forever and their own tower in the city, with the coin as a floor that climbs as fees come in.{" "}
-                {pct(SPLIT.treasuryBps)} buys back $PTWR.
+                {pct(SPLIT.treasuryBps)} goes to the treasury.
               </p>
             </div>
             <ol className="lp-steps">
@@ -445,7 +444,7 @@ export default function Launch() {
                     <i className="dot g" /> {who}
                   </span>
                   <span>
-                    <i className="dot w" /> $PTWR buyback
+                    <i className="dot w" /> treasury
                   </span>
                 </div>
 

@@ -10,9 +10,9 @@ type Props = { params: Promise<{ mint: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { mint } = await params;
   const c = isAddress(mint) && hasDb() ? await getCoin(mint).catch(() => null) : null;
-  if (!c) return { title: "coin · pump tower" };
-  const title = `$${c.ticker} · ${c.name} · pump tower`;
-  const description = c.description || `Launched on Pump Tower. 80% of creator fees go to ${c.recipient.username ? `@${c.recipient.username}` : "a pump user"}, 20% buys back $PTWR.`;
+  if (!c) return { title: "coin · king of the hill" };
+  const title = `$${c.ticker} · ${c.name} · king of the hill`;
+  const description = c.description || `Launched on King of the Hill. 80% of creator fees go to ${c.recipient.username ? `@${c.recipient.username}` : "a pump user"}, 20% goes to the treasury.`;
   return {
     title,
     description,

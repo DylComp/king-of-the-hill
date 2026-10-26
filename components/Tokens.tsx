@@ -93,7 +93,7 @@ export default function Tokens() {
           <div className="sec-head">
             <span className="kicker">tokens</span>
             <h1 className="pixel display sm">every coin launched here</h1>
-            <p className="lede">Each one pays its pump user 80% of creator fees and buys back $PTWR with the rest. Fees level up the coin&apos;s floor in their tower.</p>
+            <p className="lede">Each one pays its pump user 80% of creator fees and goes to the treasury with the rest. Fees level up the coin&apos;s floor in their tower.</p>
           </div>
           <div className="token-stats">
             <div className="panel tile">

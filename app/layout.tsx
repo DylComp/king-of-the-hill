@@ -7,14 +7,14 @@ import ErrorReporter from "@/components/ErrorReporter";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "pump tower",
-  description: "Your Solana bags become a pixel skyscraper. Every token is a floor. Hold longer, live higher.",
+  title: "king of the hill",
+  description: "Squads compete. Holders win SOL. Follow the hourly King of the Hill and explore your Solana tower.",
   openGraph: {
-    title: "pump tower",
-    description: "Every token is a floor. Bare walls on day zero, the penthouse at thirty days.",
-    images: ["/og.png"],
+    title: "king of the hill",
+    description: "Squads compete for the hourly crown. Holders of the winning squad coin earn SOL.",
+    images: ["/king/opengraph-image"],
   },
-  twitter: { card: "summary_large_image", images: ["/og.png"] },
+  twitter: { card: "summary_large_image", images: ["/king/opengraph-image"] },
 };
 
 export const viewport: Viewport = { themeColor: "#08090b" };

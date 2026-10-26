@@ -66,7 +66,7 @@ export async function GET(req: Request) {
                 ))}
               </div>
               <div style={{ fontSize: 28, color: "#8a8f9e", marginTop: 10 }}>
-                {next != null ? `next floor upgrade at ${next} SOL in fees · 20% buys back $PTWR` : "top floor reached · 20% buys back $PTWR"}
+                {next != null ? `next floor upgrade at ${next} SOL in fees · 20% goes to the treasury` : "top floor reached · 20% goes to the treasury"}
               </div>
             </div>
           </div>
