@@ -14,7 +14,7 @@ export default function KingParticipation({wallet,squads}:{wallet:ReturnType<typ
    const c=await post<{nonce:string;message:string}>('/api/king/participation',{groupId:selected,action});
    const out=await p.signMessage(new TextEncoder().encode(c.message),'utf8');const signature=toB64(out instanceof Uint8Array?out:out.signature);
    const r=await post<{backing?:Backing}>('/api/king/participation',{nonce:c.nonce,signature});if(r.backing)setBacking(r.backing);
-   setNote(action==='register'?'Your member payout wallet is registered.':'Squad selection saved. Eligibility is checked against the hourly KOTH snapshot.');
+   setNote(action==='register'?'Your member payout wallet is registered.':'Squad selection saved. Eligibility is checked against the 30-minute KOTH snapshot.');
   }catch(e){setNote(e instanceof Error?e.message:'Selection could not be saved.');}finally{setBusy(false);}
  }
  const name=squads.find(s=>s.groupId===backing?.groupId)?.name;
@@ -24,7 +24,7 @@ export default function KingParticipation({wallet,squads}:{wallet:ReturnType<typ
  const options=selectedSquad&&!matches.some(s=>s.groupId===selected)?[selectedSquad,...matches]:matches;
  return <section id="back" className="sec">
  <div className="back-panel">
- <div className="back-intro"><span className="kicker">one KOTH token · choose your squad</span><h2 className="pixel">back the next king</h2><p>Pick your squad. Hold KOTH. Share the win.</p><p className="dim">Eligible supporters of the winning squad share 40% of the hourly fee pot, weighted by their KOTH holdings.</p><span className="back-message-badge">Free wallet signature · no deposit</span></div>
+ <div className="back-intro"><span className="kicker">one KOTH token · choose your squad</span><h2 className="pixel">back the next king</h2><p>Pick your squad. Hold KOTH. Share the win.</p><p className="dim">Eligible supporters of the winning squad share 40% of the 30-minute fee pot, weighted by their KOTH holdings.</p><span className="back-message-badge">Free wallet signature · no deposit</span></div>
  <div className="back-controls">
  {backing&&<div className="back-current"><span className="kicker">currently backing</span><strong>{name??'Selected squad'}</strong>{backing.eligibleAt>Date.now()&&<span className="dim">Eligible after {new Date(backing.eligibleAt).toLocaleString()}</span>}</div>}
  <div className="squad-field"><label htmlFor="back-search">Find your squad</label><div className="squad-search-wrap"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input id="back-search" type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search by squad name" autoComplete="off" aria-describedby="back-results"/></div><span id="back-results" className="field-hint" role="status">{squads.length===0?'Loading squads…':matches.length===0?'No squads found. Try another name.':`${matches.length} squad${matches.length===1?'':'s'} available`}</span></div>

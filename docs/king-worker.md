@@ -26,7 +26,7 @@ Exact finalized collection receipts credit revenue once. Deposits and legacy fun
 
 ## Verification before activation
 
-Verify direct Pump standings, exact hourly boundary scores, roster identity and winner selection; public-mirror agreement does not establish these. Verify the real mint, locked fee route, complete holder snapshot and pricing, transfer simulation, scheduler, durable storage and alerts. After explicit activation, verify finalized fee and transfer receipts before claiming live settlement works. Never restart squad launches.
+Verify direct Pump standings, exact 30-minute boundary scores, roster identity and winner selection; public-mirror agreement does not establish these. Verify the real mint, locked fee route, complete holder snapshot and pricing, transfer simulation, scheduler, durable storage and alerts. After explicit activation, verify finalized fee and transfer receipts before claiming live settlement works. Never restart squad launches.
 
 Competition ends November 9, 2026 at 14:00 UTC; final fee catch-up ends 15:00 UTC. Settlement may finish later. Remind the owner to disable workers and unused paid resources only after settlement, preserving journals.
 

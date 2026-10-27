@@ -8,7 +8,7 @@ import ErrorReporter from "@/components/ErrorReporter";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "king of the hill",
-  description: "One KOTH token powers hourly squad and supporter rewards with a 40/40/20 fee split.",
+  description: "One KOTH token powers 30-minute squad and supporter rewards with a 40/40/20 fee split.",
   openGraph: {
     title: "king of the hill",
     description: "Back a squad with KOTH. 40% squad rewards, 40% supporter rewards, 20% holder SOL airdrops.",

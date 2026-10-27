@@ -18,7 +18,7 @@ KOTH is currently **prelaunch**. Financial processing is disabled until rankings
 
 ## Architecture
 
-Next.js on Vercel, durable Redis journals, finalized Solana receipt verification. A five-minute scanner tracks squads; a one-minute worker collects KOTH fees, snapshots eligible supporters and settles hourly allocations. Signing keys remain in environment variables. Unallocated rewards retain their original categories; no deposit is counted as fee revenue.
+Next.js on Vercel, durable Redis journals, finalized Solana receipt verification. A five-minute scanner tracks squads; a one-minute worker collects KOTH fees, snapshots eligible supporters and settles 30-minute allocations. Signing keys remain in environment variables. Unallocated rewards retain their original categories; no deposit is counted as fee revenue.
 
 ## Development
 

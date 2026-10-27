@@ -5,7 +5,7 @@ import { ImageResponse } from "next/og";
 import { font } from "@/lib/ogfont";
 import { SITE_HOST } from "@/lib/site";
 
-export const alt = "King of the Hill: all squads compete for the hourly crown";
+export const alt = "King of the Hill: all squads compete for the 30-minute crown";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
