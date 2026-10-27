@@ -9,6 +9,7 @@ import { DOCS, DOCS_INTRO } from "@/lib/howto";
 import SiteNav, { type Brand } from "./SiteNav";
 import { useMe } from "./useMe";
 import KingParticipation from "./KingParticipation";
+import KingBoot from "./KingBoot";
 import type {publicState} from "@/lib/king-token/store";
 
 export type BoardSquad = Squad;
@@ -47,7 +48,7 @@ export default function King() {
  const {data:token,error:tokenError}=useKing<{mint:string|null;status:string;ledgerAvailable:boolean;worker:ReturnType<typeof publicState>}>("/api/king/token",30_000);
  const wallet=useMe();const {data,error}=useKing<TrackingData>("/api/king",30_000);const [query,setQuery]=useState("");
  const squads=data?.squads.filter(s=>s.name.toLowerCase().includes(query.trim().toLowerCase()))??[];
- return <><SiteNav wallet={wallet} active="/" brand={KING_BRAND}/><main><section className="sec">
+ return <><KingBoot ready={!!data||!!error} names={data?.squads.map(s=>s.name)}/><SiteNav wallet={wallet} active="/" brand={KING_BRAND}/><main><section className="sec">
  <div className="sec-head"><span className="kicker">KOTH / squad competition</span><h1 className="pixel display sm">one token. back your king.</h1>
  <p className="lede">One KOTH token powers a competition across all 100 squads. Squad competition standings use cross-checked public mirrors of Pump’s data. Rewards remain paused until the feed and hourly winner selection are verified.</p>
  <p className="dim">KOTH creator fees fund the original split: 40% to the winning squad, 40% to KOTH holders who backed it, and 20% to proportional SOL airdrops to KOTH holders over $1.</p>
