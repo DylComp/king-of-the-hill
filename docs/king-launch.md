@@ -11,6 +11,20 @@ Use Pump creator-fee sharing with exactly one shareholder:
 
 The sharing configuration must be locked (admin revoked) and the curve creator must point to that configuration. A direct creator wallet receiving fees without a sharing configuration does not satisfy the current worker. Verify the destination before applying the irreversible final shares. Do not set static 40/40/20 recipients on Pump: the worker computes changing winners and holders.
 
+## Live readiness audit — 2026-10-27 03:47 UTC
+
+**Not ready for financial activation.** Mint configuration alone must not enable settlement.
+
+- Production serves 100 public-mirror standings rows, but reports rankingsVerified=false and hourlyWinnersVerified=false.
+- Direct Pump leaderboard access returned HTTP 403 during this audit. Public mirror agreement is not proof of direct Pump parity.
+- At the sampled refresh, 64 of 100 rank/score/member-count combinations agreed between PFSC and SCS. Refresh skew is expected; never combine mismatched snapshots for payment.
+- Only 51 current source participant IDs matched the historical worker roster; only 48 also matched member count. Resolve participant-to-group identities and obtain verified owner/member wallets before allocating squad rewards. Never match payout recipients by display name alone.
+- prepareRound still uses bankedAt/pickKing (wallet cash flow). It is NOT wired to the displayed competition feed. Replace this path with an evidenced winner decision before removing any lock.
+- Hourly winner semantics need explicit resolution: highest competition rank at hour end differs from largest PnL gain during the hour. Do not silently change the original hourly-gain rule. Source timestamps, complete boundary observations, ties, disqualifications and missing data need acceptance checks.
+- Keep RANKINGS_VERIFIED=false and the token worker disabled. Verify a complete shadow round, including correct recipient identities, before activation. Financial receipt verification still requires the actual mint after launch.
+
+These are timestamped observations, not permanent source counts. The local detailed comparison is saved in output/koth-readiness-audit.json (not committed).
+
 ## Standings acceptance blocker
 
 The current scanner ranks hourly wallet cash flow, not Pump official PnL or competition standings. Do not activate reward settlement until the standings source and winner-selection semantics have been reconciled with the intended official competition data. Historical tracker crowns are not official Pump results.
