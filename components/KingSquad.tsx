@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import {useState} from "react";
+import KingBoot from "./KingBoot";
 import SiteNav from "./SiteNav";
 import SquadAvatar from "./SquadAvatar";
 import KingParticipation from "./KingParticipation";
@@ -13,7 +14,7 @@ export default function KingSquad({name}:{name:string}) {
  const [query,setQuery]=useState('');const wallet=useMe();
  const {data,error}=useKing<{squad:BoardSquad;members:MemberStats[];asOf:number;crowns:{hour:string;gainSol:number;provisional:boolean}[]}>(`/api/king/squad?name=${encodeURIComponent(name)}`,60_000);
  const members=data?.members.filter(m=>`${m.username??''} ${m.wallet}`.toLowerCase().includes(query.trim().toLowerCase()))??[];
- return <><SiteNav wallet={wallet} brand={KING_BRAND}/><main><section className="sec"><Link href="/">← all squads</Link>
+ return <><KingBoot ready={!!data||!!error}/><SiteNav wallet={wallet} brand={KING_BRAND}/><main><section className="sec"><Link href="/">← all squads</Link>
  <div className="squad-profile-head"><SquadAvatar src={data?.squad.image??null} name={data?.squad.name??name} size={88}/><div><span className="kicker">squad profile · {data?.squad.struck?'disqualified':'KOTH competition'}</span><h1 className="pixel display sm">{data?.squad.name??name}</h1><p className="dim">{data?`${data.squad.members} members · roster from competition snapshot`:'Loading squad details…'}</p></div></div>
  {error&&<p role="status">Could not refresh squad details. {error}</p>}
  <p className="lede">Back this squad with KOTH. Winning squads receive 40% of the fee pot; eligible supporters share 40%; 20% buys and burns KOTH.</p>
