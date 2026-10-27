@@ -44,7 +44,7 @@ type TrackingData = {mode:string;board:{wallets:number;initializedWallets:number
 export default function King() {
  const {data:token,error:tokenError}=useKing<{mint:string|null;status:string;worker:ReturnType<typeof publicState>}>("/api/king/token",30_000);
  const wallet=useMe();const {data,error}=useKing<TrackingData>("/api/king",30_000);const [query,setQuery]=useState("");
- const squads=data?.squads.filter(s=>s.name.toLowerCase().includes(query.toLowerCase()))??[];
+ const squads=data?.squads.filter(s=>s.name.toLowerCase().includes(query.trim().toLowerCase()))??[];
  return <><SiteNav wallet={wallet} active="/" brand={KING_BRAND}/><main><section className="sec">
  <div className="sec-head"><span className="kicker">KING / squad competition</span><h1 className="pixel display sm">one token. back your king.</h1>
  <p className="lede">One KING token powers a competition across all 100 squads. Each hour, the squad with the largest positive gain in banked trading results takes the crown.</p>
@@ -53,7 +53,7 @@ export default function King() {
  <div className="panel"><strong className="green">{!token?'Loading KING status':token.status==='awaiting_mint'?'PRELAUNCH — KING has not launched':token.status==='configured_paused'?'KING configured — activation checks pending':'KING rewards enabled'}</strong><p>{token?.mint?<>Official KING mint: <span style={{overflowWrap:'anywhere'}}>{token.mint}</span></>:"The tracker is live. Fee collection, paid rounds and buy-and-burn remain inactive until the official KING mint is configured and verified."}</p></div>
  <div className="king-split"><div><strong>40%</strong><span>winning squad</span></div><div><strong>40%</strong><span>eligible KING supporters</span></div><div><strong>20%</strong><span>buy & burn KING</span></div></div>
  {(error||tokenError)&&<p role="status">{error??tokenError}</p>}
- <label>Find a squad <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="squad name" /></label>
+ <div className="squad-board-toolbar"><div><span className="kicker">the competition</span><h2 className="pixel">squad leaderboard</h2></div><div className="squad-field board-search"><label htmlFor="squad-search">Find a squad</label><div className="squad-search-wrap"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input id="squad-search" type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search by squad name" autoComplete="off"/></div><span className="field-hint" role="status">{data?`${squads.length} of ${data.squads.length} squads`:'Loading squads…'}</span></div></div>
  <div style={{overflowX:"auto",marginTop:24}}><table style={{width:"100%",textAlign:"left"}}><thead><tr><th>Squad</th><th>This hour · SOL</th><th>Last hour · SOL</th><th>Members</th></tr></thead><tbody>
  {squads.map(s=><tr key={s.groupId}><td style={{padding:"12px 8px"}}><Link href={`/king/${encodeURIComponent(squadSlug(s.name))}`}>{s.name}</Link></td><td>{solSigned(s.bankedHour)}</td><td>{solSigned(s.bankedLast)}</td><td>{s.members}</td></tr>)}
  </tbody></table></div>
