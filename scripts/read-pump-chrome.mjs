@@ -1,7 +1,7 @@
 // Read public Pump standings through the user's existing macOS Chrome session.
 // Never launches Chrome, reads wallet data, signs, or submits transactions.
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { parseBoard } from '../lib/pump-data/model.ts';
 import { closingLeader } from '../lib/pump-data/round.ts';
@@ -53,6 +53,12 @@ int main(int argc,const char **argv){@autoreleasepool{
  const digest=createHash('sha256').update(body).digest('hex');const archive=new URL('pump-closing-evidence/',out);mkdirSync(archive,{recursive:true});
  writeFileSync(new URL(`${Date.now()}-${digest.slice(0,12)}.json`,archive),body,{flag:'wx'});
  writeFileSync(new URL('pump-chrome-latest.json',out),body);
- console.log(JSON.stringify({connected:true,httpStatus:result.status,observedAt,rows:b.entries.length,totalRanked:b.totalRanked,builtAtMs:b.builtAtMs,endSec:b.endSec,leader:{rank:b.entries[0].rank,name:b.entries[0].username,participantId:b.entries[0].participantId},identity,identityError,closingSnapshot,settlementVerified:false,sha256:digest}));
+ let ingestion=null;
+ if(closingSnapshot&&identity){
+  const env=Object.fromEntries(readFileSync(new URL('../.env.king.local',import.meta.url),'utf8').split('\n').filter(l=>l.includes('=')).map(l=>{const i=l.indexOf('=');return[l.slice(0,i),l.slice(i+1).replace(/^"|"$/g,'')]}));
+  if(!env.KING_CLOSING_SECRET)ingestion={error:'collector_credential_missing'};
+  else try{const r=await fetch('https://pump-tower.vercel.app/api/king/closing-evidence',{method:'POST',redirect:'error',headers:{authorization:'Bearer '+env.KING_CLOSING_SECRET,'content-type':'application/json'},body,signal:AbortSignal.timeout(15000)});const j=await r.json();ingestion={status:r.status,stored:j.stored===true,duplicate:j.duplicate===true,round:j.round};}catch{ingestion={error:'ingestion_unavailable'};}
+ }
+ console.log(JSON.stringify({ingestion,connected:true,httpStatus:result.status,observedAt,rows:b.entries.length,totalRanked:b.totalRanked,builtAtMs:b.builtAtMs,endSec:b.endSec,leader:{rank:b.entries[0].rank,name:b.entries[0].username,participantId:b.entries[0].participantId},identity,identityError,closingSnapshot,settlementVerified:false,sha256:digest}));
 } catch(e){console.error(JSON.stringify({connected:false,error:e instanceof Error?e.message:'Chrome check failed'}));process.exitCode=1;}
 finally{rmSync(temp,{recursive:true,force:true});}
