@@ -160,7 +160,7 @@ export function itemIcon(id: string, kind: "furniture" | "pet" | "outfit"): HTML
   c.width = 34;
   c.height = 30;
   const ctx = c.getContext("2d")!;
-  const room = makeRoom(ctx, { tier: 3, accent: "#4ade80", mood: "flat", symbol: "KING", logo: null, usd: null, isHouse: false, seed: id });
+  const room = makeRoom(ctx, { tier: 3, accent: "#4ade80", mood: "flat", symbol: "KOTH", logo: null, usd: null, isHouse: false, seed: id });
   if (piece.hang) {
     ctx.translate(0, 4);
     piece.draw(room, 17, 0);

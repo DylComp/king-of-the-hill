@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {splitFees,allocate,validateAllocation,selectBacking,HOUR} from './king-token/model.ts';
-test('one KING fee pot uses original 40/40/20 allocation',()=>{
+test('one KOTH fee pot uses original 40/40/20 allocation',()=>{
  const b=splitFees('1000000000');assert.deepEqual(b,{squad:'400000000',supporters:'400000000',burn:'200000000'});
  const a=allocate(b,['member2','member1'],{holder1:'3',holder2:'1'});
  assert.deepEqual(a.payouts.map(p=>p.lamports),['200000000','200000000','300000000','100000000']);
@@ -36,7 +36,7 @@ test('missing or legacy mint never enables the new financial worker',()=>{
  const mint=process.env.KING_MINT,flag=process.env.KING_TOKEN_WORKER_ENABLED;
  try{delete process.env.KING_MINT;process.env.KING_TOKEN_WORKER_ENABLED='true';assert.equal(kingMint(),null);assert.equal(enabled(),false);process.env.KING_MINT='5ChT61vPfByx2NApxSNT4iPMTRCV39m5z88bXYcppump';assert.throws(()=>enabled(),/legacy_mint/);}finally{if(mint===undefined)delete process.env.KING_MINT;else process.env.KING_MINT=mint;if(flag===undefined)delete process.env.KING_TOKEN_WORKER_ENABLED;else process.env.KING_TOKEN_WORKER_ENABLED=flag;}
 });
-test('single-KING journal refuses concurrent owners and changed mint; strips secrets from public status',async()=>{
+test('single-KOTH journal refuses concurrent owners and changed mint; strips secrets from public status',async()=>{
  const db=new Map<string,string>();
  const command=(async(cmd:string,...args:(string|number)[])=>{
   if(cmd==='GET')return db.get(String(args[0]))??null;

@@ -1,4 +1,4 @@
-// Single KING only. These rules are independent of the retired squad-token ledger.
+// Single KOTH only. These rules are independent of the retired squad-token ledger.
 export const SPLIT = { squad: 4000, supporters: 4000, burn: 2000 } as const;
 export const HOUR = 3_600_000;
 export const END = Date.parse('2026-11-09T14:00:00Z');
