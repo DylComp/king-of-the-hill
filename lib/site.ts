@@ -19,4 +19,4 @@ export function canonicalSiteUrl(value: unknown): unknown {
 export const GITHUB_URL = "https://github.com/DylComp/king-of-the-hill";
 
 /** The project's X account, linked beside GitHub in the nav and footer. */
-export const X_URL = "https://x.com/PumpTowerz";
+export const X_URL = "https://x.com/KothSqauds";

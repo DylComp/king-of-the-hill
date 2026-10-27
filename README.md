@@ -8,11 +8,11 @@ Contract address: `FaxcUtnGBpmBTzGRWWcEjUfzx6VAxkKe6nB6raSBpump`
 
 Production `KING_MINT` is configured to this address. The address was supplied before minting; configuration is not proof of an on-chain launch or enabled rewards. Creator fees must route 100% to `kiNGXkmkJSMPQoFEdUZs68nANK16C1AjyQD2jVPY46C` using the locked Pump sharing configuration. The worker applies the 40% squad / 40% supporters / 20% holder SOL airdrop split. Payouts remain disabled until direct 30-minute closing snapshots, winner identities and mint-specific settlement checks pass.
 
-![King of the Hill](public/brand/koth-x-banner.png)
+![King of the Hill](public/brand/koth-squad-leaderboard-banner.png)
 
 **One KOTH token. Back your king.**
 
-[Live site](https://www.kothcoins.fun) · [Worker documentation](docs/king-worker.md) · [Launch checklist](docs/king-launch.md)
+[Live site](https://www.kothcoins.fun) · [X](https://x.com/KothSqauds) · [Worker documentation](docs/king-worker.md) · [Launch checklist](docs/king-launch.md)
 
 Track 100 squads through public mirrors of Pump competition standings. Rankings and 30-minute winner selection remain unverified. KOTH creator fees fund the original reward system:
 
@@ -43,7 +43,8 @@ See the worker documentation for custody, eligibility, reserves, retries and acc
 ## Brand assets
 
 - [Profile logo](public/brand/koth-avatar.png)
-- [X banner](public/brand/koth-x-banner.png)
+- [Squad leaderboard X banner](public/brand/koth-squad-leaderboard-banner.png)
+- [Original X banner](public/brand/koth-x-banner.png)
 
 The implementation evolved from Pump Tower; retained historical metadata does not represent active squad coins or PTWR rewards.
 
