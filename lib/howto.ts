@@ -1,9 +1,11 @@
 export type DocSection = { id: string; title: string; summary: string; items: [string, string][] };
-export const DOCS_INTRO = "King of the Hill follows all 100 squads in pump.fun’s Squad Invitational using public wallet activity.";
-export const DOCS: DocSection[] = [{ id: "tracking", title: "Follow the competition", summary: "Compare squad trading results and see who earns each hourly crown.", items: [
-  ["Standings", "The board shows SOL banked from tracked trades during this hour and the previous hour. It is a trading activity measure, not a wallet balance."],
-  ["Coverage", "The scanner reads member wallets every five minutes. Tracking begins with each wallet’s first scan; earlier trades are not backfilled. Failed reads are retried, so standings can lag."],
-  ["Hourly crowns", "The eligible squad with the best positive result earns the hourly crown. If no eligible squad has a positive result, no crown is awarded. Incomplete scan coverage is marked."],
-  ["Competition", "The cup ends November 9, 2026 at 14:00 UTC. Final results may take time to settle as wallet scans complete."],
-  ["Read-only", "Browsing the tracker is free and requires no wallet connection. The tracker reads public activity and does not move funds."]
+export const DOCS_INTRO = "One KING token. All 100 squads. The original hourly 40/40/20 fee-funded competition.";
+export const DOCS: DocSection[] = [{id:"king",title:"How the hourly pot works",summary:"The tracker runs now. Paid rounds start only after KING launches, fee routing is verified and the first complete snapshot hour finishes.",items:[
+ ["40% — winning squad","The eligible squad with the greatest positive hourly banked trading result wins. Its creator receives the squad allocation unless members register their own wallets; registered members then share that allocation equally."],
+ ["40% — KING supporters","Connect your wallet and sign a free message to back a squad. Eligible KING holders backing the winner split the supporter allocation in proportion to their KING balance at the randomized finalized snapshot."],
+ ["20% — buy and burn KING","The treasury uses this allocation to buy the official KING token and burn the purchased tokens in the same transaction. PTWR and retired squad coins are never purchased."],
+ ["Eligibility","Switching squads starts a one-hour cooldown before the new choice is eligible. Selling or transferring KING out during the hour removes eligibility for that hour. Missing chain data pauses settlement rather than assuming eligibility."],
+ ["Fees and receipts","Only verified KING creator-fee receipts fund rounds. Deposits and legacy squad-coin fees are not revenue. Collected fees are assigned to their confirmed collection hour; final catch-up fees go to the final round. Payout and burn signatures are shown after finalization."],
+ ["Small amounts and empty rounds","Rounding dust and allocations with no eligible recipients stay reserved in their original category for a later round. Small burn amounts accumulate for a viable purchase. They are never reassigned to another category."],
+ ["Coverage and end","Wallet scans run every five minutes. Results measure tracked trading flows, not total portfolio performance; missing scans delay settlement. The cup ends November 9, 2026 at 14:00 UTC, followed by final collection and settlement."]
 ]}];

@@ -1,4 +1,4 @@
 export const dynamic = "force-dynamic";
 export async function GET() {
-  return Response.json({ disabled: true, reason: "Buybacks are not part of King of the Hill." });
+  return Response.json({ disabled: true, reason: "The legacy PTWR worker is retired. KING burns belong to the single-KING worker." });
 }

@@ -428,5 +428,5 @@ async function payouts(j: Journal, treasury: Keypair, deadline: number) {
   }
 }
 export async function runKingWorker(test = false) {
-  return { outcome: "disabled_tracking_only", enabled: false };
+  return { outcome: "disabled_legacy_squad_worker", enabled: false };
 }

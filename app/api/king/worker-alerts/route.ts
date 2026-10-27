@@ -1,6 +1,7 @@
 import { timingSafeEqual, randomUUID } from "node:crypto";
 import { redis, getJson } from "@/lib/redis";
-import type { State } from "@/lib/king-worker/journal";
+import {state,publicState} from "@/lib/king-token/store";
+import {enabled} from "@/lib/king-token/config";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const KEY = "pt:king:worker:alerts";
@@ -49,31 +50,6 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   if (!authorized(req))
     return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const [raw, s] = await Promise.all([
-    redis<string[]>("LRANGE", KEY, 0, 99),
-    getJson<State>("pt:king:worker:v1"),
-  ]);
-  return Response.json({
-    alerts: raw.map((x) => JSON.parse(x)),
-    worker: s
-      ? {
-          at: s.at,
-          outcome: s.outcome,
-          testPassed: s.testPassed,
-          stopped: s.stopped,
-          launches: s.launches.map((l) => ({
-            mint: l.mint,
-            signature: l.signature,
-            status: l.status,
-          })),
-          hours: Object.entries(s.hours).map(([hour, h]) => ({
-            hour,
-            paidWallets: Object.keys(h.paid).length,
-            burnDone: h.burnDone,
-            acknowledged: h.acknowledged,
-          })),
-        }
-      : null,
-    enabled: process.env.KING_WORKER_ENABLED === "true",
-  });
+  const [raw,s]=await Promise.all([redis<string[]>("LRANGE",KEY,0,99),state()]);
+  return Response.json({alerts:raw.map(x=>JSON.parse(x)),worker:publicState(s),enabled:enabled(),launchesEnabled:false});
 }

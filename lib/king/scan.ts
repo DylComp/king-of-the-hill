@@ -6,7 +6,7 @@ import { STABLES, WSOL, hourOf, tradeLamports, type RpcTx } from "./model";
 import { cursors, saveScan, scannedAt } from "./store";
 
 /** Newest transactions read per wallet per run; a busier wallet keeps only its newest. */
-const MAX_SIGS = 300;
+const MAX_SIGS = 2000;
 const PARALLEL = 6;
 
 async function rpc<T>(method: string, params: unknown[]): Promise<T> {
@@ -48,11 +48,12 @@ async function newSignatures(wallet: string, until: string | undefined) {
   const out: Sig[] = [];
   let before: string | undefined;
   while (out.length < MAX_SIGS) {
-    const page = await rpc<Sig[]>("getSignaturesForAddress", [wallet, { limit: 100, ...(until && { until }), ...(before && { before }), commitment: "confirmed" }]);
+    const page = await rpc<Sig[]>("getSignaturesForAddress", [wallet, { limit: 100, ...(until && { until }), ...(before && { before }), commitment: "finalized" }]);
     out.push(...page);
     if (page.length < 100) break;
     before = page[page.length - 1].signature;
   }
+  if (until && out.length >= MAX_SIGS) throw Error("scan_history_limit");
   return out.slice(0, MAX_SIGS);
 }
 
@@ -68,8 +69,9 @@ async function scanWallet(wallet: string, groupId: string, until: string | undef
     for (let i = 0; i < ok.length; i += 10) {
       await Promise.all(
         ok.slice(i, i + 10).map(async (s) => {
-          const tx = await rpc<RpcTx | null>("getTransaction", [s.signature, { encoding: "json", maxSupportedTransactionVersion: 1, commitment: "confirmed" }]);
-          const lamports = tx && tradeLamports(tx, wallet, usdPerSol);
+          const tx = await rpc<RpcTx | null>("getTransaction", [s.signature, { encoding: "json", maxSupportedTransactionVersion: 1, commitment: "finalized" }]);
+          if (!tx) throw Error("scan_receipt_missing");
+          const lamports = tradeLamports(tx, wallet, usdPerSol);
           if (lamports == null) return;
           const hour = hourOf((tx!.blockTime ?? s.blockTime!) * 1000);
           perHour.set(hour, (perHour.get(hour) ?? 0n) + lamports);
@@ -87,6 +89,7 @@ async function scanWallet(wallet: string, groupId: string, until: string | undef
  */
 export async function scanWallets(wallets: { wallet: string; groupId: string }[], deadline: number) {
   const [cur, seen, usdPerSol] = await Promise.all([cursors(), scannedAt(), solPrice()]);
+  if(usdPerSol==null)throw Error("scan_quote_price_unavailable");
   const queue = [...wallets].sort((a, b) => Number(seen[a.wallet] ?? 0) - Number(seen[b.wallet] ?? 0));
   let scanned = 0;
   let txs = 0;
@@ -100,7 +103,7 @@ export async function scanWallets(wallets: { wallet: string; groupId: string }[]
       } catch (e) {
         failed++;
         // A wallet the RPC rejects outright would otherwise hold up every hour's crown.
-        if (/invalid/i.test((e as Error).message)) await saveScan(w.groupId, w.wallet, new Map(), null, Date.now()).catch(() => null);
+        // Failed reads never advance the cursor or count as complete coverage.
       }
     }
   };

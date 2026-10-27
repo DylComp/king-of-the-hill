@@ -12,7 +12,8 @@ import type { useMe } from "./useMe";
 
 const LINKS = [
   ["/", "squads"],
-  ["/#crowns", "crowns"],
+  ["/#back", "back a squad"],
+  ["/#rewards", "rewards"],
   ["/#docs", "how it works"],
 ] as const;
 

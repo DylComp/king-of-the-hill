@@ -1,5 +1,6 @@
 // Read-only competition records are separate from legacy financial allocations.
 import { getJson, redis, setJson } from "../redis";
+import {enabled,kingMint} from "../king-token/config";
 import { COMPETITION_ENDS, HOUR, hourId, hourOf, pickKing } from "./model";
 import { competitionBoard, trackedSquads, struckSquads, walletsOf } from "./source";
 import { bankedAt, scannedAt } from "./store";
@@ -15,11 +16,11 @@ export async function trackingCrowns(): Promise<TrackingCrown[]> {
 export async function trackingBoard() {
  const ids=trackedSquads(), wallets=walletsOf(ids);
  const [board, scans, crowns, lastScan]=await Promise.all([competitionBoard(ids),scannedAt(),trackingCrowns(),getJson(PREFIX+":lastScan")]);
- return { mode:"tracking-only", launchesEnabled:false, payoutsEnabled:false, coins:0,
+ return { mode:"single-king", launchesEnabled:false, payoutsEnabled:enabled(), coins:0, kingMint:kingMint(),
   lastScan, board:{takenAt:board.takenAt,wallets:wallets.length,initializedWallets:wallets.filter(w=>scans[w.wallet]).length},
   squads:board.squads.map(s=>({...s,coin:null})),crowns,endsAt:COMPETITION_ENDS };
 }
-export async function runTracking(now=Date.now()) {
+async function scanTracking(now=Date.now()) {
  if(now>=COMPETITION_ENDS+HOUR) return {mode:"tracking-only",done:true};
  await redis("SET",PREFIX+":started",String(now),"NX");
  const started=Number(await redis<string>("GET",PREFIX+":started"));
@@ -41,4 +42,10 @@ export async function runTracking(now=Date.now()) {
  const result={mode:"tracking-only",squads:ids.size,wallets:wallets.length,scanned:scan.scanned,transactions:scan.txs,failed:scan.failed,at:now};
  await setJson(PREFIX+":lastScan",result);
  return result;
+}
+
+export async function runTracking(now=Date.now()) {
+ const {randomUUID}=await import('node:crypto');const lease=randomUUID(),key=PREFIX+':scan-lock';
+ if(await redis('SET',key,lease,'NX','EX',120)!=='OK')return {mode:'tracking-only',outcome:'scan_busy'};
+ try{return await scanTracking(now);}finally{await redis('EVAL',"if redis.call('GET',KEYS[1])==ARGV[1] then return redis.call('DEL',KEYS[1]) end return 0",1,key,lease);}
 }

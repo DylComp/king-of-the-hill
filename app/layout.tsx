@@ -8,10 +8,10 @@ import ErrorReporter from "@/components/ErrorReporter";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "king of the hill",
-  description: "Follow all 100 squads, live wallet trading results and hourly crowns.",
+  description: "One KING token powers hourly squad and supporter rewards with a 40/40/20 fee split.",
   openGraph: {
     title: "king of the hill",
-    description: "Squads compete for the hourly crown, tracked through their wallets.",
+    description: "Back a squad with KING. 40% squad rewards, 40% supporter rewards, 20% KING buy-and-burn.",
     images: ["/king/opengraph-image"],
   },
   twitter: { card: "summary_large_image", images: ["/king/opengraph-image"] },

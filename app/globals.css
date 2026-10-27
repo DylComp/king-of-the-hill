@@ -2948,3 +2948,5 @@ html[data-booted] .boot {
   align-items: center;
   gap: 5px;
 }
+
+.king-split{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:24px 0}.king-split>div{border:1px solid #28513a;padding:16px;display:flex;flex-direction:column;gap:8px}.king-split strong{font-size:32px;color:#61dd91}.king-split span{font-size:18px}#back select{background:#0a1710;color:#c9ddd0;border:1px solid #38694b;padding:12px;font:inherit;margin:8px 0}#docs dd{margin:8px 0 20px}section[id]{scroll-margin-top:100px}@media(max-width:480px){.king-split{gap:6px}.king-split>div{padding:10px}.king-split span{font-size:16px}}

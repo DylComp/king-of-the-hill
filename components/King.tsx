@@ -6,6 +6,8 @@ import { squadSlug } from "@/lib/king/model";
 import { DOCS, DOCS_INTRO } from "@/lib/howto";
 import SiteNav, { type Brand } from "./SiteNav";
 import { useMe } from "./useMe";
+import KingParticipation from "./KingParticipation";
+import type {publicState} from "@/lib/king-token/store";
 
 export type BoardSquad = Squad;
 const fmtSol = (n: number) => n >= 100 ? n.toFixed(0) : n >= 1 ? n.toFixed(2) : n.toFixed(4);
@@ -40,14 +42,17 @@ export function useKing<T>(url: string, every = 10_000) {
 
 type TrackingData = {mode:string;board:{wallets:number;initializedWallets:number};squads:BoardSquad[];crowns:{hour:string;squad:string|null;gainSol:number;provisional:boolean}[]};
 export default function King() {
+ const {data:token,error:tokenError}=useKing<{mint:string|null;status:string;worker:ReturnType<typeof publicState>}>("/api/king/token",30_000);
  const wallet=useMe();const {data,error}=useKing<TrackingData>("/api/king",30_000);const [query,setQuery]=useState("");
  const squads=data?.squads.filter(s=>s.name.toLowerCase().includes(query.toLowerCase()))??[];
  return <><SiteNav wallet={wallet} active="/" brand={KING_BRAND}/><main><section className="sec">
- <div className="sec-head"><span className="kicker">king of the hill / squad tracker</span><h1 className="pixel display sm">all squads. one crown.</h1>
- <p className="lede">Follow all 100 squads in pump.fun’s Squad Invitational. The squad whose members bank the most SOL from trading takes the hourly crown.</p>
- <p className="dim">Live standings from on-chain trading activity. Free to follow; no wallet connection required.</p>
+ <div className="sec-head"><span className="kicker">KING / squad competition</span><h1 className="pixel display sm">one token. back your king.</h1>
+ <p className="lede">One KING token powers a competition across all 100 squads. Each hour, the squad with the largest positive gain in banked trading results takes the crown.</p>
+ <p className="dim">KING creator fees fund the original split: 40% to the winning squad, 40% to KING holders who backed it, and 20% to buy and burn KING.</p>
  <p className="dim">{data?`${data.board.initializedWallets} / ${data.board.wallets} wallets initialized` : "Loading tracker"}. New squads count from their first scan; figures update as the scanner rotates through wallets.</p></div>
- {error&&<p role="status">{error}</p>}
+ <div className="panel"><strong className="green">{!token?'Loading KING status':token.status==='awaiting_mint'?'PRELAUNCH — KING has not launched':token.status==='configured_paused'?'KING configured — activation checks pending':'KING rewards enabled'}</strong><p>{token?.mint?<>Official KING mint: <span style={{overflowWrap:'anywhere'}}>{token.mint}</span></>:"The tracker is live. Fee collection, paid rounds and buy-and-burn remain inactive until the official KING mint is configured and verified."}</p></div>
+ <div className="king-split"><div><strong>40%</strong><span>winning squad</span></div><div><strong>40%</strong><span>eligible KING supporters</span></div><div><strong>20%</strong><span>buy & burn KING</span></div></div>
+ {(error||tokenError)&&<p role="status">{error??tokenError}</p>}
  <label>Find a squad <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="squad name" /></label>
  <div style={{overflowX:"auto",marginTop:24}}><table style={{width:"100%",textAlign:"left"}}><thead><tr><th>Squad</th><th>This hour · SOL</th><th>Last hour · SOL</th><th>Members</th></tr></thead><tbody>
  {squads.map(s=><tr key={s.groupId}><td style={{padding:"12px 8px"}}><Link href={`/king/${encodeURIComponent(squadSlug(s.name))}`}>{s.name}</Link></td><td>{solSigned(s.bankedHour)}</td><td>{solSigned(s.bankedLast)}</td><td>{s.members}</td></tr>)}
@@ -56,5 +61,9 @@ export default function King() {
  <div id="crowns" className="sec-head" style={{marginTop:40}}><h2 className="pixel">hourly crowns</h2><p className="dim">Each hourly crown recognizes the best positive squad trading result. Partial scan coverage is marked.</p></div>
  {data?.crowns.map(c=><p key={c.hour}>{c.hour} · {c.squad??"No positive trading result"} · {solSigned(c.gainSol)} SOL {c.provisional?"(partial scan coverage)":""}</p>)}
  {data && !data.crowns.length && <p className="dim">The first crown appears after a complete tracking hour.</p>}
+ </section><KingParticipation wallet={wallet} squads={data?.squads??[]}/>
+ <section id="rewards" className="sec"><h2 className="pixel">payouts & KING burns</h2><p className="dim">Only finalized transaction receipts count as paid. These records belong to the single KING system.</p>
+ {!token?.worker?.rounds.length&&<p>No KING reward rounds yet. Rewards begin after launch and the first complete snapshot hour.</p>}
+ {token?.worker?.rounds.map(r=><article className="panel" key={r.hour}><h3>{new Date(r.hour).toLocaleString()} · {r.squad??'Awaiting winner'}</h3><p>{r.status} · {(Number(r.feesLamports)/1e9).toFixed(6)} SOL collected · {r.payouts.length} allocations</p><p>Squad: {(Number(r.allocations?.squad??0)/1e9).toFixed(6)} SOL · Supporters: {(Number(r.allocations?.supporters??0)/1e9).toFixed(6)} SOL · KING buy-and-burn: {(Number(r.burnLamports??0)/1e9).toFixed(6)} SOL</p>{r.signatures.map(sig=><p key={sig}><a href={`https://solscan.io/tx/${sig}`} target="_blank" rel="noreferrer">Finalized receipt ↗</a></p>)}</article>)}
  </section><section id="docs" className="sec"><h2 className="pixel">how it works</h2><p className="lede">{DOCS_INTRO}</p>{DOCS.map(section=><div key={section.id}><h3>{section.title}</h3><p>{section.summary}</p><dl>{section.items.map(([title,body])=><div key={title}><dt className="green">{title}</dt><dd>{body}</dd></div>)}</dl></div>)}</section></main></>;
 }
