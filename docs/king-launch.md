@@ -38,3 +38,9 @@ Set server-only `PUMP_API_KEY` with `leaderboards.read` (plus `graph.read` and `
 The five-minute cron records official competition observations keyed by Pump build timestamp once access exists. These are evidence, not verified hourly winners. A rolling 24-hour PnL difference must not be treated as hourly profit. Boundary timestamps, membership/strike changes, refresh coverage and the hourly winner definition still require verification against actual source data.
 
 `RANKINGS_VERIFIED=false` in worker configuration is an explicit code-level lock. An enable env flag cannot bypass it. Do not remove until source equality and hourly winner acceptance are complete. Current adapter tests use synthetic schema fixtures, not live Pump data; they do not establish source parity.
+
+## No-key competition feed
+
+When `PUMP_API_KEY` is absent, the competition view uses public JSON from `https://pfsc.fun/api/state` and `https://www.scsp.fun/api/state`. These are third-party mirrors, not official API access. We require the same cup ID and scoring start, exactly 100 ranked entries, unique identities, and exact agreement of every rank's total USD PnL and member count. Read/build timestamps must be under ten minutes old. One source provides names/IDs and the other supplies the realized/unrealized breakdown; those breakdowns are not independently corroborated. Source failure, stale input or disagreement gives unavailable or explicitly stale last-good data, never cash-flow estimates.
+
+This alternative only supplies competition standings, not daily/weekly/monthly boards. It does not establish direct Pump-page parity, identity parity across both mirrors, or verified hourly winners. Financial processing remains code-locked. Only source data is consumed: no third-party token mint, treasury, fee split or transaction settings are imported.

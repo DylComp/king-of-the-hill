@@ -49,7 +49,7 @@ export default function King() {
  const squads=data?.squads.filter(s=>s.name.toLowerCase().includes(query.trim().toLowerCase()))??[];
  return <><SiteNav wallet={wallet} active="/" brand={KING_BRAND}/><main><section className="sec">
  <div className="sec-head"><span className="kicker">KING / squad competition</span><h1 className="pixel display sm">one token. back your king.</h1>
- <p className="lede">One KING token powers a competition across all 100 squads. Squad standings come from Pump’s official data feed. Rewards remain paused until the feed and hourly winner selection are verified.</p>
+ <p className="lede">One KING token powers a competition across all 100 squads. Squad competition standings use cross-checked public mirrors of Pump’s data. Rewards remain paused until the feed and hourly winner selection are verified.</p>
  <p className="dim">KING creator fees fund the original split: 40% to the winning squad, 40% to KING holders who backed it, and 20% to buy and burn KING.</p>
  <p className="dim">{data?`${data.board.initializedWallets} / ${data.board.wallets} wallets initialized` : "Loading tracker"}. New squads count from their first scan; figures update as the scanner rotates through wallets.</p></div>
  <div className="panel"><strong className="green">{!token?'Loading KING status':token.status==='awaiting_mint'?'PRELAUNCH — KING has not launched':token.status==='configured_paused'?'KING configured — activation checks pending':'KING rewards enabled'}</strong><p>{token?.mint?<>Official KING mint: <span style={{overflowWrap:'anywhere'}}>{token.mint}</span></>:"The tracker is live. Fee collection, paid rounds and buy-and-burn remain inactive until the official KING mint is configured and verified."}</p></div>
