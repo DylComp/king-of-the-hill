@@ -1,12 +1,3 @@
 {
-  "crons": [
-    {
-      "path": "/api/cron/king",
-      "schedule": "1-59/5 * * * *"
-    },
-    {
-      "path": "/api/cron/king-token",
-      "schedule": "* * * * *"
-    }
-  ]
+  "crons": []
 }
