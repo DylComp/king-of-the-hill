@@ -2,6 +2,8 @@
 export const SPLIT = { squad: 4000, supporters: 4000, holders: 2000 } as const;
 export const HOUR = 3_600_000; // Backing-switch cooldown remains one hour.
 export const ROUND = 30 * 60_000;
+export const WINNER_RULE = 'pump_rank_one_at_close' as const;
+export const WINNER_SCOPE = 'pump_top_100' as const;
 export const roundOf = (at:number) => Math.floor(at / ROUND) * ROUND;
 export const roundId = (at:number) => new Date(roundOf(at)).toISOString().slice(0,16)+'Z';
 export const END = Date.parse('2026-11-09T14:00:00Z');

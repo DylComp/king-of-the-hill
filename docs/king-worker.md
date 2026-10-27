@@ -6,7 +6,7 @@ One official KOTH mint; separate squad coins and all their launch paths remain r
 
 ## 30-minute allocations
 
-- 40% to the winning squad: largest positive Pump PnL gain during the specific 30-minute round. Registered verified members share equally; otherwise its verified creator receives the allocation.
+- 40% to the winning squad: the squad ranked #1 on Pump’s cumulative competition board at each :00/:30 close. Registered verified members share equally; otherwise its verified creator receives the allocation.
 - 40% to eligible KOTH supporters backing that squad, proportional to snapshotted holdings. Switching has a one-hour cooldown. Outgoing KOTH during the round disqualifies this supporter allocation; incomplete transaction history blocks settlement.
 - 20% in SOL to all eligible KOTH holders with strictly more than $1 at the randomized finalized 30-minute snapshot, proportional to token holdings. No backing, registration or claim is required. Overlapping squad/supporter/holder rewards are allowed. The supporter holding-through-the-round restriction does not apply to this category.
 
@@ -18,7 +18,7 @@ Rounding dust and categories without recipients carry in their original buckets.
 
 The authenticated one-minute `/api/cron/king-token` worker captures snapshots, collects fees and resumes journaled payouts. Transactions batch up to eight transfers; large rounds settle across multiple invocations, not necessarily instantly at hour close. Supporter history audits currently process one wallet per invocation. Load testing is required before activation to establish supported holder counts and backlog behavior.
 
-`KING_MINT`, `KING_TOKEN_WORKER_ENABLED=true` and the code acceptance gate `RANKINGS_VERIFIED` are required. Missing mint returns awaiting_mint before loading signers. The acceptance gate remains false. Historical cash-flow crowns cannot authorize payouts. `verifiedRoundWinner` requires a complete direct-source boundary and verified roster record; no production verifier currently writes these records. This is an explicit remaining activation blocker.
+`KING_MINT`, `KING_TOKEN_WORKER_ENABLED=true` and the code acceptance gate `RANKINGS_VERIFIED` are required. Missing mint returns awaiting_mint before loading signers. The acceptance gate remains false. Historical cash-flow crowns cannot authorize payouts. `verifiedRoundWinner` requires a verified direct-source closing snapshot and winner roster record; no production verifier currently writes these records. This is an explicit remaining activation blocker.
 
 Creator-fee sharing must be locked with 100% to `kiNGXkmkJSMPQoFEdUZs68nANK16C1AjyQD2jVPY46C`. Dynamic recipients are computed by the worker, not configured as fixed on-chain shareholders. Fee-collection gas wallet: `KiNgDiSzoX9Z69LoRZh73QkBhJNLqxDbJKgQ2bHmon7`. Keys remain environment-only in KING_TREASURY_SECRET_KEY and KING_LAUNCHER_SECRET_KEY.
 
@@ -26,8 +26,10 @@ Exact finalized collection receipts credit revenue once. Deposits and legacy fun
 
 ## Verification before activation
 
-Verify direct Pump standings, exact 30-minute boundary scores, roster identity and winner selection; public-mirror agreement does not establish these. Verify the real mint, locked fee route, complete holder snapshot and pricing, transfer simulation, scheduler, durable storage and alerts. After explicit activation, verify finalized fee and transfer receipts before claiming live settlement works. Never restart squad launches.
+Verify direct Pump standings, the exact 30-minute closing snapshot, roster identity and winner selection; public-mirror agreement does not establish these. Verify the real mint, locked fee route, complete holder snapshot and pricing, transfer simulation, scheduler, durable storage and alerts. After explicit activation, verify finalized fee and transfer receipts before claiming live settlement works. Never restart squad launches.
 
 Competition ends November 9, 2026 at 14:00 UTC; final fee catch-up ends 15:00 UTC. Settlement may finish later. Remind the owner to disable workers and unused paid resources only after settlement, preserving journals.
 
 Rounds start at :00 and :30 UTC and last 30 minutes. The squad-switch cooldown remains one hour. Final catch-up still ends at 15:00 UTC. Existing journals with a different or unspecified duration require audit; they are not silently reinterpreted.
+
+The approved winner rule is pump_rank_one_at_close, scoped to Pump’s displayed top 100. No starting snapshot or PnL subtraction is used. Pump’s ordering breaks equal-score ties; a negative cumulative PnL does not invalidate its published #1. A squad may win consecutive rounds. Source endSec must equal the close; fetch time cannot replace the source cutoff. The 100-row API ceiling is no longer a blocker. Direct production access and verified closing/roster evidence remain required. Earlier gain-rule proof records cannot authorize this rule.

@@ -38,3 +38,5 @@ See the worker documentation for custody, eligibility, reserves, retries and acc
 - [X banner](public/brand/koth-x-banner.png)
 
 The implementation evolved from Pump Tower; retained historical metadata does not represent active squad coins or PTWR rewards.
+
+Winner rule: at each :00/:30 UTC close, Pump’s published competition rank #1 wins. The top-100 board is sufficient; no PnL-gain comparison is used. A verified closing snapshot and roster are required before settlement.

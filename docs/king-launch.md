@@ -1,5 +1,12 @@
 # KOTH launch checklist
 
+## Current approved winner rule
+
+The user selected **Pump’s highest-ranked squad at each 30-minute close**. The published #1 on the cumulative competition board wins, including consecutive wins. The top-100 response is sufficient. No starting snapshot, full-field coverage or 30-minute PnL-gain calculation is required. Earlier audit entries below describe the superseded gain rule.
+
+Still required: reliable direct production access (currently HTTP 403), a source-timestamped closing snapshot with verified winner wallet identities, and mint-specific fee route/snapshot/simulation checks. The new proof namespace rejects evidence for earlier winner rules. Payouts remain disabled.
+
+
 ## Launch settings
 
 Launch one standard SOL-paired KOTH token on pump.fun. Do not enable cashback or Mayhem mode. Keep control of the creator wallet until creator-fee sharing is configured. A premint public address can be supplied early; no private mint key is needed by the monitor.
