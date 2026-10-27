@@ -11,6 +11,10 @@ Use Pump creator-fee sharing with exactly one shareholder:
 
 The sharing configuration must be locked (admin revoked) and the curve creator must point to that configuration. A direct creator wallet receiving fees without a sharing configuration does not satisfy the current worker. Verify the destination before applying the irreversible final shares. Do not set static 40/40/20 recipients on Pump: the worker computes changing winners and holders.
 
+## Standings acceptance blocker
+
+The current scanner ranks hourly wallet cash flow, not Pump official PnL or competition standings. Do not activate reward settlement until the standings source and winner-selection semantics have been reconciled with the intended official competition data. Historical tracker crowns are not official Pump results.
+
 ## Activation
 
 1. Supply the public KING mint, optionally before minting. Set `KING_MINT` in Vercel Production, leaving `KING_TOKEN_WORKER_ENABLED=false` until checks pass.
