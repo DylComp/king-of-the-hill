@@ -104,3 +104,11 @@ The owner selected every ranked squad for winner comparison, including squads ou
 ### First-party contract finding
 
 Inspection through the owner’s existing Chrome of Pump’s shipped competition route definition confirms `limit` defaults to and is capped at 100. It defines no offset, page or historical-time query. Testing offset=100 and page=2 both returned ranks 1–100; limit=1000 also returned 100. The full board reported 954 ranked squads at this observation. This proves the public route cannot by itself support the requested all-ranked-squads settlement. An authorized full-board source plus stored boundary observations and verified roster identities is required; neither top-100 snapshots nor moderator-only endpoints are substitutes. The financial gate remains false.
+
+## Existing-Chrome closing evidence collector
+
+Run `node scripts/read-pump-chrome.mjs` on macOS with the existing Chrome profile open to Pump's squads leaderboard and JavaScript from Apple Events enabled. It does not launch a browser or access wallet extensions. It reads the public competition response, the leading entry's competition members, and its active group members. Squad IDs, user IDs and wallet addresses must agree; owner identity comes from an explicit active OWNER role. Truncated pages, missing owners, duplicate identities and mismatched wallets fail validation.
+
+`node scripts/capture-pump-closes.mjs` runs a bounded two-hour read-only observation session. It samples every minute, accelerating to three seconds within 90 seconds of each :00/:30 boundary. Chrome and the Mac must remain running and awake. Status is in ignored `output/pump-close-collector.json`; full observations and SHA-256-addressed filenames are under ignored `output/pump-closing-evidence/`.
+
+A source cutoff matching an exact close, passing the closing-board validator and observed within two minutes of build is labeled `closingSnapshot`. This is local evidence, not production settlement authorization. Hashes detect file changes, not source authenticity. No script writes the verified Redis namespace or enables payouts. A trusted production ingestion path, reviewed closing/roster evidence and mint-specific settlement acceptance remain required. Current-owner verification alone cannot certify a past round.
