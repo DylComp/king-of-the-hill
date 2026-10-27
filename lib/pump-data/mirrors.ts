@@ -20,4 +20,20 @@ export function reconcileMirrors(a:any,b:any,now=Date.now()):PumpBoard {
  const start=Date.parse(a.cup.startsAt)/1000;if(!finite(start)||start!==b.cup.startsAt/1000)throw Error('mirror_window_mismatch');
  return {entries:rows,periodLabel:'Competition · public mirrors',windowStartSec:start,totalRanked:100,builtAtMs:b.cup.builtAt,isFinal:a.cup.isFinal===true&&b.cup.isFinal===true};
 }
-export async function readPublicMirrors(){const urls=['https://pfsc.fun/api/state','https://www.scsp.fun/api/state'];const [a,b]=await Promise.all(urls.map(async url=>{const r=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(10000)});if(!r.ok)throw Error('mirror_unavailable');return r.json();}));return {data:reconcileMirrors(a,b),sourceUrls:urls};}
+export function primaryMirror(a:any,now=Date.now()):PumpBoard {
+ if(a?.ok!==true||a.source!=='cup'||a.cup?.id!==CUP)throw Error('mirror_identity_mismatch');
+ if(!fresh(a.fetchedAt,now))throw Error('mirror_stale');
+ if(!Array.isArray(a.squads)||a.squads.length!==100)throw Error('mirror_incomplete');
+ const seen=new Set<string>();const entries:PumpRow[]=a.squads.map((r:any,i:number)=>{
+  if(r.rank!==i+1||typeof r.id!=='string'||seen.has(r.id)||!finite(r.pnl)||typeof r.name!=='string'||!Number.isInteger(r.members)||r.members<0)throw Error('mirror_invalid_row');seen.add(r.id);
+  return {rank:r.rank,participantId:r.id,username:r.name,profileImageUrl:typeof r.image==='string'&&r.image.startsWith('https://')?r.image:null,pnlUsd:r.pnl,memberCount:r.members,lastRefreshedAtMs:0,topPositions:[]};
+ });const start=Date.parse(a.cup.startsAt)/1000;if(!finite(start))throw Error('mirror_window_mismatch');
+ return {entries,periodLabel:'Competition · public mirror',windowStartSec:start,totalRanked:100,isFinal:a.cup.isFinal===true};
+}
+export async function readPublicMirrors(){
+ const urls=['https://pfsc.fun/api/state','https://www.scsp.fun/api/state'];
+ const [a,b]=await Promise.all(urls.map(async url=>{try{const r=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(10000)});return r.ok?await r.json():null;}catch{return null;}}));
+ const primary=primaryMirror(a);
+ try{return {data:reconcileMirrors(a,b),sourceUrls:urls,corroborated:true,sourceReadAt:a.fetchedAt};}
+ catch{return {data:primary,sourceUrls:[urls[0]],corroborated:false,sourceReadAt:a.fetchedAt};}
+}

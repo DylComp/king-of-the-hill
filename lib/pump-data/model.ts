@@ -2,7 +2,7 @@ export const PERIODS=['daily','weekly','monthly','competition'] as const;
 export type Period=typeof PERIODS[number];
 export const SORTS=['combined','realized','unrealized'] as const;
 export type Sort=typeof SORTS[number];
-export type PumpRow={rank:number;groupId?:string;participantId?:string;username:string|null;profileImageUrl:string|null;pnlUsd:number;pnlSol?:number;pnlPercent?:number;realizedPnlUsd:number;unrealizedPnlUsd:number;buySpendSol:number;memberCount:number;membersCounted?:number;membersFresh?:number;lastRefreshedAtMs:number;positionsCount:number;topPositions:{mint:string;symbol:string|null;imageUri:string|null}[]};
+export type PumpRow={rank:number;groupId?:string;participantId?:string;username:string|null;profileImageUrl:string|null;pnlUsd:number;pnlSol?:number;pnlPercent?:number;realizedPnlUsd?:number;unrealizedPnlUsd?:number;buySpendSol?:number;memberCount:number;membersCounted?:number;membersFresh?:number;lastRefreshedAtMs:number;positionsCount?:number;topPositions:{mint:string;symbol:string|null;imageUri:string|null}[]};
 export type PumpBoard={entries:PumpRow[];periodLabel:string;windowStartSec:number;totalRanked:number;builtAtMs?:number;endSec?:number;isFinal?:boolean};
 const num=(x:unknown)=>typeof x==='number'&&Number.isFinite(x);
 // Validate required display fields. Never calculate, resort or substitute local scores.

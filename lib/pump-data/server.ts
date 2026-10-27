@@ -2,7 +2,7 @@ import {getJson,setJson} from '../redis';
 import {readPublicMirrors} from './mirrors';
 import {COMPETITION_ID} from '../king/model';
 import {parseBoard,type Period,type Sort,type PumpBoard} from './model';
-export type OfficialResult={source:'pump-official-api'|'pump-public-mirrors';sourceUrls?:string[];status:'available'|'stale'|'unavailable';reason?:string;period:Period;sort:Sort;fetchedAt:number|null;data:PumpBoard|null;rankingsVerified:false;hourlyWinnersVerified:false};
+export type OfficialResult={source:'pump-official-api'|'pump-public-mirrors';sourceUrls?:string[];corroborated?:boolean;sourceReadAt?:number;status:'available'|'stale'|'unavailable';reason?:string;period:Period;sort:Sort;fetchedAt:number|null;data:PumpBoard|null;rankingsVerified:false;hourlyWinnersVerified:false};
 const BASE='https://api.pump.fun/v1';
 export async function officialStandings(period:Period,sort:Sort):Promise<OfficialResult>{
  const key=`king:pump:board:v2:${period}:${sort}`;
