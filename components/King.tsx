@@ -10,6 +10,7 @@ import SiteNav, { type Brand } from "./SiteNav";
 import { useMe } from "./useMe";
 import KingParticipation from "./KingParticipation";
 import KingBoot from "./KingBoot";
+import KothToken from "./KothToken";
 import type {publicState} from "@/lib/king-token/store";
 
 export type BoardSquad = Squad;
@@ -53,7 +54,7 @@ export default function King() {
  <p className="lede">One KOTH token powers 30-minute rewards. Whoever is #1 on Pump’s competition board at the close wins. The live board displays Pump’s top 100 through a public mirror. Rewards remain paused until the feed and 30-minute winner selection are verified.</p>
  <p className="dim">KOTH creator fees fund the original split: 40% to the winning squad, 40% to KOTH holders who backed it, and 20% to proportional SOL airdrops to KOTH holders over $1.</p>
  <p className="dim">{data?.diagnosticsStatus==='unavailable'?"Wallet diagnostics are temporarily unavailable; live standings are shown below":data?`${data.board.initializedWallets} / ${data.board.wallets} wallets initialized` : "Loading tracker"}. New squads count from their first scan; figures update as the scanner rotates through wallets.</p></div>
- <div className="panel"><strong className="green">{!token?'Loading KOTH status':token.status==='awaiting_mint'?'PRELAUNCH — KOTH has not launched':token.status==='configured_paused'?'KOTH configured — activation checks pending':'KOTH rewards enabled'}</strong><p>{token?.mint?<>Official KOTH mint: <span style={{overflowWrap:'anywhere'}}>{token.mint}</span></>:"The tracker is live. Fee collection, paid rounds and holder airdrops remain inactive until the official KOTH mint is configured and verified."}</p></div>
+ <KothToken rewardsEnabled={token?.status==='enabled'}/>
  <div className="king-split"><div><strong>40%</strong><span>winning squad</span></div><div><strong>40%</strong><span>eligible KOTH supporters</span></div><div><strong>20%</strong><span>KOTH holders over $1</span></div></div>
  {(error||tokenError)&&<p role="status">{error??tokenError}</p>}
  <OfficialStandings/>

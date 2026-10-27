@@ -1,5 +1,13 @@
 # Single KOTH: 40/40/20 SOL rewards
 
+## Official KOTH token
+
+Contract address: `FaxcUtnGBpmBTzGRWWcEjUfzx6VAxkKe6nB6raSBpump`
+
+[Pump token page](https://pump.fun/coin/FaxcUtnGBpmBTzGRWWcEjUfzx6VAxkKe6nB6raSBpump) · [Solscan](https://solscan.io/token/FaxcUtnGBpmBTzGRWWcEjUfzx6VAxkKe6nB6raSBpump)
+
+Production `KING_MINT` is configured to this address. The address was supplied before minting; configuration is not proof of an on-chain launch or enabled rewards. Creator fees must route 100% to `kiNGXkmkJSMPQoFEdUZs68nANK16C1AjyQD2jVPY46C` using the locked Pump sharing configuration. The worker applies the 40% squad / 40% supporters / 20% holder SOL airdrop split. Payouts remain disabled until direct 30-minute closing snapshots, winner identities and mint-specific settlement checks pass.
+
 Production: https://www.kothcoins.fun. Vercel project: pump-tower.
 
 One official KOTH mint; separate squad coins and all their launch paths remain retired. Only collected creator fees from the configured official mint fund rewards.

@@ -7,6 +7,6 @@ export function kingMint(): string|null {
  if(key.toBase58()!==raw)throw Error('invalid_king_mint');
  return raw;
 }
-// Hard acceptance gate: remove only after official rankings AND hourly winners are verified.
+// Hard acceptance gate: remove only after official rankings AND 30-minute closing winners are verified.
 export const RANKINGS_VERIFIED = false;
 export function enabled(){const mint=kingMint();return RANKINGS_VERIFIED && process.env.KING_TOKEN_WORKER_ENABLED==='true' && !!mint;}

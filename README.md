@@ -1,5 +1,13 @@
 # King of the Hill
 
+## Official KOTH token
+
+Contract address: `FaxcUtnGBpmBTzGRWWcEjUfzx6VAxkKe6nB6raSBpump`
+
+[Pump token page](https://pump.fun/coin/FaxcUtnGBpmBTzGRWWcEjUfzx6VAxkKe6nB6raSBpump) · [Solscan](https://solscan.io/token/FaxcUtnGBpmBTzGRWWcEjUfzx6VAxkKe6nB6raSBpump)
+
+Production `KING_MINT` is configured to this address. The address was supplied before minting; configuration is not proof of an on-chain launch or enabled rewards. Creator fees must route 100% to `kiNGXkmkJSMPQoFEdUZs68nANK16C1AjyQD2jVPY46C` using the locked Pump sharing configuration. The worker applies the 40% squad / 40% supporters / 20% holder SOL airdrop split. Payouts remain disabled until direct 30-minute closing snapshots, winner identities and mint-specific settlement checks pass.
+
 ![King of the Hill](public/brand/koth-x-banner.png)
 
 **One KOTH token. Back your king.**
@@ -14,7 +22,7 @@ Track 100 squads through public mirrors of Pump competition standings. Rankings 
 | 40% | Eligible KOTH holders backing the winning squad, proportional to snapshot holdings |
 | 20% | Proportional SOL airdrops to KOTH holders worth more than $1 |
 
-KOTH is currently **prelaunch**. Financial processing is disabled until rankings, 30-minute winner selection, its public mint and on-chain creator-fee route are verified. There are no active squad tokens and no squad-token launches.
+The official KOTH address is configured for launch. Financial processing is disabled until rankings, 30-minute winner selection, its public mint and on-chain creator-fee route are verified. There are no active squad tokens and no squad-token launches.
 
 ## Architecture
 
