@@ -27,3 +27,14 @@ The current scanner ranks hourly wallet cash flow, not Pump official PnL or comp
 The split applies to collected creator fees, not total trade volume. Per 1 SOL of collected fees: 0.4 SOL squad, 0.4 SOL eligible supporters and 0.2 SOL KING buy-and-burn. Network costs require operating funds outside these allocations.
 
 Holders sign a backing choice and hold KING; squad members register their wallets. Switching has a one-hour cooldown. Selling or transferring KING out during the relevant hour removes supporter eligibility. Empty reward categories carry forward in their original buckets.
+
+## Official standings integration
+
+Source: https://api.pump.fun/v1, documented at https://docs.pump.fun/.
+Set server-only `PUMP_API_KEY` with `leaderboards.read` (plus `graph.read` and `profiles.read` for member expansion). No key in browser bundles or logs.
+
+`/api/king/standings` proxies `/pnl-leaderboard/groups` with daily/weekly/monthly and combined/realized/unrealized filters; competition reads `/competitions/{id}`. Original ranks and numeric scores are preserved. Successful responses cache for 60 seconds; source failure explicitly labels prior data stale, and a missing key shows unavailable with no computed fallback.
+
+The five-minute cron records official competition observations keyed by Pump build timestamp once access exists. These are evidence, not verified hourly winners. A rolling 24-hour PnL difference must not be treated as hourly profit. Boundary timestamps, membership/strike changes, refresh coverage and the hourly winner definition still require verification against actual source data.
+
+`RANKINGS_VERIFIED=false` in worker configuration is an explicit code-level lock. An enable env flag cannot bypass it. Do not remove until source equality and hourly winner acceptance are complete. Current adapter tests use synthetic schema fixtures, not live Pump data; they do not establish source parity.

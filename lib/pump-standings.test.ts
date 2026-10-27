@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {parseBoard} from './pump-data/model.ts';
+import {enabled} from './king-token/config.ts';
+const row=(rank:number,id:string,pnl:number)=>({rank,groupId:id,username:id,profileImageUrl:null,pnlUsd:pnl,pnlSol:1.23456789,pnlPercent:12.345,realizedPnlUsd:-10,unrealizedPnlUsd:110,buySpendSol:3,memberCount:4,membersCounted:3,lastRefreshedAtMs:1000,positionsCount:2,topPositions:[]});
+const board=()=>({entries:[row(1,'a',5),row(2,'b',100)],periodLabel:'24h',windowStartSec:100,totalRanked:2});
+test('preserves source ranking even when selected sort differs from combined PnL',()=>{const b=board();const parsed=parseBoard(b,'daily');assert.deepEqual(parsed.entries,b.entries);assert.equal(parsed.entries[0].pnlSol,1.23456789);});
+test('missing and malformed source cannot become an empty successful leaderboard',()=>{for(const value of [null,{}, {entries:[]}, {...board(),entries:[{...row(1,'a',1),pnlUsd:'1'}]}])assert.throws(()=>parseBoard(value,'daily'));});
+test('duplicate identities and invalid rank order are rejected',()=>{assert.throws(()=>parseBoard({...board(),entries:[row(1,'a',2),row(2,'a',1)]},'daily'));assert.throws(()=>parseBoard({...board(),entries:[row(2,'a',2),row(1,'b',1)]},'daily'));});
+test('legitimate empty published board is distinct from missing source',()=>{assert.deepEqual(parseBoard({...board(),entries:[],totalRanked:0},'daily').entries,[]);});
+test('competition retains source boundaries and excludes struck rows',()=>{const r={...row(1,'a',100),participantId:'a',kind:'group',struck:false,membersFresh:4};const b={leaderboard:{entries:[r],startSec:100,endSec:200,builtAtMs:200000,totalRanked:1,isFinal:false}};assert.equal(parseBoard(b,'competition').endSec,200);assert.throws(()=>parseBoard({leaderboard:{...b.leaderboard,entries:[{...r,struck:true}]}},'competition'));});
+test('payouts stay disabled even with a valid mint and enable flag until rankings verified',()=>{const oldMint=process.env.KING_MINT,oldFlag=process.env.KING_TOKEN_WORKER_ENABLED;try{process.env.KING_MINT='So11111111111111111111111111111111111111112';process.env.KING_TOKEN_WORKER_ENABLED='true';assert.equal(enabled(),false);}finally{if(oldMint==null)delete process.env.KING_MINT;else process.env.KING_MINT=oldMint;if(oldFlag==null)delete process.env.KING_TOKEN_WORKER_ENABLED;else process.env.KING_TOKEN_WORKER_ENABLED=oldFlag;}});

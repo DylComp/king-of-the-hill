@@ -1,5 +1,6 @@
 // Read-only competition records are separate from legacy financial allocations.
 import { getJson, redis, setJson } from "../redis";
+import {recordCompetitionObservation} from "../pump-data/server";
 import {enabled,kingMint} from "../king-token/config";
 import { COMPETITION_ENDS, HOUR, hourId, hourOf, pickKing } from "./model";
 import { competitionBoard, trackedSquads, struckSquads, walletsOf } from "./source";
@@ -47,5 +48,5 @@ async function scanTracking(now=Date.now()) {
 export async function runTracking(now=Date.now()) {
  const {randomUUID}=await import('node:crypto');const lease=randomUUID(),key=PREFIX+':scan-lock';
  if(await redis('SET',key,lease,'NX','EX',120)!=='OK')return {mode:'tracking-only',outcome:'scan_busy'};
- try{return await scanTracking(now);}finally{await redis('EVAL',"if redis.call('GET',KEYS[1])==ARGV[1] then return redis.call('DEL',KEYS[1]) end return 0",1,key,lease);}
+ try{await recordCompetitionObservation().catch(()=>null);return await scanTracking(now);}finally{await redis('EVAL',"if redis.call('GET',KEYS[1])==ARGV[1] then return redis.call('DEL',KEYS[1]) end return 0",1,key,lease);}
 }
