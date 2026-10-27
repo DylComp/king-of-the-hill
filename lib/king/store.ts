@@ -66,14 +66,16 @@ export const scannedAt = () => hash(k.scanned);
  * One transaction, so the cursor only moves together with the numbers it counted.
  */
 export async function saveScan(groupId: string, wallet: string, perHour: Map<number, bigint>, cursor: string | null, at: number) {
-  const cmds: (string | number)[][] = [];
+  const cmds: (string | number)[][] = [["HSETNX", "pt:king:wallet:since", wallet, at]];
   let total = 0n;
   for (const [hour, lamports] of perHour) {
     if (lamports === 0n) continue;
     cmds.push(["HINCRBY", k.banked(hour), groupId, lamports.toString()], ["EXPIRE", k.banked(hour), 30 * 86_400]);
+    cmds.push(["HINCRBY", `pt:king:wallet:hour:${hour}`, wallet, lamports.toString()], ["EXPIRE", `pt:king:wallet:hour:${hour}`, 30 * 86_400]);
     total += lamports;
   }
   if (total !== 0n) cmds.push(["HINCRBY", k.bankedTotal, groupId, total.toString()]);
+  if (total !== 0n) cmds.push(["HINCRBY", "pt:king:wallet:total", wallet, total.toString()]);
   if (cursor) cmds.push(["HSET", k.cursor, wallet, cursor]);
   cmds.push(["HSET", k.scanned, wallet, at]);
   await pipeline(cmds, true);
@@ -111,3 +113,5 @@ export const setCarried = (lamports: bigint) => redis("SET", k.carry, lamports.t
 /** One launch per squad at a time. */
 export const claimLaunch = async (groupId: string) => (await redis<string | null>("SET", k.launching(groupId), "1", "NX", "EX", 300)) === "OK";
 export const releaseLaunch = (groupId: string) => redis("DEL", k.launching(groupId));
+
+export const walletStats = async (hour:number) => { const [current,last,total,since,scans]=await Promise.all([hash(`pt:king:wallet:hour:${hour}`),hash(`pt:king:wallet:hour:${hour-3600000}`),hash("pt:king:wallet:total"),hash("pt:king:wallet:since"),scannedAt()]);return {current,last,total,since,scans}; };

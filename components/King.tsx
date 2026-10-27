@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import SquadAvatar from "./SquadAvatar";
 import { useEffect, useState } from "react";
 import type { Squad } from "@/lib/king/model";
 import { squadSlug } from "@/lib/king/model";
@@ -54,8 +55,8 @@ export default function King() {
  <div className="king-split"><div><strong>40%</strong><span>winning squad</span></div><div><strong>40%</strong><span>eligible KING supporters</span></div><div><strong>20%</strong><span>buy & burn KING</span></div></div>
  {(error||tokenError)&&<p role="status">{error??tokenError}</p>}
  <div className="squad-board-toolbar"><div><span className="kicker">the competition</span><h2 className="pixel">squad leaderboard</h2></div><div className="squad-field board-search"><label htmlFor="squad-search">Find a squad</label><div className="squad-search-wrap"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input id="squad-search" type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search by squad name" autoComplete="off"/></div><span className="field-hint" role="status">{data?`${squads.length} of ${data.squads.length} squads`:'Loading squads…'}</span></div></div>
- <div style={{overflowX:"auto",marginTop:24}}><table style={{width:"100%",textAlign:"left"}}><thead><tr><th>Squad</th><th>This hour · SOL</th><th>Last hour · SOL</th><th>Members</th></tr></thead><tbody>
- {squads.map(s=><tr key={s.groupId}><td style={{padding:"12px 8px"}}><Link href={`/king/${encodeURIComponent(squadSlug(s.name))}`}>{s.name}</Link></td><td>{solSigned(s.bankedHour)}</td><td>{solSigned(s.bankedLast)}</td><td>{s.members}</td></tr>)}
+ <div style={{overflowX:"auto",marginTop:24}}><table style={{width:"100%",textAlign:"left"}}><thead><tr><th>Squad</th><th>This hour · SOL</th><th>Last hour · SOL</th><th>Tracked total · SOL</th><th>Members</th></tr></thead><tbody>
+ {squads.map(s=><tr key={s.groupId}><td style={{padding:"12px 8px"}}><Link className="squad-identity" href={`/king/${encodeURIComponent(squadSlug(s.name))}`}><SquadAvatar src={s.image} name={s.name}/><span>{s.name}<small>{s.struck?"Disqualified":"View squad & members"}</small></span></Link></td><td>{solSigned(s.bankedHour)}</td><td>{solSigned(s.bankedLast)}</td><td>{solSigned(s.bankedTotal)}</td><td>{s.members}</td></tr>)}
  </tbody></table></div>
  {data && !squads.length && <p>No squads match your search.</p>}
  <div id="crowns" className="sec-head" style={{marginTop:40}}><h2 className="pixel">hourly crowns</h2><p className="dim">Each hourly crown recognizes the best positive squad trading result. Partial scan coverage is marked.</p></div>
