@@ -10,6 +10,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ mint: string }
   const meta = await redis<string | null>("GET", assetKeys.meta(mint)).catch(() => null);
   if (!meta) return new Response("not found", { status: 404 });
   const data = JSON.parse(meta);
+  data.description = "Historical token retired from the King of the Hill competition. The project now tracks squad wallet activity only. This token has no active rewards or payout program on the site.";
   for (const field of ["image", "website", "external_url", "createdOn"]) {
     if (field in data) data[field] = canonicalSiteUrl(data[field]);
   }

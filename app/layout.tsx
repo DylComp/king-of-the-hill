@@ -8,7 +8,7 @@ import ErrorReporter from "@/components/ErrorReporter";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "king of the hill",
-  description: "Follow every squad and its trading results. No squad tokens or automatic launches.",
+  description: "Follow all 100 squads, live wallet trading results and hourly crowns.",
   openGraph: {
     title: "king of the hill",
     description: "Squads compete for the hourly crown, tracked through their wallets.",

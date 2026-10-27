@@ -1,6 +1,5 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createRequire } from "node:module";
 import { FEE_TIERS, FEE_TIER_NAMES, cleanDraft, feeTier, initialBuyLamports, metadataJson, shares } from "./launch/model.ts";
 import { parseQuery } from "./launch/profile.ts";
 import { TIERS } from "./game.ts";
@@ -56,11 +55,4 @@ test("pump user queries", () => {
   assert.deepEqual(parseQuery(`https://pump.fun/profile/${wallet}?tab=coins`), { wallet });
   assert.deepEqual(parseQuery("pump.fun/profile/bob"), { username: "bob" });
   assert.equal(parseQuery("<script>"), null);
-});
-
-test("the browser's program allowlist matches the SDK", async () => {
-  const require = createRequire(import.meta.url);
-  const sdk = require("@pump-fun/pump-sdk");
-  const src = await import("node:fs").then((fs) => fs.readFileSync(new URL("../components/Launch.tsx", import.meta.url), "utf8"));
-  for (const id of [sdk.PUMP_PROGRAM_ID.toBase58(), sdk.PUMP_FEE_PROGRAM_ID.toBase58()]) assert.ok(src.includes(id), id);
 });

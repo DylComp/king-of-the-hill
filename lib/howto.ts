@@ -1,23 +1,9 @@
-// The docs shown in the "docs" section: what King of the Hill is, then every
-// section of the site and its features, in page order. Kept next to the rules so each change
-// updates it in the same commit; numbers are read from the rules, not typed in.
-import {
-  CASH_PER_SOL,
-  HOUSE_BOOST,
-  HOUSE_SYMBOL,
-  MAX_FURNITURE,
-  TREASURY_WALLET,
-  TIERS,
-  WALLET_BONUS,
-  citizensFor,
-  floorRate,
-  streakReward,
-} from "./game";
-import { FEE_TIERS, FEE_TIER_NAMES, SPLIT } from "./launch/model";
-import { HOLDERS_BPS, MAX_MEMBERS, MAX_PAYEES, MIN_PAYOUT_LAMPORTS, POT_BPS } from "./king/model";
-import { ALL_QUESTS_BONUS, QUESTS, REFERRED_REWARD, REFERRER_REWARD } from "./quests";
-
 export type DocSection = { id: string; title: string; summary: string; items: [string, string][] };
-
-export const DOCS_INTRO = "King of the Hill tracks all 100 squads through their wallets. No squad tokens, launches, buybacks or automatic cash payouts. The tower game remains a read-only view of your wallet.";
-export const DOCS: DocSection[] = [{id:"king",title:"Squad tracker",summary:"All squads compete without tokens.",items:[["Tracking","Trading results count from each wallet's first scan. The scanner rotates through wallets every five minutes."],["Crowns","The best positive trading result wins each hourly crown. Incomplete scan coverage is marked."],["No token launches","Automatic and manual launches are disabled. Existing coins are retired from the competition; their blockchain records remain."],["Funds","The tracker does not sign transactions or spend SOL. Existing treasury funds are left untouched."]]}];
+export const DOCS_INTRO = "King of the Hill follows all 100 squads in pump.fun’s Squad Invitational using public wallet activity.";
+export const DOCS: DocSection[] = [{ id: "tracking", title: "Follow the competition", summary: "Compare squad trading results and see who earns each hourly crown.", items: [
+  ["Standings", "The board shows SOL banked from tracked trades during this hour and the previous hour. It is a trading activity measure, not a wallet balance."],
+  ["Coverage", "The scanner reads member wallets every five minutes. Tracking begins with each wallet’s first scan; earlier trades are not backfilled. Failed reads are retried, so standings can lag."],
+  ["Hourly crowns", "The eligible squad with the best positive result earns the hourly crown. If no eligible squad has a positive result, no crown is awarded. Incomplete scan coverage is marked."],
+  ["Competition", "The cup ends November 9, 2026 at 14:00 UTC. Final results may take time to settle as wallet scans complete."],
+  ["Read-only", "Browsing the tracker is free and requires no wallet connection. The tracker reads public activity and does not move funds."]
+]}];

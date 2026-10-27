@@ -1,10 +1,1 @@
-import { fail, json } from "@/lib/api";
-import { launchStatus } from "@/lib/launch/server";
-
-export async function GET() {
-  try {
-    return json(await launchStatus());
-  } catch (e) {
-    return fail(e, "launch status");
-  }
-}
+export async function GET() { return Response.json({open:false,enabled:false,reason:"This feature is retired. Visit the squad tracker."}); }

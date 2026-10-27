@@ -5,24 +5,21 @@ import { GITHUB_URL, X_URL } from "@/lib/site";
 import { shortAddr } from "@/lib/game";
 import GitHubMark from "./GitHubMark";
 import XMark from "./XMark";
-import { NavCA } from "./CopyCA";
 import HoverText from "./HoverText";
 import Logo from "./Logo";
 import { walletLinks } from "./wallet";
 import type { useMe } from "./useMe";
 
 const LINKS = [
-  ["/#tower", "tower"],
-  ["/#city", "city"],
-  ["/#skyline", "skyline"],
-  ["/king", "king"],
-  ["/#docs", "docs"],
+  ["/", "squads"],
+  ["/#crowns", "crowns"],
+  ["/#docs", "how it works"],
 ] as const;
 
 /** A section with its own name and mark, like King of the Hill. */
 export type Brand = { name: string; href: string; logo: string };
 
-/** The game's nav for the launchpad pages, with the same wallet button. */
+/** Shared tracker navigation. */
 export default function SiteNav({ wallet, active, brand }: { wallet: ReturnType<typeof useMe>; active?: string; brand?: Brand }) {
   const { me, connect, signOut, mobilePick, setMobilePick, note, setNote } = wallet;
   useEffect(() => {
@@ -53,7 +50,6 @@ export default function SiteNav({ wallet, active, brand }: { wallet: ReturnType<
             </Link>
           ))}
         </nav>
-        <NavCA />
         <a className="gh" href={GITHUB_URL} target="_blank" rel="noopener" title="source code on GitHub" aria-label="GitHub">
           <GitHubMark />
         </a>

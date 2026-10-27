@@ -15,3 +15,15 @@ test('all launch and legacy payout paths reject before signing or preparing',asy
  for(const fn of [prepare,send,genericPrepare,confirm,pay]) assert.equal((await fn()).status,410);
  assert.deepEqual((await (await queue()).json()).squads,[]);
 });
+
+// Stale clients and manually invoked old crons must not reach transaction builders.
+import {POST as asset} from '../app/api/launch/asset/route.ts';
+import {POST as legacyConfirm} from '../app/api/launch/confirm/route.ts';
+import {POST as collect} from '../app/api/token/[mint]/collect/route.ts';
+import {GET as devFees} from '../app/api/cron/dev-fees/route.ts';
+import {GET as profileFees} from '../app/api/cron/profile-fees/route.ts';
+import {GET as launchStatus} from '../app/api/launch/status/route.ts';
+test('legacy fee workers and transaction builders are retired without credentials',async()=>{
+ for(const fn of [asset,legacyConfirm,collect,devFees,profileFees]) assert.equal((await fn()).status,410);
+ assert.equal((await (await launchStatus()).json()).open,false);
+});

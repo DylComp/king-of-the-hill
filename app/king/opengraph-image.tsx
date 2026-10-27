@@ -20,7 +20,7 @@ export default async function Image() {
         <div style={{ display: "flex", flexDirection: "column", flex: 1, gap: 26 }}>
           <div style={{ fontFamily: "Pixel", fontSize: 20, color: "#86efac" }}>SQUAD INVITATIONAL</div>
           <div style={{ fontFamily: "Pixel", fontSize: 46, lineHeight: 1.25, color: "#ffd43b" }}>KING OF THE HILL</div>
-          <div style={{ fontSize: 44, lineHeight: 1.1 }}>All squads. One crown. Track the competition without creating tokens.</div>
+          <div style={{ fontSize: 44, lineHeight: 1.1 }}>All squads. One crown. Live standings and hourly trading results.</div>
           <div style={{ fontSize: 32, color: "#8a8f9e" }}>{`${SITE_HOST}/king`}</div>
         </div>
       </div>
