@@ -66,3 +66,18 @@ The winner is the squad with the largest positive PnL gain over the hour. The sh
 ## All-holder 20% allocation
 
 The former burn allocation is replaced by SOL rewards to every eligible wallet holding strictly more than $1 of official KOTH at the hourly snapshot, proportional to holdings. Overlap with the other 80% is permitted. Read [worker details](king-worker.md) for exclusions, complete-account reconciliation, pricing and throughput limits. The mint-specific scan, price and transfer simulations must pass before activation. No buy or burn is performed.
+
+## Live acceptance check — October 27, 2026, 17:33 UTC
+
+The user's existing Chrome displayed the Pump Squads competition board successfully. Comparing 100 visible rows to the current site feed yielded 73 matching rank/member-count pairs and 70 matching displayed PnL amounts. The top-five names and ranks agreed, but several scores differed. These observations were taken across refresh cycles, not one atomic source snapshot; they demonstrate partial agreement only. They do not verify exact parity, historical hour boundaries or winners.
+
+The 20% SOL holder allocation is deployed and covered by allocation/threshold/completeness tests. Typecheck and 96 tests pass. No token mint is configured, no fees were collected and no SOL was sent. Production payouts remain disabled.
+
+Open blockers before financial activation:
+1. A reliable direct Pump data capture with source timestamps, full coverage and verified squad-to-owner/member identities.
+2. An audited complete hourly boundary pair and winner proof for largest positive hourly PnL gain. The evidence-record writer is not implemented; the consumer fails closed.
+3. Working fresh SOL/USD pricing: live requests to the configured Pyth Hermes endpoint returned HTTP 401 from the development host. Production oracle connectivity is not proven. Resolve authenticated/provider access or validate a replacement before snapshots can qualify wallets.
+4. With the actual mint: locked treasury fee-route verification, full-supply holder scan, canonical SOL-pair valuation, unsigned collection/transfer simulations and capacity checks for the expected holder/supporter count.
+5. After controlled activation: finalized collection and all three reward-category receipts. Automated batching exists, but live throughput and settlement are unproven.
+
+A mint address may be supplied before these are resolved; supplying it is not permission to bypass these checks or evidence of launch readiness.
