@@ -10,4 +10,4 @@ Generated with the built-in image-generation tool using the actual site logo as 
 
 Avatar prompt: faithfully recreate the crowned green pixel mascot with sunglasses, black suit, white shirt, red tie, yellow and pink flowers on a dark green background; centered square avatar with no text and circular-crop margin.
 
-Banner prompt: use the same site mascot at right in a 3:1 dark-green pixel-art composition; exact text KING OF THE HILL, $KOTH, kingofthehills.fun; keep the lower-left clear for the X profile overlay.
+Banner prompt: use the same site mascot at right in a 3:1 dark-green pixel-art composition; exact text KING OF THE HILL, $KOTH, kothcoins.fun; keep the lower-left clear for the X profile overlay.

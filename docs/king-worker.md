@@ -1,6 +1,6 @@
 # Single KOTH: original 40/40/20 competition
 
-Production: https://www.kingofthehills.fun. Vercel project: pump-tower.
+Production: https://www.kothcoins.fun. Vercel project: pump-tower.
 
 The only project token is KOTH. All 100 squads are tracked without issuing tokens. The nine retired squad coins, their immutable metadata and their historical financial journals are never sources of revenue or payout eligibility for this system. Every squad-token launch path and the old signer remain disabled.
 

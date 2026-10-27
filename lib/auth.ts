@@ -4,6 +4,7 @@
 import { createHmac, createPublicKey, randomBytes, timingSafeEqual, verify } from "node:crypto";
 import { cookies } from "next/headers";
 import { base58Decode } from "./base58";
+import { SITE_HOST } from "./site";
 import { redis } from "./redis";
 
 const COOKIE = "pt_session";
@@ -19,7 +20,7 @@ async function secret(): Promise<string> {
 }
 
 export function signInMessage(wallet: string, nonce: string) {
-  return `King of the Hill sign in\n\nThis only proves you own this wallet. It does not send a transaction or cost anything.\n\nWallet: ${wallet}\nNonce: ${nonce}`;
+  return `King of the Hill sign in\nDomain: ${SITE_HOST}\n\nThis only proves you own this wallet. It does not send a transaction or cost anything.\n\nWallet: ${wallet}\nNonce: ${nonce}`;
 }
 
 /** Each request gets its own nonce, so someone else asking for one can't cancel your sign-in. */

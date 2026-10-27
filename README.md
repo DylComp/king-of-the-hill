@@ -4,7 +4,7 @@
 
 **One KOTH token. Back your king.**
 
-[Live site](https://www.kingofthehills.fun) · [Worker documentation](docs/king-worker.md) · [Launch checklist](docs/king-launch.md)
+[Live site](https://www.kothcoins.fun) · [Worker documentation](docs/king-worker.md) · [Launch checklist](docs/king-launch.md)
 
 Track 100 squads through public mirrors of Pump competition standings. Rankings and hourly winner selection remain unverified. KOTH creator fees fund the original reward system:
 

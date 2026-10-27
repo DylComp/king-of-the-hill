@@ -1,4 +1,5 @@
 import {createPublicKey,verify} from 'node:crypto';
+import {SITE_HOST} from '../site.ts';
 import {PublicKey} from '@solana/web3.js';
-export function participationMessage(wallet:string,groupId:string,action:'back'|'register',nonce:string,expires:number){return `King of the Hill — ${action==='back'?'back a squad':'register squad payout wallet'}\nDomain: www.kingofthehills.fun\nWallet: ${wallet}\nSquad: ${groupId}\nAction: ${action}\nNonce: ${nonce}\nExpires: ${expires}\nThis message moves no funds. Switching squads has a one-hour eligibility cooldown.`;}
+export function participationMessage(wallet:string,groupId:string,action:'back'|'register',nonce:string,expires:number){return `King of the Hill — ${action==='back'?'back a squad':'register squad payout wallet'}\nDomain: ${SITE_HOST}\nWallet: ${wallet}\nSquad: ${groupId}\nAction: ${action}\nNonce: ${nonce}\nExpires: ${expires}\nThis message moves no funds. Switching squads has a one-hour eligibility cooldown.`;}
 export function verifiedMessage(wallet:string,message:string,signature:string){try{const key=createPublicKey({key:{kty:'OKP',crv:'Ed25519',x:Buffer.from(new PublicKey(wallet).toBytes()).toString('base64url')},format:'jwk'});const sig=Buffer.from(signature,'base64');return sig.length===64&&verify(null,Buffer.from(message),key,sig);}catch{return false;}}
