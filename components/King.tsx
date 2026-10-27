@@ -42,16 +42,16 @@ export function useKing<T>(url: string, every = 10_000) {
   return { data, error };
 }
 
-type TrackingData = {mode:string;board:{wallets:number;initializedWallets:number};squads:BoardSquad[];crowns:{hour:string;squad:string|null;gainSol:number;provisional:boolean}[]};
+type TrackingData = {mode:string;diagnosticsStatus:string;board:{wallets:number;initializedWallets:number|null};squads:BoardSquad[];crowns:{hour:string;squad:string|null;gainSol:number;provisional:boolean}[]};
 export default function King() {
- const {data:token,error:tokenError}=useKing<{mint:string|null;status:string;worker:ReturnType<typeof publicState>}>("/api/king/token",30_000);
+ const {data:token,error:tokenError}=useKing<{mint:string|null;status:string;ledgerAvailable:boolean;worker:ReturnType<typeof publicState>}>("/api/king/token",30_000);
  const wallet=useMe();const {data,error}=useKing<TrackingData>("/api/king",30_000);const [query,setQuery]=useState("");
  const squads=data?.squads.filter(s=>s.name.toLowerCase().includes(query.trim().toLowerCase()))??[];
  return <><SiteNav wallet={wallet} active="/" brand={KING_BRAND}/><main><section className="sec">
  <div className="sec-head"><span className="kicker">KOTH / squad competition</span><h1 className="pixel display sm">one token. back your king.</h1>
  <p className="lede">One KOTH token powers a competition across all 100 squads. Squad competition standings use cross-checked public mirrors of Pump’s data. Rewards remain paused until the feed and hourly winner selection are verified.</p>
  <p className="dim">KOTH creator fees fund the original split: 40% to the winning squad, 40% to KOTH holders who backed it, and 20% to buy and burn KOTH.</p>
- <p className="dim">{data?`${data.board.initializedWallets} / ${data.board.wallets} wallets initialized` : "Loading tracker"}. New squads count from their first scan; figures update as the scanner rotates through wallets.</p></div>
+ <p className="dim">{data?.diagnosticsStatus==='unavailable'?"Wallet diagnostics are temporarily unavailable; live standings are shown below":data?`${data.board.initializedWallets} / ${data.board.wallets} wallets initialized` : "Loading tracker"}. New squads count from their first scan; figures update as the scanner rotates through wallets.</p></div>
  <div className="panel"><strong className="green">{!token?'Loading KOTH status':token.status==='awaiting_mint'?'PRELAUNCH — KOTH has not launched':token.status==='configured_paused'?'KOTH configured — activation checks pending':'KOTH rewards enabled'}</strong><p>{token?.mint?<>Official KOTH mint: <span style={{overflowWrap:'anywhere'}}>{token.mint}</span></>:"The tracker is live. Fee collection, paid rounds and buy-and-burn remain inactive until the official KOTH mint is configured and verified."}</p></div>
  <div className="king-split"><div><strong>40%</strong><span>winning squad</span></div><div><strong>40%</strong><span>eligible KOTH supporters</span></div><div><strong>20%</strong><span>buy & burn KOTH</span></div></div>
  {(error||tokenError)&&<p role="status">{error??tokenError}</p>}
@@ -60,7 +60,7 @@ export default function King() {
  <div className="panel"><strong>Hourly winners: verification pending</strong><p>Historical wallet cash-flow results are not used as proof of official hourly winners. No KOTH payouts are enabled.</p></div>
  </section><KingParticipation wallet={wallet} squads={data?.squads??[]}/>
  <section id="rewards" className="sec"><h2 className="pixel">payouts & KOTH burns</h2><p className="dim">Only finalized transaction receipts count as paid. These records belong to the single KOTH system.</p>
- {!token?.worker?.rounds.length&&<p>No KOTH reward rounds yet. Rewards begin after launch and the first complete snapshot hour.</p>}
+ {token?.ledgerAvailable===false?<p role="status">Reward records are temporarily unavailable. Payouts remain disabled pending verification.</p>:!token?.worker?.rounds.length&&<p>No KOTH reward rounds yet. Rewards begin after launch and the first complete snapshot hour.</p>}
  {token?.worker?.rounds.map(r=><article className="panel" key={r.hour}><h3>{new Date(r.hour).toLocaleString()} · {r.squad??'Awaiting winner'}</h3><p>{r.status} · {(Number(r.feesLamports)/1e9).toFixed(6)} SOL collected · {r.payouts.length} allocations</p><p>Squad: {(Number(r.allocations?.squad??0)/1e9).toFixed(6)} SOL · Supporters: {(Number(r.allocations?.supporters??0)/1e9).toFixed(6)} SOL · KOTH buy-and-burn: {(Number(r.burnLamports??0)/1e9).toFixed(6)} SOL</p>{r.signatures.map(sig=><p key={sig}><a href={`https://solscan.io/tx/${sig}`} target="_blank" rel="noreferrer">Finalized receipt ↗</a></p>)}</article>)}
  </section><section id="docs" className="sec"><h2 className="pixel">how it works</h2><p className="lede">{DOCS_INTRO}</p>{DOCS.map(section=><div key={section.id}><h3>{section.title}</h3><p>{section.summary}</p><dl>{section.items.map(([title,body])=><div key={title}><dt className="green">{title}</dt><dd>{body}</dd></div>)}</dl></div>)}</section></main></>;
 }

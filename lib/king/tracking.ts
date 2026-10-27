@@ -3,7 +3,7 @@ import { getJson, redis, setJson } from "../redis";
 import {recordCompetitionObservation} from "../pump-data/server";
 import {enabled,kingMint} from "../king-token/config";
 import { COMPETITION_ENDS, HOUR, hourId, hourOf, pickKing } from "./model";
-import { competitionBoard, trackedSquads, struckSquads, walletsOf } from "./source";
+import { competitionBoard, rosterBoard, trackedSquads, struckSquads, walletsOf } from "./source";
 import { bankedAt, scannedAt } from "./store";
 import { allScannedSince, scanWallets } from "./scan";
 export type TrackingCrown = { hour: string; squad: string | null; groupId: string | null; gainSol: number; provisional: boolean };
@@ -16,10 +16,16 @@ export async function trackingCrowns(): Promise<TrackingCrown[]> {
 }
 export async function trackingBoard() {
  const ids=trackedSquads(), wallets=walletsOf(ids);
+ try {
  const [board, scans, crowns, lastScan]=await Promise.all([competitionBoard(ids),scannedAt(),trackingCrowns(),getJson(PREFIX+":lastScan")]);
- return { mode:"single-king", launchesEnabled:false, payoutsEnabled:enabled(), coins:0, kingMint:kingMint(),
+ return { mode:"single-king", launchesEnabled:false, payoutsEnabled:enabled(), coins:0, kingMint:kingMint(), diagnosticsStatus:"available",
   lastScan, board:{takenAt:board.takenAt,wallets:wallets.length,initializedWallets:wallets.filter(w=>scans[w.wallet]).length},
   squads:board.squads.map(s=>({...s,coin:null})),crowns,endsAt:COMPETITION_ENDS };
+ } catch {
+ const board=rosterBoard();
+ return {mode:"single-king",launchesEnabled:false,payoutsEnabled:enabled(),coins:0,kingMint:kingMint(),diagnosticsStatus:"unavailable",
+ lastScan:null,board:{takenAt:board.takenAt,wallets:wallets.length,initializedWallets:null},squads:board.squads.map(s=>({...s,coin:null})),crowns:[] as TrackingCrown[],endsAt:COMPETITION_ENDS};
+ }
 }
 async function scanTracking(now=Date.now()) {
  if(now>=COMPETITION_ENDS+HOUR) return {mode:"tracking-only",done:true};

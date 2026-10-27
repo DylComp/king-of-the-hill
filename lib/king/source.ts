@@ -54,3 +54,6 @@ export async function competitionBoard(tracked: Set<string>, now = Date.now()): 
 
 /** All squads participate without requiring a token. */
 export const trackedSquads = () => new Set(SQUADS.map(s => s.groupId));
+
+/** Historical roster only; unavailable diagnostic values stay null. */
+export function rosterBoard(){return {takenAt:SNAPSHOT_AT,squads:SQUADS.map(s=>({groupId:s.groupId,name:s.name,image:s.image,rank:s.rank,members:s.members.length,struck:s.struck,bankedHour:null,bankedLast:null,bankedTotal:null}))};}
