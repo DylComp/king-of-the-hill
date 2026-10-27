@@ -1,6 +1,9 @@
 // One official KOTH token; all three allocations are paid in SOL.
 export const SPLIT = { squad: 4000, supporters: 4000, holders: 2000 } as const;
-export const HOUR = 3_600_000;
+export const HOUR = 3_600_000; // Backing-switch cooldown remains one hour.
+export const ROUND = 30 * 60_000;
+export const roundOf = (at:number) => Math.floor(at / ROUND) * ROUND;
+export const roundId = (at:number) => new Date(roundOf(at)).toISOString().slice(0,16)+'Z';
 export const END = Date.parse('2026-11-09T14:00:00Z');
 export const TREASURY = 'kiNGXkmkJSMPQoFEdUZs68nANK16C1AjyQD2jVPY46C';
 export const DEV = 'KiNgDiSzoX9Z69LoRZh73QkBhJNLqxDbJKgQ2bHmon7';

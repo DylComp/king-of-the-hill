@@ -81,3 +81,7 @@ Open blockers before financial activation:
 5. After controlled activation: finalized collection and all three reward-category receipts. Automated batching exists, but live throughput and settlement are unproven.
 
 A mint address may be supplied before these are resolved; supplying it is not permission to bypass these checks or evidence of launch readiness.
+
+## Current change: 30-minute rounds
+
+The owner selected every ranked squad for winner comparison, including squads outside the displayed top 100. Rounds now span :00–:30 and :30–:00 UTC. One-hour backing-switch cooldown remains unchanged. Historical hourly audit observations above are retained as history. Coinbase SOL/USD, cross-checked against Kraken with 60-second freshness and 1% maximum divergence, replaces the inaccessible Pyth endpoint. `/api/king/readiness` checks production pricing and direct-source connectivity without spending or changing state. A direct Pump browser response reports 954 ranked squads but returns 100 rows; requesting limit=1000 still returned 100. Full coverage and complete source-time boundary evidence remain required.

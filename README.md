@@ -6,7 +6,7 @@
 
 [Live site](https://www.kothcoins.fun) · [Worker documentation](docs/king-worker.md) · [Launch checklist](docs/king-launch.md)
 
-Track 100 squads through public mirrors of Pump competition standings. Rankings and hourly winner selection remain unverified. KOTH creator fees fund the original reward system:
+Track 100 squads through public mirrors of Pump competition standings. Rankings and 30-minute winner selection remain unverified. KOTH creator fees fund the original reward system:
 
 | Allocation | Destination |
 | --- | --- |
@@ -14,7 +14,7 @@ Track 100 squads through public mirrors of Pump competition standings. Rankings 
 | 40% | Eligible KOTH holders backing the winning squad, proportional to snapshot holdings |
 | 20% | Proportional SOL airdrops to KOTH holders worth more than $1 |
 
-KOTH is currently **prelaunch**. Financial processing is disabled until rankings, hourly winner selection, its public mint and on-chain creator-fee route are verified. There are no active squad tokens and no squad-token launches.
+KOTH is currently **prelaunch**. Financial processing is disabled until rankings, 30-minute winner selection, its public mint and on-chain creator-fee route are verified. There are no active squad tokens and no squad-token launches.
 
 ## Architecture
 

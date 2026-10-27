@@ -1,6 +1,6 @@
 import {PublicKey,SystemProgram} from '@solana/web3.js';
 import {amount,DEV,TREASURY} from './model.ts';
-export type HolderPrice={numerator:string;denominator:string;observedAt:number;publishedAt:number;slot:number;source:'pump-curve-pyth'|'pump-amm-pyth'};
+export type HolderPrice={numerator:string;denominator:string;observedAt:number;publishedAt:number;slot:number;source:'pump-curve-exchanges'|'pump-amm-exchanges'};
 export type HolderAccount={pubkey:string;owner:string;mint:string;tokens:string};
 // USD per raw token unit as an integer fraction. Exactly $1 is not eligible.
 export function overOneDollar(tokens:string,price:HolderPrice){return amount(tokens)*amount(price.numerator)>amount(price.denominator);}

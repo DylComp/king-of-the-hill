@@ -5,7 +5,7 @@ import {connection,verifyLaunch} from '../launch/pump';
 import {rpcUrl} from '../chain';
 import {eligibleHolders,type HolderAccount} from './holders';
 import {holderPrice} from './price';
-import {DEV,TREASURY,HOUR} from './model';
+import {DEV,TREASURY,ROUND} from './model';
 import type {SnapshotHolder} from './store';
 const require=createRequire(import.meta.url);
 const sdk=require('@pump-fun/pump-sdk') as typeof import('@pump-fun/pump-sdk');
@@ -44,7 +44,7 @@ export async function heldThroughHour(c:Connection,mint:string,wallet:string,h:S
   let before:string|undefined,complete=false;
   for(let page=0;page<20;page++){
    const rows=await c.getSignaturesForAddress(new PublicKey(address),{limit:1000,...(before?{before}:{})},'finalized');
-   for(const row of rows){if(row.blockTime==null)throw Error('holder_history_incomplete');const at=row.blockTime*1000;if(at>=hour&&at<hour+HOUR&&!row.err)signatures.add(row.signature);}
+   for(const row of rows){if(row.blockTime==null)throw Error('holder_history_incomplete');const at=row.blockTime*1000;if(at>=hour&&at<hour+ROUND&&!row.err)signatures.add(row.signature);}
    if(rows.length<1000||rows.some(r=>r.blockTime!=null&&r.blockTime*1000<hour)){complete=true;break;}before=rows[rows.length-1].signature;
   }
   if(!complete)throw Error('holder_history_limit');

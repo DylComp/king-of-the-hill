@@ -57,7 +57,7 @@ test('single-KOTH journal refuses concurrent owners and changed mint; strips sec
 import {Keypair} from '@solana/web3.js';
 import {eligibleHolders,overOneDollar,type HolderPrice} from './king-token/holders.ts';
 import {TREASURY} from './king-token/model.ts';
-const price:HolderPrice={numerator:'1',denominator:'100',slot:1,observedAt:1000,publishedAt:1000,source:'pump-curve-pyth'};
+const price:HolderPrice={numerator:'1',denominator:'100',slot:1,observedAt:1000,publishedAt:1000,source:'pump-curve-exchanges'};
 test('holder threshold is strictly over $1 with exact integer math',()=>{
  assert.equal(overOneDollar('100',price),false);assert.equal(overOneDollar('101',price),true);
  assert.equal(overOneDollar('9007199254740993',{...price,denominator:'9007199254740992'}),true);
@@ -74,4 +74,18 @@ test('overlap permits all three categories without overspending; holder dust sta
  validateAllocation(b,a.payouts);assert.equal(a.payouts.filter(p=>p.wallet==='same').length,3);
  assert.equal(a.payouts.reduce((n,p)=>n+BigInt(p.lamports),0n)+Object.values(a.carry).reduce((n,v)=>n+BigInt(v),0n),1001n);
  assert.throws(()=>validateAllocation(b,[{wallet:'x',kind:'holder',lamports:'202'}]),/exceeded/);
+});
+
+import {parseUsdQuotes} from './king-token/usd.ts';
+import {ROUND,roundOf,roundId} from './king-token/model.ts';
+test('30-minute round keys retain minutes while switch cooldown stays one hour',()=>{
+ const t=Date.parse('2026-10-27T17:45:00Z');assert.equal(ROUND,1800000);assert.equal(HOUR,3600000);assert.equal(roundId(t),'2026-10-27T17:30Z');assert.equal(roundOf(t),Date.parse('2026-10-27T17:30:00Z'));
+});
+test('USD quote requires two fresh agreeing prices and rejects future/stale/disagreement',()=>{
+ const now=Date.parse('2026-10-27T17:40:00Z');const c={price:'100.98',time:new Date(now-1000).toISOString()};const k={error:[],result:{SOLUSD:[['100.99','1',(now-2000)/1000]]}};
+ assert.equal(parseUsdQuotes(c,k,now).numerator,'10098');assert.equal(parseUsdQuotes(c,k,now).denominator,'100');
+ assert.throws(()=>parseUsdQuotes(c,k,now+61000),/stale/);
+ assert.throws(()=>parseUsdQuotes({...c,time:new Date(now+11000).toISOString()},k,now),/stale/);
+ assert.throws(()=>parseUsdQuotes({...c,price:'103'},k,now),/disagree/);
+ assert.throws(()=>parseUsdQuotes(c,{error:['bad'],result:k.result},now),/invalid/);
 });
