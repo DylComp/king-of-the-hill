@@ -19,7 +19,7 @@ The sharing configuration must be locked (admin revoked) and the curve creator m
 - Direct Pump leaderboard access returned HTTP 403 during this audit. Public mirror agreement is not proof of direct Pump parity.
 - At the sampled refresh, 64 of 100 rank/score/member-count combinations agreed between PFSC and SCS. Refresh skew is expected; never combine mismatched snapshots for payment.
 - Only 51 current source participant IDs matched the historical worker roster; only 48 also matched member count. Resolve participant-to-group identities and obtain verified owner/member wallets before allocating squad rewards. Never match payout recipients by display name alone.
-- prepareRound still uses bankedAt/pickKing (wallet cash flow). It is NOT wired to the displayed competition feed. Replace this path with an evidenced winner decision before removing any lock.
+- The former prepareRound cash-flow fallback has been removed. Settlement now requires a verified direct-source hourly record; the production producer of that evidence remains unimplemented.
 - User confirmed the original rule: largest PnL gain during that specific hour, not highest cumulative competition rank. Source timestamps, complete boundary observations, ties, disqualifications and missing data need acceptance checks.
 - Keep RANKINGS_VERIFIED=false and the token worker disabled. Verify a complete shadow round, including correct recipient identities, before activation. Financial receipt verification still requires the actual mint after launch.
 
@@ -34,11 +34,11 @@ The current scanner ranks hourly wallet cash flow, not Pump official PnL or comp
 1. Supply the public KOTH mint, optionally before minting. Set `KING_MINT` in Vercel Production, leaving `KING_TOKEN_WORKER_ENABLED=false` until checks pass.
 2. Verify the public mint exists, is the intended standard SOL-paired Pump token, and its locked sharing configuration directs 100% to the treasury above.
 3. Verify environment-held signers match the treasury and collection gas wallet `KiNgDiSzoX9Z69LoRZh73QkBhJNLqxDbJKgQ2bHmon7`. Check current gas balances. Treasury must cover the 0.05 SOL reserve, all outstanding allocations and transaction overhead.
-4. Verify RPC, durable journal storage, cron authentication, alerts and simulation of collection/buy-and-burn for this mint. Keep legacy `KING_WORKER_ENABLED=false` and all squad launch routes disabled.
+4. Verify RPC, durable journal storage, cron authentication, alerts and simulation of collection and all three SOL payout categories for this mint. Keep legacy `KING_WORKER_ENABLED=false` and all squad launch routes disabled.
 5. Set only `KING_TOKEN_WORKER_ENABLED=true` and redeploy. Confirm the one-minute token cron and five-minute tracker are advancing.
-6. Verify the first collected fee receipt, eligible holder/squad payouts and actual KOTH burn against finalized chain receipts. Until then, live settlement is unproven.
+6. Verify the first collected fee receipt, eligible squad, supporter and all-holder SOL payouts against finalized chain receipts. Until then, live settlement is unproven.
 
-The split applies to collected creator fees, not total trade volume. Per 1 SOL of collected fees: 0.4 SOL squad, 0.4 SOL eligible supporters and 0.2 SOL KOTH buy-and-burn. Network costs require operating funds outside these allocations.
+The split applies to collected creator fees, not total trade volume. Per 1 SOL of collected fees: 0.4 SOL squad, 0.4 SOL eligible supporters and 0.2 SOL proportional all-holder airdrops. Network costs require operating funds outside these allocations.
 
 Holders sign a backing choice and hold KOTH; squad members register their wallets. Switching has a one-hour cooldown. Selling or transferring KOTH out during the relevant hour removes supporter eligibility. Empty reward categories carry forward in their original buckets.
 
@@ -61,4 +61,8 @@ This alternative only supplies competition standings, not daily/weekly/monthly b
 
 ## Confirmed hourly rule
 
-The winner is the squad with the largest positive PnL gain over the hour. The shadow evaluator in lib/pump-data/hourly.ts compares two complete cumulative competition boards at exact source-built hour boundaries. It rejects changed coverage/member counts and never treats fetch time as source time. Ties stay unresolved; no positive gain produces no candidate. Every result remains verified=false. Source authenticity, member identity (not merely count), disqualifications and recipient mapping still require separate verification. This evaluator is not connected to financial execution, and current public mirrors do not guarantee exact boundary snapshots.
+The winner is the squad with the largest positive PnL gain over the hour. The shadow evaluator in lib/pump-data/hourly.ts compares two complete cumulative competition boards at exact source-built hour boundaries. It rejects changed coverage/member counts and never treats fetch time as source time. Ties stay unresolved; no positive gain produces no candidate. Every result remains verified=false. Source authenticity, member identity (not merely count), disqualifications and recipient mapping still require separate verification. This evaluator is now required by the financially locked winner adapter, and current public mirrors do not guarantee exact boundary snapshots.
+
+## All-holder 20% allocation
+
+The former burn allocation is replaced by SOL rewards to every eligible wallet holding strictly more than $1 of official KOTH at the hourly snapshot, proportional to holdings. Overlap with the other 80% is permitted. Read [worker details](king-worker.md) for exclusions, complete-account reconciliation, pricing and throughput limits. The mint-specific scan, price and transfer simulations must pass before activation. No buy or burn is performed.

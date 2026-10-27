@@ -2,23 +2,23 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {splitFees,allocate,validateAllocation,selectBacking,HOUR} from './king-token/model.ts';
 test('one KOTH fee pot uses original 40/40/20 allocation',()=>{
- const b=splitFees('1000000000');assert.deepEqual(b,{squad:'400000000',supporters:'400000000',burn:'200000000'});
- const a=allocate(b,['member2','member1'],{holder1:'3',holder2:'1'});
- assert.deepEqual(a.payouts.map(p=>p.lamports),['200000000','200000000','300000000','100000000']);
- assert.equal(a.burnLamports,'200000000');validateAllocation(b,a.payouts,a.burnLamports);
+ const b=splitFees('1000000000');assert.deepEqual(b,{squad:'400000000',supporters:'400000000',holders:'200000000'});
+ const a=allocate(b,['member2','member1'],{holder1:'3',holder2:'1'},{member1:'1',holder1:'3'});
+ assert.deepEqual(a.payouts.map(p=>p.lamports),['200000000','200000000','300000000','100000000','150000000','50000000']);
+ validateAllocation(b,a.payouts);
 });
 test('empty eligibility preserves each allocation rather than redirecting it',()=>{
- const b=splitFees('100');const a=allocate(b,[],{});assert.deepEqual(a.carry,{squad:'40',supporters:'40',burn:'0'});assert.equal(a.burnLamports,'20');
+ const b=splitFees('100');const a=allocate(b,[],{});assert.deepEqual(a.carry,{squad:'40',supporters:'40',holders:'20'});
 });
 test('integer rounding conserves every lamport',()=>{
- for(let i=0;i<100;i++){const b=splitFees(String(i));const a=allocate(b,['a','b','c'],{d:'7',e:'13'});const total=a.payouts.reduce((n,p)=>n+BigInt(p.lamports),0n)+BigInt(a.carry.squad)+BigInt(a.carry.supporters)+BigInt(a.burnLamports);assert.equal(total,BigInt(i));}
+ for(let i=0;i<100;i++){const b=splitFees(String(i));const a=allocate(b,['a','b','c'],{d:'7',e:'13'});const total=a.payouts.reduce((n,p)=>n+BigInt(p.lamports),0n)+BigInt(a.carry.squad)+BigInt(a.carry.supporters)+BigInt(a.carry.holders);assert.equal(total,BigInt(i));}
 });
 test('switching squads requires one hour before new backing is eligible',()=>{
  const first=selectBacking(null,'a',100);assert.equal(first.eligibleAt,100);const second=selectBacking(first,'b',200);assert.equal(second.eligibleAt,200+HOUR);assert.throws(()=>selectBacking(second,'c',300),/cooldown/);assert.deepEqual(selectBacking(second,'b',300),second);
 });
 test('allocation checks reject overspending and duplicate recipients within a bucket',()=>{
- const b=splitFees('100');assert.throws(()=>validateAllocation(b,[{wallet:'a',kind:'supporter',lamports:'41'}],'20'));
- assert.throws(()=>validateAllocation(b,[{wallet:'a',kind:'squad',lamports:'1'},{wallet:'a',kind:'squad',lamports:'1'}],'20'));
+ const b=splitFees('100');assert.throws(()=>validateAllocation(b,[{wallet:'a',kind:'supporter',lamports:'41'}]));
+ assert.throws(()=>validateAllocation(b,[{wallet:'a',kind:'squad',lamports:'1'},{wallet:'a',kind:'squad',lamports:'1'}]));
 });
 
 import {generateKeyPairSync,sign} from 'node:crypto';
@@ -52,4 +52,26 @@ test('single-KOTH journal refuses concurrent owners and changed mint; strips sec
  j.state.collection={signed:'PRIVATE_SIGNED_BYTES',signature:'public-signature',expires:100,status:'pending'};
  assert.ok(!JSON.stringify(publicState(j.state)).includes('PRIVATE_SIGNED_BYTES'));await j.save();await j.close();await assert.rejects(()=>journal('mint-b',command),/mint_changed/);
  const next=await journal('mint-a',command);assert.ok(next);db.set('king:single:v1:lock','another-owner');await assert.rejects(()=>next.save(),/lease_lost/);await assert.rejects(()=>next.fence(),/lease_lost/);
+});
+
+import {Keypair} from '@solana/web3.js';
+import {eligibleHolders,overOneDollar,type HolderPrice} from './king-token/holders.ts';
+import {TREASURY} from './king-token/model.ts';
+const price:HolderPrice={numerator:'1',denominator:'100',slot:1,observedAt:1000,publishedAt:1000,source:'pump-curve-pyth'};
+test('holder threshold is strictly over $1 with exact integer math',()=>{
+ assert.equal(overOneDollar('100',price),false);assert.equal(overOneDollar('101',price),true);
+ assert.equal(overOneDollar('9007199254740993',{...price,denominator:'9007199254740992'}),true);
+});
+test('holder scan aggregates accounts, excludes protocol holdings and rejects partial/duplicate/stale data',()=>{
+ const owner=Keypair.generate().publicKey.toBase58();const rows=[{pubkey:'a',owner,mint:'mint',tokens:'60'},{pubkey:'b',owner,mint:'mint',tokens:'50'},{pubkey:'c',owner:TREASURY,mint:'mint',tokens:'200'}];
+ assert.deepEqual(eligibleHolders(rows,'mint','310',price,1000),{[owner]:'110'});
+ assert.throws(()=>eligibleHolders(rows.slice(0,2),'mint','310',price,1000),/incomplete/);
+ assert.throws(()=>eligibleHolders([...rows,rows[0]],'mint','370',price,1000),/invalid/);
+ assert.throws(()=>eligibleHolders(rows,'mint','310',price,62000),/price/);
+});
+test('overlap permits all three categories without overspending; holder dust stays reserved',()=>{
+ const b=splitFees('1001');const a=allocate(b,['same'],{same:'5'},{same:'1',other:'2'});
+ validateAllocation(b,a.payouts);assert.equal(a.payouts.filter(p=>p.wallet==='same').length,3);
+ assert.equal(a.payouts.reduce((n,p)=>n+BigInt(p.lamports),0n)+Object.values(a.carry).reduce((n,v)=>n+BigInt(v),0n),1001n);
+ assert.throws(()=>validateAllocation(b,[{wallet:'x',kind:'holder',lamports:'202'}]),/exceeded/);
 });

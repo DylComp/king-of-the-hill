@@ -12,7 +12,7 @@ Track 100 squads through public mirrors of Pump competition standings. Rankings 
 | --- | --- |
 | 40% | Winning squad: registered members equally, otherwise squad creator |
 | 40% | Eligible KOTH holders backing the winning squad, proportional to snapshot holdings |
-| 20% | Buy and burn the official KOTH token |
+| 20% | Proportional SOL airdrops to KOTH holders worth more than $1 |
 
 KOTH is currently **prelaunch**. Financial processing is disabled until rankings, hourly winner selection, its public mint and on-chain creator-fee route are verified. There are no active squad tokens and no squad-token launches.
 

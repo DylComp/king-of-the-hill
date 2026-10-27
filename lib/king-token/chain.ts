@@ -1,8 +1,10 @@
 import { PublicKey,VersionedTransaction,TransactionMessage,ComputeBudgetProgram,type Connection } from '@solana/web3.js';
-import {TOKEN_PROGRAM_ID,TOKEN_2022_PROGRAM_ID} from '@solana/spl-token';
+import {unpackMint,TOKEN_PROGRAM_ID,TOKEN_2022_PROGRAM_ID} from '@solana/spl-token';
 import {createRequire} from 'node:module';
 import {connection,verifyLaunch} from '../launch/pump';
 import {rpcUrl} from '../chain';
+import {eligibleHolders,type HolderAccount} from './holders';
+import {holderPrice} from './price';
 import {DEV,TREASURY,HOUR} from './model';
 import type {SnapshotHolder} from './store';
 const require=createRequire(import.meta.url);
@@ -10,20 +12,29 @@ const sdk=require('@pump-fun/pump-sdk') as typeof import('@pump-fun/pump-sdk');
 export async function verifyFeeRoute(mint:string){
  if(!(await verifyLaunch(mint,DEV,TREASURY,[{address:TREASURY,shareBps:10000}])).ok)throw Error('king_fee_route_not_ready');
 }
-export async function snapshot(mint:string,eligibleWallets:Set<string>){
- const c=connection(),m=new PublicKey(mint),info=await c.getAccountInfo(m,'finalized');
+export async function snapshot(mint:string){
+ const c=connection(),m=new PublicKey(mint),before=await c.getAccountInfoAndContext(m,'finalized'),info=before.value;
  if(!info||![TOKEN_PROGRAM_ID,TOKEN_2022_PROGRAM_ID].some(p=>p.equals(info.owner)))throw Error('king_mint_not_on_chain');
- const r=await fetch(rpcUrl(),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'getProgramAccounts',params:[info.owner.toBase58(),{commitment:'finalized',encoding:'jsonParsed',withContext:true,filters:[{memcmp:{offset:0,bytes:mint}}]}]}),signal:AbortSignal.timeout(20000)});
- const j=await r.json();if(j.error||!Array.isArray(j.result?.value)||!Number.isSafeInteger(j.result?.context?.slot))throw Error('snapshot_unavailable');
- const holders:Record<string,{tokens:string;accounts:string[]}>={};const excluded=new Set<string>();
- for(const a of j.result.value){const t=a.account?.data?.parsed?.info;if(!t||t.mint!==mint)throw Error('snapshot_invalid_account');
-  if(!eligibleWallets.has(t.owner)||[TREASURY,DEV].includes(t.owner)||!PublicKey.isOnCurve(new PublicKey(t.owner).toBytes()))continue;
+ const mintBefore=unpackMint(m,info,info.owner);
+ const r=await fetch(rpcUrl(),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'getProgramAccounts',params:[info.owner.toBase58(),{commitment:'finalized',minContextSlot:before.context.slot,encoding:'jsonParsed',withContext:true,filters:[{memcmp:{offset:0,bytes:mint}}]}]}),signal:AbortSignal.timeout(20000)});
+ const j=await r.json();if(!r.ok||j.error||!Array.isArray(j.result?.value)||!Number.isSafeInteger(j.result?.context?.slot))throw Error('snapshot_unavailable');
+ const slot=j.result.context.slot;
+ const accounts:HolderAccount[]=[],holders:Record<string,{tokens:string;accounts:string[]}>={},excluded=new Set<string>();
+ for(const a of j.result.value){const t=a.account?.data?.parsed?.info;
+  if(!t||t.mint!==mint||a.account.owner!==info.owner.toBase58()||typeof a.pubkey!=='string'||typeof t.owner!=='string'||typeof t.tokenAmount?.amount!=='string')throw Error('snapshot_invalid_account');
+  accounts.push({pubkey:a.pubkey,owner:t.owner,mint:t.mint,tokens:t.tokenAmount.amount});
+  if([TREASURY,DEV].includes(t.owner)||!PublicKey.isOnCurve(new PublicKey(t.owner).toBytes()))continue;
   if(t.delegate){excluded.add(t.owner);continue;}
   const n=BigInt(t.tokenAmount.amount);if(n<=0n)continue;const old=holders[t.owner]??{tokens:'0',accounts:[]};old.tokens=String(BigInt(old.tokens)+n);old.accounts.push(a.pubkey);holders[t.owner]=old;
  }
- for(const wallet of excluded)delete holders[wallet];
- const blockTime=await c.getBlockTime(j.result.context.slot);if(blockTime==null)throw Error('snapshot_time_unavailable');
- return {slot:j.result.context.slot as number,at:blockTime*1000,holders};
+ for(const w of excluded)delete holders[w];
+ const after=await c.getAccountInfoAndContext(m,{commitment:'finalized',minContextSlot:slot});
+ if(!after.value||!after.value.owner.equals(info.owner))throw Error('snapshot_mint_changed');
+ const mintAfter=unpackMint(m,after.value,info.owner);if(mintBefore.supply!==mintAfter.supply||mintBefore.decimals!==mintAfter.decimals)throw Error('snapshot_supply_changed');
+ const price=await holderPrice(c,m,info.owner,slot),blockTime=await c.getBlockTime(slot);
+ if(blockTime==null||Math.abs(price.observedAt-blockTime*1000)>60000)throw Error('snapshot_time_unavailable');
+ const airdrop=eligibleHolders(accounts,mint,String(mintAfter.supply),price,Date.now());
+ return {slot,at:blockTime*1000,holders,airdrop,price,accountCount:accounts.length};
 }
 // Read the complete finalized hour for wallet + snapshotted token accounts.
 // Pagination exhaustion or missing receipts blocks payout, rather than assuming eligibility.
